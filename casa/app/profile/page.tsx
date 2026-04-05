@@ -186,7 +186,7 @@ export default function ProfilePage() {
           <div className="flex-1 space-y-2">
             <p><strong>Full Name:</strong> {profile?.full_name}</p>
             <p><strong>Email:</strong> {user?.email}</p>
-            <p><strong>Phone Number:</strong> {profile?.phone_number}</p>
+            <p><strong>Phone Number:</strong> {profile?.phone}</p>
           </div>
         </div>
       </section>

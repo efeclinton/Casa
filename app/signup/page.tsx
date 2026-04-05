@@ -10,7 +10,6 @@ export default function SignupPage() {
 
   const [fullName, setFullName] = useState("")
   const [phone, setPhone] = useState("")
-  const [photo, setPhoto] = useState<File | null>(null)
 
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
@@ -29,30 +28,6 @@ export default function SignupPage() {
 
     setLoading(true)
 
-    let avatarUrl = null
-
-    if (photo) {
-      const fileExt = photo.name.split('.').pop()
-      const fileName = `${Date.now()}.${fileExt}`
-      const filePath = `avatars/${fileName}`
-
-      const { error: uploadError } = await supabase.storage
-        .from('avatars')
-        .upload(filePath, photo)
-
-      if (uploadError) {
-        alert('Error uploading photo: ' + uploadError.message)
-        setLoading(false)
-        return
-      }
-
-      const { data } = supabase.storage
-        .from('avatars')
-        .getPublicUrl(filePath)
-
-      avatarUrl = data.publicUrl
-    }
-
     const { data, error } = await supabase.auth.signUp({
       email,
       password
@@ -70,8 +45,7 @@ export default function SignupPage() {
       .insert({
         id: data.user?.id,
         full_name: fullName,
-        phone_number: phone,
-        avatar_url: avatarUrl,
+        phone: phone,
         agent_status: 'none'
       })
 
@@ -112,13 +86,6 @@ export default function SignupPage() {
           placeholder="Phone Number"
           value={phone}
           onChange={(e) => setPhone(e.target.value)}
-          className="w-full border p-3 rounded"
-        />
-
-        <input
-          type="file"
-          accept="image/*"
-          onChange={(e) => setPhoto(e.target.files?.[0] || null)}
           className="w-full border p-3 rounded"
         />
 
