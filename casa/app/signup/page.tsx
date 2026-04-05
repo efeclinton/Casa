@@ -44,16 +44,16 @@ export default function SignupPage() {
     if (user) {
       const { error: profileError } = await supabase
         .from('profiles')
-        .insert([{
+        .upsert([{
           id: user.id,
           full_name: fullName,
           phone: phone,
           email: email,
           agent_status: 'none'
-        }])
+        }], { onConflict: 'id' })
 
       if (profileError) {
-        console.error('Error creating profile:', profileError)
+        console.log("PROFILE ERROR:", profileError)
         alert('Error creating profile: ' + profileError.message)
         setLoading(false)
         return
