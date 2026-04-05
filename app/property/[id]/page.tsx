@@ -34,33 +34,38 @@ export default function PropertyPage() {
 
       setProperty(data)
 
-      // Fetch agent info and rating (listings owner_id is agent user id)
-      if (data?.owner_id) {
-        const agentId = data.owner_id
+      const agentId = data?.agent_id || data?.owner_id
 
-        const [{ data: agentData }, { data: ratingsData, count: ratingsCount }] = await Promise.all([
+      if (agentId) {
+        const [{ data: agentData }, { data: reviewsData }] = await Promise.all([
           supabase
             .from("profiles")
-            .select("full_name, avatar_url")
+            .select("id, full_name, avatar_url")
             .eq("id", agentId)
             .single(),
           supabase
-            .from("agent_ratings")
-            .select("rating", { count: "exact", head: false })
+            .from("agent_reviews")
+            .select("rating")
             .eq("agent_id", agentId)
         ])
 
         setAgentProfile(agentData)
 
-        if (ratingsCount && ratingsData) {
-          const sum = (ratingsData as any[]).reduce((acc, item) => acc + (item.rating || 0), 0)
-          const avg = sum / ratingsCount
+        const reviewList = reviewsData || []
+
+        if (reviewList.length > 0) {
+          const sum = (reviewList as any[]).reduce((acc, item) => acc + (item.rating || 0), 0)
+          const avg = sum / reviewList.length
           setAgentRating(Number(avg.toFixed(1)))
-          setAgentReviewsCount(ratingsCount)
+          setAgentReviewsCount(reviewList.length)
         } else {
           setAgentRating(0)
           setAgentReviewsCount(0)
         }
+      } else {
+        setAgentProfile(null)
+        setAgentRating(0)
+        setAgentReviewsCount(0)
       }
 
       setLoading(false)
@@ -148,6 +153,33 @@ export default function PropertyPage() {
     setSaving(false)
   }
 
+  const flagProperty = async () => {
+    const { data: { user } } = await supabase.auth.getUser()
+
+    if (!user) {
+      router.push("/login")
+      return
+    }
+
+    const reason = prompt("Why are you flagging this property?")
+
+    if (!reason) return
+
+    const { error } = await supabase
+      .from("flagged_properties")
+      .insert({
+        property_id: property.id,
+        user_id: user.id,
+        reason
+      })
+
+    if (error) {
+      alert("Failed to flag property")
+    } else {
+      alert("Property flagged for review")
+    }
+  }
+
   const getAgentInitials = (name: string) => {
     if (!name) return "?"
     return name.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2)
@@ -178,12 +210,15 @@ export default function PropertyPage() {
       const whatsappLink = `https://wa.me/${phone}?text=${whatsappMessage}`
 
       // Track contact action
-      const { error: contactError } = await supabase
-        .from("agent_contacts")
-        .insert({ agent_id: property.owner_id, user_id: user.id })
+      const agentId = property?.agent_id || property?.owner_id
+      if (agentId) {
+        const { error: contactError } = await supabase
+          .from("agent_contacts")
+          .insert({ agent_id: agentId, user_id: user.id })
 
-      if (contactError) {
-        console.error("Could not save contact record", contactError)
+        if (contactError) {
+          console.error("Could not save contact record", contactError)
+        }
       }
 
       window.open(whatsappLink, "_blank")
@@ -288,13 +323,13 @@ export default function PropertyPage() {
 
       )}
 
-      {agentProfile && (
+      {(property?.agent_id || property?.owner_id) && (
         <div className="mt-10 p-6 bg-white rounded-lg shadow">
-          <a href={`/agent/${agentProfile.id}`} className="flex items-center gap-4 cursor-pointer hover:bg-gray-50 p-4 rounded">
+          <a href={`/agent/${property.agent_id || property.owner_id}`} className="flex items-center gap-4 cursor-pointer hover:bg-gray-50 p-4 rounded">
             <div className="relative w-16 h-16">
               <Image
-                src={getAgentAvatarSrc(agentProfile.avatar_url, agentProfile.full_name)}
-                alt={`${agentProfile.full_name} avatar`}
+                src={getAgentAvatarSrc(agentProfile?.avatar_url || null, agentProfile?.full_name || property.owner_name || "Agent")}
+                alt={`${agentProfile?.full_name || property.owner_name || "Agent"} avatar`}
                 width={64}
                 height={64}
                 className="rounded-full object-cover"
@@ -303,7 +338,7 @@ export default function PropertyPage() {
               />
             </div>
             <div>
-              <h3 className="text-xl font-bold">{agentProfile.full_name}</h3>
+              <h3 className="text-xl font-bold">{agentProfile?.full_name || property.owner_name || "Agent"}</h3>
               <p className="text-sm text-gray-500">
                 ⭐ {agentRating > 0 ? agentRating.toFixed(1) : "No rating yet"}
                 {agentReviewsCount > 0 && ` (${agentReviewsCount} review${agentReviewsCount === 1 ? '' : 's'})`}
@@ -397,6 +432,13 @@ export default function PropertyPage() {
         ) : (
           <p className="text-red-500">Phone number not available</p>
         )}
+
+        <button
+          onClick={flagProperty}
+          className="text-red-600 underline mt-3"
+        >
+          Report Listing
+        </button>
 
       </div>
 

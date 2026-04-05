@@ -48,7 +48,7 @@ export default function AgentProfilePage() {
         supabase
           .from("properties")
           .select("id,title,price,location,image")
-          .or(`agent_id.eq.${agentId},owner_id.eq.${agentId}`),
+          .eq("agent_id", agentId),
         supabase
           .from("agent_reviews")
           .select("rating"),

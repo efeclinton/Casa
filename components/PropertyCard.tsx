@@ -22,13 +22,18 @@ export default function PropertyCard({
   id
 }: PropertyCardProps) {
 
+  console.log("Rendering property ID:", id)
+
   const formattedPrice = `₦${Math.round(price / 1000)}k / ${rent_period}`
 
   const fallbackImage =
     "https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=1200&auto=format&fit=crop&q=80"
 
   return (
-    <Link href={`/property/${id}`}>
+    <Link
+      href={`/property/${id}`}
+      onClick={() => console.log("Clicked property ID:", id)}
+    >
 
       <div className="bg-white rounded-xl shadow overflow-hidden hover:shadow-lg transition cursor-pointer">
 

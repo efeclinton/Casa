@@ -193,6 +193,8 @@ export default function ListProperty() {
           tour_images: tourLinks.filter(link => link !== ""),
 
           owner_id: user.id,
+          agent_id: user.id,
+
           owner_name: ownerName,
           owner_email: ownerEmail,
           owner_phone: ownerPhone
