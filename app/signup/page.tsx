@@ -39,20 +39,25 @@ export default function SignupPage() {
       return
     }
 
-    // Insert into profiles
-    const { error: profileError } = await supabase
-      .from('profiles')
-      .insert({
-        id: data.user?.id,
-        full_name: fullName,
-        phone: phone,
-        agent_status: 'none'
-      })
+    const user = data.user
 
-    if (profileError) {
-      alert('Error creating profile: ' + profileError.message)
-      setLoading(false)
-      return
+    if (user) {
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .insert([{
+          id: user.id,
+          full_name: fullName,
+          phone: phone,
+          email: email,
+          agent_status: 'none'
+        }])
+
+      if (profileError) {
+        console.error('Error creating profile:', profileError)
+        alert('Error creating profile: ' + profileError.message)
+        setLoading(false)
+        return
+      }
     }
 
     alert("Account created successfully")
