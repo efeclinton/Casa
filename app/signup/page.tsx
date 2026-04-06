@@ -26,6 +26,8 @@ export default function SignupPage() {
       return
     }
 
+    console.log("FORM DATA:", { fullName, phone, email })
+
     setLoading(true)
 
     const { data, error } = await supabase.auth.signUp({
@@ -42,6 +44,13 @@ export default function SignupPage() {
     const user = data.user
 
     if (user) {
+      console.log("UPSERT DATA:", {
+        id: user.id,
+        full_name: fullName,
+        phone: phone,
+        email: email,
+      })
+
       const { error: profileError } = await supabase
         .from('profiles')
         .upsert([{

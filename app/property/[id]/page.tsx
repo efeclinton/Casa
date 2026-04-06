@@ -37,31 +37,26 @@ export default function PropertyPage() {
       const agentId = data?.agent_id || data?.owner_id
 
       if (agentId) {
-        const [{ data: agentData }, { data: reviewsData }] = await Promise.all([
+        const [{ data: agentData }, { data: ratingData }] = await Promise.all([
           supabase
             .from("profiles")
             .select("id, full_name, avatar_url")
             .eq("id", agentId)
             .single(),
           supabase
-            .from("agent_reviews")
-            .select("rating")
+            .from("agent_rating_summary")
+            .select("*")
             .eq("agent_id", agentId)
+            .single()
         ])
 
         setAgentProfile(agentData)
 
-        const reviewList = reviewsData || []
+        const avgRating = ratingData?.avg_rating || 0
+        const reviewCount = ratingData?.review_count || 0
 
-        if (reviewList.length > 0) {
-          const sum = (reviewList as any[]).reduce((acc, item) => acc + (item.rating || 0), 0)
-          const avg = sum / reviewList.length
-          setAgentRating(Number(avg.toFixed(1)))
-          setAgentReviewsCount(reviewList.length)
-        } else {
-          setAgentRating(0)
-          setAgentReviewsCount(0)
-        }
+        setAgentRating(Number(avgRating.toFixed(1)))
+        setAgentReviewsCount(reviewCount)
       } else {
         setAgentProfile(null)
         setAgentRating(0)
@@ -340,8 +335,9 @@ export default function PropertyPage() {
             <div>
               <h3 className="text-xl font-bold">{agentProfile?.full_name || property.owner_name || "Agent"}</h3>
               <p className="text-sm text-gray-500">
-                ⭐ {agentRating > 0 ? agentRating.toFixed(1) : "No rating yet"}
-                {agentReviewsCount > 0 && ` (${agentReviewsCount} review${agentReviewsCount === 1 ? '' : 's'})`}
+                ⭐ {agentReviewsCount > 0
+                  ? `${agentRating.toFixed(1)} / 5 (${agentReviewsCount} reviews)`
+                  : "No rating yet"}
               </p>
             </div>
           </a>

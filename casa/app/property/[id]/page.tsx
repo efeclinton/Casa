@@ -38,26 +38,26 @@ export default function PropertyPage() {
       if (data?.owner_id) {
         const agentId = data.owner_id
 
-        const [{ data: agentData }, { data: ratingsData, count: ratingsCount }] = await Promise.all([
+        const [{ data: agentData }, { data: ratingData }] = await Promise.all([
           supabase
             .from("profiles")
             .select("full_name, avatar_url")
             .eq("id", agentId)
             .single(),
           supabase
-            .from("agent_ratings")
-            .select("rating", { count: "exact", head: false })
+            .from("agent_rating_summary")
+            .select("*")
             .eq("agent_id", agentId)
+            .single()
         ])
 
         setAgentProfile(agentData)
 
-        if (ratingsCount && ratingsData) {
-          const sum = (ratingsData as any[]).reduce((acc, item) => acc + (item.rating || 0), 0)
-          const avg = sum / ratingsCount
-          setAgentRating(Number(avg.toFixed(1)))
-          setAgentReviewsCount(ratingsCount)
-        } else {
+        const avgRating = ratingData?.avg_rating || 0
+        const reviewCount = ratingData?.review_count || 0
+
+        setAgentRating(Number(avgRating.toFixed(1)))
+        setAgentReviewsCount(reviewCount)
           setAgentRating(0)
           setAgentReviewsCount(0)
         }
@@ -305,8 +305,9 @@ export default function PropertyPage() {
             <div>
               <h3 className="text-xl font-bold">{agentProfile.full_name}</h3>
               <p className="text-sm text-gray-500">
-                ⭐ {agentRating > 0 ? agentRating.toFixed(1) : "No rating yet"}
-                {agentReviewsCount > 0 && ` (${agentReviewsCount} review${agentReviewsCount === 1 ? '' : 's'})`}
+                ⭐ {agentReviewsCount > 0
+                  ? `${agentRating.toFixed(1)} / 5 (${agentReviewsCount} reviews)`
+                  : "No rating yet"}
               </p>
             </div>
           </a>

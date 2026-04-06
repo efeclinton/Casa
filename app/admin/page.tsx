@@ -201,6 +201,17 @@ export default function AdminPage() {
       return
     }
 
+    const { data: ratings, error: ratingsError } = await supabase
+      .from("agent_ratings")
+      .select("agent_id, rating")
+
+    if (ratingsError) {
+      console.error("LOAD AGENTS ERROR:", ratingsError)
+      alert("Failed to load agents: " + ratingsError.message)
+      setLoadingAgents(false)
+      return
+    }
+
     const counts: Record<string, number> = {};
 
     (properties || []).forEach((p: any) => {
@@ -208,10 +219,30 @@ export default function AdminPage() {
       counts[p.agent_id] = (counts[p.agent_id] || 0) + 1
     })
 
-    const agentsWithCounts = (agents || []).map((a: any) => ({
-      ...a,
-      listing_count: counts[a.id] || 0,
-    }))
+    const ratingMap: Record<string, number[]> = {}
+
+    ;(ratings || []).forEach((r: any) => {
+      if (!ratingMap[r.agent_id]) {
+        ratingMap[r.agent_id] = []
+      }
+      ratingMap[r.agent_id].push(r.rating)
+    })
+
+    const agentsWithCounts = (agents || []).map((a: any) => {
+      const agentRatings = ratingMap[a.id] || []
+
+      const avgRating =
+        agentRatings.length > 0
+          ? agentRatings.reduce((a, b) => a + b, 0) / agentRatings.length
+          : 0
+
+      return {
+        ...a,
+        listing_count: counts[a.id] || 0,
+        avgRating: avgRating,
+        reviewCount: agentRatings.length
+      }
+    })
 
     setAgents(agentsWithCounts)
     setLoadingAgents(false)
@@ -529,10 +560,8 @@ export default function AdminPage() {
               {filteredAgents.map(agent => {
                 const listingCount = agent.listing_count || 0
                 const contactCount = agent.agent_contacts?.length || 0
-                const ratings = agent.agent_ratings || []
-                const avgRating = ratings.length
-                  ? (ratings.reduce((a: any, b: any) => a + (b.rating || 0), 0) / ratings.length).toFixed(1)
-                  : "0"
+                const avgRating = agent.avgRating || 0
+                const reviewCount = agent.reviewCount || 0
 
                 return (
                   <div
@@ -550,7 +579,7 @@ export default function AdminPage() {
                         <p>Status: {agent.status || "unknown"}</p>
                         <p>Listings: {listingCount}</p>
                         <p>Contacts: {contactCount}</p>
-                        <p>Rating: ⭐ {avgRating}</p>
+                        <p>Rating: ⭐ {reviewCount > 0 ? `${avgRating.toFixed(1)} / 5 (${reviewCount} reviews)` : "No rating yet"}</p>
                       </div>
                     </div>
 
