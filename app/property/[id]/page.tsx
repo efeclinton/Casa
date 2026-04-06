@@ -67,8 +67,9 @@ export default function PropertyPage() {
 
     }
 
-    if (id) loadProperty()
-
+    if (id) {
+      loadProperty()
+    }
   }, [id])
 
   useEffect(() => {
