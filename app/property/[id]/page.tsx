@@ -62,9 +62,8 @@ export default function PropertyPage() {
         setAgentRating(0);
         setAgentReviewsCount(0);
       }
-
+      
       setLoading(false);
-
     };
 
     if (!id) return;
