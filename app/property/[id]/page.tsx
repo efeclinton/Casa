@@ -30,11 +30,11 @@ export default function PropertyPage() {
         .from("properties")
         .select("*")
         .eq("id", id)
-        .single()
+        .single();
 
-      setProperty(data)
+      setProperty(data);
 
-      const agentId = data?.agent_id || data?.owner_id
+      const agentId = data?.agent_id || data?.owner_id;
 
       if (agentId) {
         const [{ data: agentData }, { data: ratingData }] = await Promise.all([
@@ -48,55 +48,57 @@ export default function PropertyPage() {
             .select("*")
             .eq("agent_id", agentId)
             .single()
-        ])
+        ]);
 
-        setAgentProfile(agentData)
+        setAgentProfile(agentData);
 
-        const avgRating = ratingData?.avg_rating || 0
-        const reviewCount = ratingData?.review_count || 0
+        const avgRating = ratingData?.avg_rating || 0;
+        const reviewCount = ratingData?.review_count || 0;
 
-        setAgentRating(Number(avgRating.toFixed(1)))
-        setAgentReviewsCount(reviewCount)
+        setAgentRating(Number(avgRating.toFixed(1)));
+        setAgentReviewsCount(reviewCount);
       } else {
-        setAgentProfile(null)
-        setAgentRating(0)
-        setAgentReviewsCount(0)
+        setAgentProfile(null);
+        setAgentRating(0);
+        setAgentReviewsCount(0);
       }
 
-      setLoading(false)
+      setLoading(false);
 
-    }
+    };
 
-    if (id) {
-      loadProperty()
-    }
-  }, [id])
+    if (!id) return;
+
+    loadProperty();
+
+  }, [id]);
 
   useEffect(() => {
     const checkSaved = async () => {
-      if (!id) return
+      if (!id) return;
 
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) return
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
 
       const { data, error } = await supabase
         .from("saved_listings")
         .select("id")
         .eq("user_id", user.id)
         .eq("property_id", id)
-        .single()
+        .single();
 
       if (!error && data) {
-        setIsSaved(true)
-        setSavedId(data.id)
+        setIsSaved(true);
+        setSavedId(data.id);
       } else {
-        setIsSaved(false)
-        setSavedId(null)
+        setIsSaved(false);
+        setSavedId(null);
       }
-    }
+    };
 
-    checkSaved()
-  }, [id])
+    checkSaved();
+
+  }, [id]);
 
   const authRedirect = () => {
     router.push(`/login?redirect=/property/${id}`)
