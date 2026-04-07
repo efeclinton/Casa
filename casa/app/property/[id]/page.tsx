@@ -35,13 +35,13 @@ export default function PropertyPage() {
       setProperty(data)
 
       // Fetch agent info and rating (listings owner_id is agent user id)
-      if (data?.owner_id) {
-        const agentId = data.owner_id
+      const agentId = data?.agent_id || data?.owner_id
 
+      if (agentId) {
         const [{ data: agentData }, { data: ratingData }] = await Promise.all([
           supabase
             .from("profiles")
-            .select("full_name, avatar_url")
+            .select("id, full_name, avatar_url")
             .eq("id", agentId)
             .single(),
           supabase
@@ -58,16 +58,18 @@ export default function PropertyPage() {
 
         setAgentRating(Number(avgRating.toFixed(1)))
         setAgentReviewsCount(reviewCount)
-          setAgentRating(0)
-          setAgentReviewsCount(0)
-        }
+      } else {
+        setAgentProfile(null)
+        setAgentRating(0)
+        setAgentReviewsCount(0)
       }
 
       setLoading(false)
-
     }
 
-    if (id) loadProperty()
+    if (!id) return
+
+    loadProperty()
 
   }, [id])
 
