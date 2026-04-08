@@ -21,6 +21,9 @@ export default function PropertyPage() {
   const [isSaved, setIsSaved] = useState(false)
   const [savedId, setSavedId] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
+  const [showGalleryModal, setShowGalleryModal] = useState(false)
+  const [currentImageIndex, setCurrentImageIndex] = useState(0)
+  const [touchStart, setTouchStart] = useState<number | null>(null)
 
   useEffect(() => {
 
@@ -98,6 +101,24 @@ export default function PropertyPage() {
 
     checkSaved()
   }, [id])
+
+  useEffect(() => {
+    if (!showGalleryModal) return
+
+    document.body.style.overflow = 'hidden'
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'ArrowLeft') handlePrevImage()
+      if (e.key === 'ArrowRight') handleNextImage()
+      if (e.key === 'Escape') handleCloseGallery()
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown)
+      document.body.style.overflow = 'unset'
+    }
+  }, [showGalleryModal, currentImageIndex])
 
   const authRedirect = () => {
     router.push(`/login?redirect=/property/${id}`)
@@ -194,6 +215,45 @@ export default function PropertyPage() {
     ensure()
   }
 
+  const openGallery = (index: number) => {
+    setCurrentImageIndex(index)
+    setShowGalleryModal(true)
+  }
+
+  const handleCloseGallery = () => {
+    setShowGalleryModal(false)
+  }
+
+  const handleNextImage = () => {
+    const imgs = Array.isArray(property?.images) ? property.images : []
+    setCurrentImageIndex((prev) => (prev + 1) % imgs.length)
+  }
+
+  const handlePrevImage = () => {
+    const imgs = Array.isArray(property?.images) ? property.images : []
+    setCurrentImageIndex((prev) => (prev - 1 + imgs.length) % imgs.length)
+  }
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    setTouchStart(e.touches[0].clientX)
+  }
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (!touchStart) return
+    const touchEnd = e.changedTouches[0].clientX
+    const diff = touchStart - touchEnd
+
+    if (Math.abs(diff) > 50) {
+      if (diff > 0) {
+        handleNextImage()
+      } else {
+        handlePrevImage()
+      }
+    }
+
+    setTouchStart(null)
+  }
+
 
 
   if (loading) {
@@ -237,7 +297,8 @@ export default function PropertyPage() {
           <img
             src={images[0] || property.image}
             alt="Main property image"
-            className="w-full h-[420px] object-cover rounded-xl"
+            className="w-full h-[420px] object-cover rounded-xl cursor-pointer hover:opacity-90 transition"
+            onClick={() => openGallery(0)}
           />
         </div>
 
@@ -246,7 +307,8 @@ export default function PropertyPage() {
             key={index}
             src={img}
             alt={`Property image ${index + 2}`}
-            className="w-full h-[200px] object-cover rounded-lg"
+            className="w-full h-[200px] object-cover rounded-lg cursor-pointer hover:opacity-90 transition"
+            onClick={() => openGallery(index + 1)}
           />
         ))}
 
@@ -402,6 +464,63 @@ export default function PropertyPage() {
         )}
 
       </div>
+
+      {/* Fullscreen Gallery Modal */}
+      {showGalleryModal && (
+        <div
+          className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center"
+          onClick={handleCloseGallery}
+          onTouchStart={handleTouchStart}
+          onTouchEnd={handleTouchEnd}
+        >
+          {/* Close Button */}
+          <button
+            onClick={handleCloseGallery}
+            className="absolute top-4 right-4 text-white text-3xl hover:text-gray-300 transition z-50"
+          >
+            ✕
+          </button>
+
+          {/* Main Image Container */}
+          <div
+            className="relative w-full h-full flex items-center justify-center"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <img
+              src={images[currentImageIndex] || property.image}
+              alt={`Gallery image ${currentImageIndex + 1}`}
+              className="max-w-full max-h-full object-contain"
+            />
+
+            {/* Previous Button */}
+            <button
+              onClick={(e) => {
+                e.stopPropagation()
+                handlePrevImage()
+              }}
+              className="absolute left-4 top-1/2 transform -translate-y-1/2 bg-white/20 hover:bg-white/40 text-white text-3xl w-12 h-12 flex items-center justify-center rounded transition"
+            >
+              ‹
+            </button>
+
+            {/* Next Button */}
+            <button
+              onClick={(e) => {
+                e.stopPropagation()
+                handleNextImage()
+              }}
+              className="absolute right-4 top-1/2 transform -translate-y-1/2 bg-white/20 hover:bg-white/40 text-white text-3xl w-12 h-12 flex items-center justify-center rounded transition"
+            >
+              ›
+            </button>
+
+            {/* Counter */}
+            <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 bg-black/60 text-white px-4 py-2 rounded-lg text-sm">
+              {currentImageIndex + 1} / {images.length}
+            </div>
+          </div>
+        </div>
+      )}
 
     </main>
   )
