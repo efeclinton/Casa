@@ -202,8 +202,8 @@ export default function AdminPage() {
     }
 
     const { data: ratings, error: ratingsError } = await supabase
-      .from("agent_ratings")
-      .select("agent_id, rating")
+      .from("agent_rating_summary")
+      .select("*")
 
     if (ratingsError) {
       console.error("LOAD AGENTS ERROR:", ratingsError)
@@ -219,28 +219,20 @@ export default function AdminPage() {
       counts[p.agent_id] = (counts[p.agent_id] || 0) + 1
     })
 
-    const ratingMap: Record<string, number[]> = {}
+    const ratingMap: Record<string, any> = {}
 
     ;(ratings || []).forEach((r: any) => {
-      if (!ratingMap[r.agent_id]) {
-        ratingMap[r.agent_id] = []
-      }
-      ratingMap[r.agent_id].push(r.rating)
+      ratingMap[r.agent_id] = r
     })
 
     const agentsWithCounts = (agents || []).map((a: any) => {
-      const agentRatings = ratingMap[a.id] || []
-
-      const avgRating =
-        agentRatings.length > 0
-          ? agentRatings.reduce((a, b) => a + b, 0) / agentRatings.length
-          : 0
+      const r = ratingMap[a.id]
 
       return {
         ...a,
         listing_count: counts[a.id] || 0,
-        avgRating: avgRating,
-        reviewCount: agentRatings.length
+        avgRating: r?.avg_rating || 0,
+        reviewCount: r?.review_count || 0
       }
     })
 
@@ -579,7 +571,7 @@ export default function AdminPage() {
                         <p>Status: {agent.status || "unknown"}</p>
                         <p>Listings: {listingCount}</p>
                         <p>Contacts: {contactCount}</p>
-                        <p>Rating: ⭐ {reviewCount > 0 ? `${avgRating.toFixed(1)} / 5 (${reviewCount} reviews)` : "No rating yet"}</p>
+                        <p>Rating: ⭐ {avgRating.toFixed(1)} ({reviewCount})</p>
                       </div>
                     </div>
 
