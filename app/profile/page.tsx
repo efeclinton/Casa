@@ -78,9 +78,9 @@ export default function ProfilePage() {
 
   const getStatusMessage = () => {
     if (profile?.agent_status === "pending") return "Your application is under review"
-    if (profile?.agent_status === "approved") return "You are now an approved agent"
+    if (profile?.agent_status === "approved") return "Your account is active."
     if (profile?.agent_status === "rejected") return "Your application was rejected"
-    if (profile?.agent_status === "banned") return "You have been banned by admin. Contact support."
+    if (profile?.agent_status === "banned") return "Your account has been banned by admin."
     if (profile?.agent_status === "suspended") return "Your account is temporarily suspended."
     return ""
   }

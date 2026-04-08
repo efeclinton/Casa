@@ -250,9 +250,11 @@ export default function AdminPage() {
   }
 
   const updateAgentStatus = async (agentId:string, status:string) => {
+    const nextAgentStatus = status === "active" ? "approved" : status
+
     const { error } = await supabase
       .from("profiles")
-      .update({ status, agent_status: status })
+      .update({ status, agent_status: nextAgentStatus })
       .eq("id", agentId)
 
     if (error) {
@@ -260,12 +262,18 @@ export default function AdminPage() {
       return
     }
 
-    if (status === "banned" || status === "suspended") {
+    if (status === "banned" || status === "suspended" || status === "active") {
       const message = status === "banned"
         ? "Your account has been banned by admin."
-        : "Your account has been suspended by admin."
+        : status === "suspended"
+          ? "Your account has been suspended."
+          : "Your account has been reactivated."
 
-      const type = status === "banned" ? "ban" : "suspension"
+      const type = status === "banned"
+        ? "ban"
+        : status === "suspended"
+          ? "suspension"
+          : "activation"
 
       const { error: notificationError } = await supabase
         .from("notifications")

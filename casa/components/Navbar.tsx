@@ -2,13 +2,16 @@
 
 import { useState, useEffect } from "react"
 import Link from "next/link"
+import { usePathname } from "next/navigation"
 import { supabase } from "../lib/supabaseClient"
 
 export default function Navbar() {
+  const pathname = usePathname()
 
   const [menuOpen, setMenuOpen] = useState(false)
   const [user, setUser] = useState<any>(null)
   const [profile, setProfile] = useState<any>(null)
+  const [unreadCount, setUnreadCount] = useState(0)
 
   useEffect(() => {
 
@@ -23,8 +26,17 @@ export default function Navbar() {
           .single()
 
         setProfile(data)
+
+        const { count } = await supabase
+          .from("notifications")
+          .select("*", { count: "exact", head: true })
+          .eq("user_id", currentUser.id)
+          .eq("read", false)
+
+        setUnreadCount(count || 0)
       } else {
         setProfile(null)
+        setUnreadCount(0)
       }
     }
 
@@ -35,6 +47,12 @@ export default function Navbar() {
     }
 
     getInitialUser()
+
+    const handleNotificationsUpdated = () => {
+      getInitialUser()
+    }
+
+    window.addEventListener("notifications-updated", handleNotificationsUpdated)
 
     // Listen for auth state changes
     let subscription: any = null
@@ -51,12 +69,14 @@ export default function Navbar() {
 
     // Clean up subscription on unmount
     return () => {
+      window.removeEventListener("notifications-updated", handleNotificationsUpdated)
+
       if (subscription) {
         subscription.unsubscribe()
       }
     }
 
-  }, [])
+  }, [pathname])
 
   const handleLogout = async () => {
     await supabase.auth.signOut()
@@ -74,13 +94,26 @@ export default function Navbar() {
           Casa
         </Link>
 
-        {/* Menu Icon */}
-        <button
-          onClick={() => setMenuOpen(!menuOpen)}
-          className="text-2xl"
-        >
-          ☰
-        </button>
+        <div className="flex items-center gap-4">
+          {user && (
+            <Link href="/notifications" className="relative text-2xl">
+              🔔
+              {unreadCount > 0 && (
+                <span className="absolute -top-2 -right-2 min-w-5 h-5 px-1 flex items-center justify-center text-xs rounded-full bg-red-600 text-white">
+                  {unreadCount}
+                </span>
+              )}
+            </Link>
+          )}
+
+          {/* Menu Icon */}
+          <button
+            onClick={() => setMenuOpen(!menuOpen)}
+            className="text-2xl"
+          >
+            ☰
+          </button>
+        </div>
 
       </div>
 
@@ -108,6 +141,10 @@ export default function Navbar() {
 
               {user && (
                 <Link href="/profile">Profile</Link>
+              )}
+
+              {user && (
+                <Link href="/notifications">Notifications</Link>
               )}
 
               {user && profile && profile.agent_status === "approved" && (

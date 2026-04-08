@@ -127,8 +127,13 @@ export default function ListProperty() {
       return
     }
 
-    if (profile?.agent_status !== "approved") {
-      alert("You cannot create listings because your account is not approved.")
+    try {
+      if (profile?.agent_status !== "approved") {
+        throw new Error("Not allowed to create listing")
+      }
+    } catch (error: any) {
+      alert("You cannot create listings because your account is currently restricted.")
+      console.log(error)
       setIsSubmitting(false)
       return
     }
@@ -260,7 +265,7 @@ export default function ListProperty() {
     return <p className="p-10">Checking login...</p>
   }
 
-  if (agentStatus === "banned" || agentStatus === "suspended") {
+  if (agentStatus !== "approved") {
     return (
       <main className="max-w-xl mx-auto p-10">
         <h1 className="text-3xl font-bold mb-6">
@@ -268,7 +273,7 @@ export default function ListProperty() {
         </h1>
 
         <p>
-          You cannot create listings because your account is currently {agentStatus}.
+          You cannot create listings because your account is currently restricted.
         </p>
       </main>
     )
