@@ -69,10 +69,19 @@ export default function ProfilePage() {
 
   const role = profile?.agent_status === "none" ? "User" : "Agent"
 
+  const getStatusBadgeClass = () => {
+    if (profile?.agent_status === "approved") return "bg-green-100 text-green-700"
+    if (profile?.agent_status === "suspended") return "bg-yellow-100 text-yellow-700"
+    if (profile?.agent_status === "banned") return "bg-red-100 text-red-700"
+    return "bg-gray-100 text-gray-700"
+  }
+
   const getStatusMessage = () => {
     if (profile?.agent_status === "pending") return "Your application is under review"
     if (profile?.agent_status === "approved") return "You are now an approved agent"
     if (profile?.agent_status === "rejected") return "Your application was rejected"
+    if (profile?.agent_status === "banned") return "You have been banned by admin. Contact support."
+    if (profile?.agent_status === "suspended") return "Your account is temporarily suspended."
     return ""
   }
 
@@ -195,7 +204,12 @@ export default function ProfilePage() {
         <h2 className="text-2xl font-semibold mb-4">Account Status</h2>
         <div className="space-y-2">
           <p><strong>Role:</strong> {role}</p>
-          <p><strong>Agent Status:</strong> {profile?.agent_status}</p>
+          <p>
+            <strong>Agent Status:</strong>{" "}
+            <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium capitalize ${getStatusBadgeClass()}`}>
+              {profile?.agent_status}
+            </span>
+          </p>
         </div>
 
         {role === "User" && (

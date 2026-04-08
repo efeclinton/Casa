@@ -252,12 +252,33 @@ export default function AdminPage() {
   const updateAgentStatus = async (agentId:string, status:string) => {
     const { error } = await supabase
       .from("profiles")
-      .update({ status })
+      .update({ status, agent_status: status })
       .eq("id", agentId)
 
     if (error) {
       alert("Failed to update status")
       return
+    }
+
+    if (status === "banned" || status === "suspended") {
+      const message = status === "banned"
+        ? "Your account has been banned by admin."
+        : "Your account has been suspended by admin."
+
+      const type = status === "banned" ? "ban" : "suspension"
+
+      const { error: notificationError } = await supabase
+        .from("notifications")
+        .insert({
+          user_id: agentId,
+          title: "Account Status Update",
+          message,
+          type
+        })
+
+      if (notificationError) {
+        console.error("Failed to create notification", notificationError)
+      }
     }
 
     alert(`Agent ${status}`)

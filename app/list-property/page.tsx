@@ -9,6 +9,7 @@ export default function ListProperty() {
   const router = useRouter()
 
   const [loading, setLoading] = useState(true)
+  const [agentStatus, setAgentStatus] = useState<string | null>(null)
 
   const [title, setTitle] = useState("")
   const [price, setPrice] = useState("")
@@ -49,6 +50,13 @@ export default function ListProperty() {
       if (!data.session) {
         router.push("/login")
       } else {
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("agent_status")
+          .eq("id", data.session.user.id)
+          .single()
+
+        setAgentStatus(profile?.agent_status || null)
         setLoading(false)
       }
 
@@ -102,7 +110,26 @@ export default function ListProperty() {
 
     if (!user) {
       alert("You must be logged in to list a property")
+      setIsSubmitting(false)
       router.push("/login")
+      return
+    }
+
+    const { data: profile, error: profileError } = await supabase
+      .from("profiles")
+      .select("agent_status")
+      .eq("id", user.id)
+      .single()
+
+    if (profileError) {
+      alert("Unable to verify account status")
+      setIsSubmitting(false)
+      return
+    }
+
+    if (profile?.agent_status !== "approved") {
+      alert("You cannot create listings because your account is not approved.")
+      setIsSubmitting(false)
       return
     }
 
@@ -231,6 +258,20 @@ export default function ListProperty() {
 
   if (loading) {
     return <p className="p-10">Checking login...</p>
+  }
+
+  if (agentStatus === "banned" || agentStatus === "suspended") {
+    return (
+      <main className="max-w-xl mx-auto p-10">
+        <h1 className="text-3xl font-bold mb-6">
+          List a Property
+        </h1>
+
+        <p>
+          You cannot create listings because your account is currently {agentStatus}.
+        </p>
+      </main>
+    )
   }
 
 
