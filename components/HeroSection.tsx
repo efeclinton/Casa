@@ -13,20 +13,20 @@ export default function HeroSection() {
       }}
     >
       {/* Dark overlay */}
-      <div className="absolute inset-0 bg-black/50"></div>
+      <div className="absolute inset-0 bg-black/60"></div>
 
       {/* Content */}
       <div className="relative z-10 max-w-6xl mx-auto px-6 text-white text-center">
 
-        <h1 className="text-4xl md:text-5xl font-bold mb-4 drop-shadow-lg">
+        <h1 className="text-3xl sm:text-4xl font-bold text-white">
           Find Your Next Property
         </h1>
 
-        <p className="mb-8 text-lg text-white/90 drop-shadow-md">
+        <p className="text-white/90 mt-2">
           Search verified properties across Nigeria
         </p>
 
-        <div className="bg-white/90 backdrop-blur-md p-6 rounded-2xl shadow-xl text-black max-w-xl mx-auto">
+        <div className="bg-white shadow-lg rounded-xl p-4 text-black max-w-xl mx-auto mt-6">
 
           <SearchBar />
 

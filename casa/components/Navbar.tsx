@@ -87,11 +87,11 @@ export default function Navbar() {
       {menuOpen && (
         <>
           <div
-            className="fixed inset-0 bg-black/50 z-40"
+            className="fixed inset-0 bg-black/40 z-40"
             onClick={() => setMenuOpen(false)}
           />
 
-          <div className="fixed inset-y-0 right-0 w-72 bg-white p-6 z-50 shadow-lg transition-transform duration-300 translate-x-0">
+          <div className="fixed right-0 top-0 h-full w-64 bg-white z-50 shadow-lg p-6 transition-transform duration-300 translate-x-0">
             <button
               onClick={() => setMenuOpen(false)}
               className="text-xl mb-4"

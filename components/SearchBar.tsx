@@ -32,7 +32,7 @@ export default function SearchBar() {
         placeholder="Search location..."
         value={location}
         onChange={(e) => setLocation(e.target.value)}
-        className="w-full border rounded-lg px-4 py-3"
+        className="w-full border border-gray-300 rounded-lg px-3 py-2 text-black placeholder-gray-500"
       />
 
       <div className="grid grid-cols-2 gap-3">
@@ -42,7 +42,7 @@ export default function SearchBar() {
           placeholder="Min price"
           value={minPrice}
           onChange={(e) => setMinPrice(e.target.value)}
-          className="border rounded-lg px-4 py-3"
+          className="w-full border border-gray-300 rounded-lg px-3 py-2 text-black placeholder-gray-500"
         />
 
         <input
@@ -50,7 +50,7 @@ export default function SearchBar() {
           placeholder="Max price"
           value={maxPrice}
           onChange={(e) => setMaxPrice(e.target.value)}
-          className="border rounded-lg px-4 py-3"
+          className="w-full border border-gray-300 rounded-lg px-3 py-2 text-black placeholder-gray-500"
         />
 
       </div>
