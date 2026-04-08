@@ -61,14 +61,34 @@ const load = async () => {
   // =====================
   const { data: reviewsData, error: reviewsError } = await supabase
     .from("agent_ratings")
-    .select("id, rating, comment, created_at, user_id, profiles (full_name)")
+    .select("id, rating, comment, created_at, user_id")
     .eq("agent_id", agentId)
     .order("created_at", { ascending: false })
 
   console.log("REVIEWS ERROR:", reviewsError)
   console.log("REVIEWS DATA:", reviewsData)
 
-  setReviews(reviewsData || [])
+  const userIds = Array.from(new Set((reviewsData || []).map((r: any) => r.user_id).filter(Boolean)))
+
+  let profileMap: Record<string, any> = {}
+
+  if (userIds.length > 0) {
+    const { data: profilesData } = await supabase
+      .from("profiles")
+      .select("id, full_name, avatar_url")
+      .in("id", userIds)
+
+    ;(profilesData || []).forEach((p: any) => {
+      profileMap[p.id] = p
+    })
+  }
+
+  const reviewsWithUser = (reviewsData || []).map((r: any) => ({
+    ...r,
+    profile: profileMap[r.user_id]
+  }))
+
+  setReviews(reviewsWithUser)
 
   // =====================
   // CALCULATE RATING
@@ -98,7 +118,7 @@ const load = async () => {
 
     setHasContacted((contactData || []).length > 0)
 
-    const existingReview = (reviewsData || []).find((r: any) => r.user_id === currentUser.id)
+    const existingReview = (reviewsWithUser || []).find((r: any) => r.user_id === currentUser.id)
 
     if (existingReview) {
       setUserReview(existingReview)
@@ -134,6 +154,11 @@ if (!comment.trim() || !rating) {
 setSubmitting(true)
 
 try {
+  const { data: { user: authUser } } = await supabase.auth.getUser()
+
+  if (!authUser) {
+    throw new Error("You must be logged in to submit a review")
+  }
 
   if (userReview) {
     const { error } = await supabase
@@ -149,7 +174,7 @@ try {
       .from("agent_ratings")
       .insert({
         agent_id: agentId,
-        user_id: user.id,
+        user_id: authUser.id,
         rating,
         comment
       })
@@ -159,14 +184,34 @@ try {
 
   const { data: newReviews, error: newReviewsError } = await supabase
     .from("agent_ratings")
-    .select("id, rating, comment, created_at, user_id, profiles (full_name)")
+    .select("id, rating, comment, created_at, user_id")
     .eq("agent_id", agentId)
     .order("created_at", { ascending: false })
 
   console.log("REFETCH ERROR:", newReviewsError)
   console.log("REFETCH DATA:", newReviews)
 
-  setReviews(newReviews || [])
+  const reviewUserIds = Array.from(new Set((newReviews || []).map((r: any) => r.user_id).filter(Boolean)))
+
+  let refreshedProfileMap: Record<string, any> = {}
+
+  if (reviewUserIds.length > 0) {
+    const { data: refreshedProfiles } = await supabase
+      .from("profiles")
+      .select("id, full_name, avatar_url")
+      .in("id", reviewUserIds)
+
+    ;(refreshedProfiles || []).forEach((p: any) => {
+      refreshedProfileMap[p.id] = p
+    })
+  }
+
+  const reviewsWithUser = (newReviews || []).map((r: any) => ({
+    ...r,
+    profile: refreshedProfileMap[r.user_id]
+  }))
+
+  setReviews(reviewsWithUser)
 
   const ratingValues = newReviews || []
 
@@ -394,15 +439,15 @@ return (
               <div className="flex items-start gap-3">
                 <img
                   src={getOptimizedAvatarUrl(
-                    review.profiles?.avatar_url || review.user?.avatar_url,
-                    review.profiles?.full_name || review.user?.full_name
+                    review.profile?.avatar_url || null,
+                    review.profile?.full_name || "Anonymous"
                   )}
                   className="w-10 h-10 rounded-full"
                 />
 
                 <div>
                   <p className="font-semibold">
-                    {review.profiles?.full_name || review.user?.full_name || "Anonymous"}
+                    {review.profile?.full_name || "Anonymous"}
                   </p>
 
                   <p className="text-sm text-gray-500">

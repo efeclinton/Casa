@@ -50,11 +50,11 @@ export default function AgentProfilePage() {
           .select("id,title,price,location,image")
           .eq("agent_id", agentId),
         supabase
-          .from("agent_reviews")
+          .from("agent_ratings")
           .select("rating"),
         supabase
-          .from("agent_reviews")
-          .select("id,user_id,rating,comment,created_at")
+          .from("agent_ratings")
+          .select("id, rating, comment, created_at, user_id")
           .eq("agent_id", agentId)
           .order("created_at", { ascending: false }),
       ])
@@ -67,7 +67,27 @@ export default function AgentProfilePage() {
       setUser(currentUser)
 
       const reviewList = reviewsData || []
-      setReviews(reviewList)
+
+      const userIds = Array.from(new Set(reviewList.map((r: any) => r.user_id).filter(Boolean)))
+      let profileMap: Record<string, any> = {}
+
+      if (userIds.length > 0) {
+        const { data: profilesData } = await supabase
+          .from("profiles")
+          .select("id, full_name, avatar_url")
+          .in("id", userIds)
+
+        ;(profilesData || []).forEach((p: any) => {
+          profileMap[p.id] = p
+        })
+      }
+
+      const reviewsWithUser = reviewList.map((r: any) => ({
+        ...r,
+        profile: profileMap[r.user_id]
+      }))
+
+      setReviews(reviewsWithUser)
 
       const ratingValues = ratingsData || []
       if (ratingValues.length > 0) {
@@ -89,7 +109,7 @@ export default function AgentProfilePage() {
 
         setHasContacted(!!contactResult.data)
 
-        const existingReview = reviewList.find((r: any) => r.user_id === currentUser.id)
+        const existingReview = reviewsWithUser.find((r: any) => r.user_id === currentUser.id)
         if (existingReview) {
           setUserReview(existingReview)
           setRating(existingReview.rating)
@@ -122,28 +142,53 @@ export default function AgentProfilePage() {
     setSubmitting(true)
 
     try {
+      const { data: { user: authUser } } = await supabase.auth.getUser()
+
+      if (!authUser) {
+        throw new Error("You must be logged in to submit a review")
+      }
+
       if (userReview) {
         const { error } = await supabase
-          .from("agent_reviews")
+          .from("agent_ratings")
           .update({ rating, comment })
           .eq("id", userReview.id)
 
         if (error) throw error
       } else {
         const { error } = await supabase
-          .from("agent_reviews")
-          .insert({ agent_id: agentId, user_id: user.id, rating, comment })
+          .from("agent_ratings")
+          .insert({ agent_id: agentId, user_id: authUser.id, rating, comment })
 
         if (error) throw error
       }
 
       const { data: newReviews } = await supabase
-        .from("agent_reviews")
-        .select("id,user_id,rating,comment,created_at")
+        .from("agent_ratings")
+        .select("id, rating, comment, created_at, user_id")
         .eq("agent_id", agentId)
         .order("created_at", { ascending: false })
 
-      setReviews(newReviews || [])
+      const reviewUserIds = Array.from(new Set((newReviews || []).map((r: any) => r.user_id).filter(Boolean)))
+      let refreshedProfileMap: Record<string, any> = {}
+
+      if (reviewUserIds.length > 0) {
+        const { data: refreshedProfiles } = await supabase
+          .from("profiles")
+          .select("id, full_name, avatar_url")
+          .in("id", reviewUserIds)
+
+        ;(refreshedProfiles || []).forEach((p: any) => {
+          refreshedProfileMap[p.id] = p
+        })
+      }
+
+      const reviewsWithUser = (newReviews || []).map((r: any) => ({
+        ...r,
+        profile: refreshedProfileMap[r.user_id]
+      }))
+
+      setReviews(reviewsWithUser)
 
       const ratingValues = newReviews || []
       if (ratingValues.length > 0) {
@@ -269,9 +314,23 @@ export default function AgentProfilePage() {
           <div className="space-y-3">
             {reviews.map((review) => (
               <div key={review.id} className="border px-4 py-3 rounded-lg">
-                <div className="flex items-center justify-between mb-2">
+                <div className="flex items-start justify-between gap-3 mb-2">
+                  <div className="flex items-start gap-3">
+                    <img
+                      src={getOptimizedAvatarUrl(
+                        review.profile?.avatar_url || null,
+                        review.profile?.full_name || "Anonymous"
+                      )}
+                      className="w-10 h-10 rounded-full"
+                    />
+
+                    <div>
+                      <p className="font-semibold">{review.profile?.full_name || "Anonymous"}</p>
+                      <span className="text-sm text-gray-500">{new Date(review.created_at).toLocaleDateString()}</span>
+                    </div>
+                  </div>
+
                   <span className="font-semibold">Rating: {review.rating} / 5</span>
-                  <span className="text-sm text-gray-500">{new Date(review.created_at).toLocaleDateString()}</span>
                 </div>
                 <p>{review.comment}</p>
               </div>
