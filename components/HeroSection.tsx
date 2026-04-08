@@ -4,7 +4,7 @@ import IntentButtons from "./IntentButtons"
 export default function HeroSection() {
   return (
     <section
-      className="relative min-h-[400px] md:min-h-[500px] flex items-center"
+      className="relative min-h-[600px] md:min-h-[500px] flex flex-col justify-center pb-10 md:pb-0"
       style={{
         backgroundImage:
           "url('https://images.unsplash.com/photo-1600585154340-be6161a56a0c')",
@@ -26,7 +26,7 @@ export default function HeroSection() {
           Search verified properties across Nigeria
         </p>
 
-        <div className="bg-white shadow-lg rounded-xl p-4 text-black max-w-xl mx-auto mt-4 md:mt-0 w-full block">
+        <div className="relative w-full max-w-md mx-auto bg-white shadow-lg rounded-xl p-4 text-black mt-4 md:mt-0">
 
           <SearchBar />
 
