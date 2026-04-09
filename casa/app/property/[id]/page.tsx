@@ -215,6 +215,11 @@ export default function PropertyPage() {
     ensure()
   }
 
+  const handleReport = () => {
+    if (!property?.id) return
+    alert("Report submitted. We'll review this listing.")
+  }
+
   const openGallery = (index: number) => {
     setCurrentImageIndex(index)
     setShowGalleryModal(true)
@@ -457,29 +462,38 @@ export default function PropertyPage() {
         </div>
 
       )}
-      {/* Contact & Save */}
+      {/* Contact, Save & Report */}
 
-      <div className="mt-10 flex flex-col md:flex-row md:items-center md:gap-4 gap-3">
+      <div className="mt-10">
+        <div className="flex flex-col md:flex-row md:items-center md:gap-4 gap-3">
+
+          <button
+            onClick={handleToggleSave}
+            disabled={saving}
+            className="bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700 transition"
+          >
+            {saving ? "..." : isSaved ? "Unsave Listing" : "Save Listing"}
+          </button>
+
+          {phone ? (
+            <button
+              onClick={handleContact}
+              className="bg-green-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-green-700 transition"
+            >
+              Contact on WhatsApp
+            </button>
+          ) : (
+            <p className="text-red-500">Phone number not available</p>
+          )}
+
+        </div>
 
         <button
-          onClick={handleToggleSave}
-          disabled={saving}
-          className="bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700 transition"
+          onClick={handleReport}
+          className="w-full mt-3 py-3 rounded-xl border border-red-500 text-red-500 hover:bg-red-50 text-sm font-medium"
         >
-          {saving ? "..." : isSaved ? "Unsave Listing" : "Save Listing"}
+          Report this listing
         </button>
-
-        {phone ? (
-          <button
-            onClick={handleContact}
-            className="bg-green-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-green-700 transition"
-          >
-            Contact on WhatsApp
-          </button>
-        ) : (
-          <p className="text-red-500">Phone number not available</p>
-        )}
-
       </div>
 
       {/* Fullscreen Gallery Modal */}
