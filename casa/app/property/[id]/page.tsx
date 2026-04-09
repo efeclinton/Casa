@@ -314,6 +314,51 @@ export default function PropertyPage() {
 
       </div>
 
+      {agentProfile && (
+        <div className="mt-6 mb-4 p-6 bg-white rounded-lg shadow">
+          <a href={`/agent/${agentProfile.id}`} className="flex items-center gap-4 cursor-pointer hover:bg-gray-50 p-4 rounded">
+            <div className="relative w-16 h-16">
+              <Image
+                src={getAgentAvatarSrc(agentProfile.avatar_url, agentProfile.full_name)}
+                alt={`${agentProfile.full_name} avatar`}
+                width={64}
+                height={64}
+                className="rounded-full object-cover"
+                placeholder="blur"
+                blurDataURL="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjQiIGhlaWdodD0iNjQiIHZpZXdCb3g9IjAgMCA2NCA2NCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGNpcmNsZSBjeD0iMzIiIGN5PSIzMiIgcj0iMzIiIGZpbGw9IiNFNUU3RUIiLz4KPHN2ZyB4PSIyNCIgeT0iMjQiIHdpZHRoPSIxNiIgaGVpZ2h0PSIxNiIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9IiM5Q0E0QUYiIHN0cm9rZS13aWR0aD0iMS41Ij4KPHBhdGggZD0iTTEyIDJDMTMuMSAyIDE0IDIuOSAxNCA0QzE0IDUuMSAxMy4xIDYgMTIgNkMxMC45IDYgMTAgNS4xIDEwIDRDMTAgMi45IDEwLjkgMiAxMiAyWk0xMiAxNEM5LjggMTQgOCA5LjggOCA3QzggNS4yIDkuMiA0IDEyIDRDMTQuOCA0IDE2IDUuMiAxNiA3QzE2IDkuOCAxNC44IDE0IDEyIDE0WiIvPgo8L3N2Zz4KPC9zdmc+"
+              />
+            </div>
+            <div>
+              <h3 className="text-xl font-bold">{agentProfile.full_name}</h3>
+              <p className="text-sm text-gray-500">
+                ⭐ {agentReviewsCount > 0
+                  ? `${agentRating.toFixed(1)} / 5 (${agentReviewsCount} reviews)`
+                  : "No rating yet"}
+              </p>
+            </div>
+          </a>
+        </div>
+      )}
+
+
+      {/* Property Info */}
+
+      <div className="mt-6">
+
+        <h1 className="text-3xl font-bold">
+          {property.title}
+        </h1>
+
+        <p className="text-2xl font-semibold mt-2">
+          {formattedPrice}
+        </p>
+
+        <p className="text-gray-500 mt-1">
+          {property.location}
+        </p>
+
+      </div>
+
 
       {/* Virtual Tour */}
 
@@ -392,25 +437,6 @@ export default function PropertyPage() {
       )}
 
 
-      {/* Property Info */}
-
-      <div className="mt-6">
-
-        <h1 className="text-3xl font-bold">
-          {property.title}
-        </h1>
-
-        <p className="text-2xl font-semibold mt-2">
-          {formattedPrice}
-        </p>
-
-        <p className="text-gray-500 mt-1">
-          {property.location}
-        </p>
-
-      </div>
-
-
       {/* Description */}
 
       {property.description && (
@@ -427,32 +453,6 @@ export default function PropertyPage() {
 
         </div>
 
-      )}
-
-      {agentProfile && (
-        <div className="mt-10 p-6 bg-white rounded-lg shadow">
-          <a href={`/agent/${agentProfile.id}`} className="flex items-center gap-4 cursor-pointer hover:bg-gray-50 p-4 rounded">
-            <div className="relative w-16 h-16">
-              <Image
-                src={getAgentAvatarSrc(agentProfile.avatar_url, agentProfile.full_name)}
-                alt={`${agentProfile.full_name} avatar`}
-                width={64}
-                height={64}
-                className="rounded-full object-cover"
-                placeholder="blur"
-                blurDataURL="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjQiIGhlaWdodD0iNjQiIHZpZXdCb3g9IjAgMCA2NCA2NCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGNpcmNsZSBjeD0iMzIiIGN5PSIzMiIgcj0iMzIiIGZpbGw9IiNFNUU3RUIiLz4KPHN2ZyB4PSIyNCIgeT0iMjQiIHdpZHRoPSIxNiIgaGVpZ2h0PSIxNiIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9IiM5Q0E0QUYiIHN0cm9rZS13aWR0aD0iMS41Ij4KPHBhdGggZD0iTTEyIDJDMTMuMSAyIDE0IDIuOSAxNCA0QzE0IDUuMSAxMy4xIDYgMTIgNkMxMC45IDYgMTAgNS4xIDEwIDRDMTAgMi45IDEwLjkgMiAxMiAyWk0xMiAxNEM5LjggMTQgOCA5LjggOCA3QzggNS4yIDkuMiA0IDEyIDRDMTQuOCA0IDE2IDUuMiAxNiA3QzE2IDkuOCAxNC44IDE0IDEyIDE0WiIvPgo8L3N2Zz4KPC9zdmc+"
-              />
-            </div>
-            <div>
-              <h3 className="text-xl font-bold">{agentProfile.full_name}</h3>
-              <p className="text-sm text-gray-500">
-                ⭐ {agentReviewsCount > 0
-                  ? `${agentRating.toFixed(1)} / 5 (${agentReviewsCount} reviews)`
-                  : "No rating yet"}
-              </p>
-            </div>
-          </a>
-        </div>
       )}
       {/* Contact & Save */}
 
