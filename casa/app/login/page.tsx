@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { supabase } from "../../lib/supabaseClient"
+import { supabase } from "@/lib/supabaseClient"
 import { useRouter } from "next/navigation"
 
 export default function LoginPage() {
@@ -25,6 +25,19 @@ export default function LoginPage() {
     }
 
     router.push("/")
+  }
+
+  const handleGoogleLogin = async () => {
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: {
+        redirectTo: window.location.origin
+      }
+    })
+
+    if (error) {
+      alert(error.message)
+    }
   }
 
   return (
@@ -60,6 +73,18 @@ export default function LoginPage() {
         </button>
 
       </form>
+
+      <button
+        onClick={handleGoogleLogin}
+        className="w-full mt-4 flex items-center justify-center gap-2 border border-gray-300 rounded-lg py-3 hover:bg-gray-50 transition"
+      >
+        <img
+          src="https://www.svgrepo.com/show/475656/google-color.svg"
+          alt="Google"
+          className="w-5 h-5"
+        />
+        Continue with Google
+      </button>
 
       <p className="mt-4 text-sm">
         Don't have an account? <a href="/signup" className="text-green-600">Sign up</a>
