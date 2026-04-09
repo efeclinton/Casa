@@ -4,7 +4,7 @@ export default function VirtualTour({ image }: { image: string }) {
 
   return (
 
-    <div className="w-full h-[500px] rounded-xl overflow-hidden border">
+    <div className="w-full aspect-square md:aspect-auto md:h-[500px] rounded-xl overflow-hidden border">
 
       <iframe
         src={image}
@@ -12,7 +12,7 @@ export default function VirtualTour({ image }: { image: string }) {
         height="100%"
         allowFullScreen
         loading="lazy"
-        className="border-0"
+        className="w-full h-full border-0"
       />
 
     </div>

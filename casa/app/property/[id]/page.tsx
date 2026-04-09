@@ -294,22 +294,25 @@ export default function PropertyPage() {
       <div className="grid grid-cols-4 gap-3">
 
         <div className="col-span-4 md:col-span-2 row-span-2">
-          <img
-            src={images[0] || property.image}
-            alt="Main property image"
-            className="w-full h-[420px] object-cover rounded-xl cursor-pointer hover:opacity-90 transition"
-            onClick={() => openGallery(0)}
-          />
+          <div className="w-full aspect-square md:aspect-auto md:h-[420px] overflow-hidden rounded-xl">
+            <img
+              src={images[0] || property.image}
+              alt="Main property image"
+              className="w-full h-full object-cover cursor-pointer hover:opacity-90 transition"
+              onClick={() => openGallery(0)}
+            />
+          </div>
         </div>
 
         {images.slice(1,5).map((img: string, index: number) => (
-          <img
-            key={index}
-            src={img}
-            alt={`Property image ${index + 2}`}
-            className="w-full h-[200px] object-cover rounded-lg cursor-pointer hover:opacity-90 transition"
-            onClick={() => openGallery(index + 1)}
-          />
+          <div key={index} className="w-full aspect-square md:aspect-auto md:h-[200px] overflow-hidden rounded-lg">
+            <img
+              src={img}
+              alt={`Property image ${index + 2}`}
+              className="w-full h-full object-cover cursor-pointer hover:opacity-90 transition"
+              onClick={() => openGallery(index + 1)}
+            />
+          </div>
         ))}
 
       </div>
