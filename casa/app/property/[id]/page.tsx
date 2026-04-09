@@ -315,6 +315,83 @@ export default function PropertyPage() {
       </div>
 
 
+      {/* Virtual Tour */}
+
+      {tours.length > 0 && (
+
+        <div className="mt-10">
+
+          {!showTour && (
+            <>
+              <p className="text-sm font-semibold mb-2">
+                Virtual Tour
+              </p>
+
+              <button
+                onClick={() => setShowTour(true)}
+                className="bg-black text-white px-6 py-4 rounded-lg inline-flex items-center justify-center gap-2"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="w-5 h-5"
+                  aria-hidden="true"
+                >
+                  <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z" />
+                  <circle cx="12" cy="12" r="3" />
+                </svg>
+                Walk Through This House (360° View)
+              </button>
+            </>
+          )}
+
+          {showTour && (
+            <div className="mt-4">
+              <VirtualTour image={tours[0]} />
+            </div>
+          )}
+
+        </div>
+
+      )}
+
+
+      {/* Videos */}
+
+      {videos.length > 0 && (
+
+        <div className="mt-8 max-w-4xl mx-auto w-full">
+
+          <h2 className="text-lg font-semibold mb-4 text-center md:text-left">
+            Watch the Property Video
+          </h2>
+
+          <div className="space-y-4">
+
+            {videos.map((video: string, index: number) => (
+
+              <video
+                key={index}
+                controls
+                className="w-full rounded-xl"
+              >
+                <source src={video} type="video/mp4" />
+              </video>
+
+            ))}
+
+          </div>
+
+        </div>
+
+      )}
+
+
       {/* Property Info */}
 
       <div className="mt-6">
@@ -377,69 +454,6 @@ export default function PropertyPage() {
           </a>
         </div>
       )}
-
-
-      {/* Videos */}
-
-      {videos.length > 0 && (
-
-        <div className="mt-10">
-
-          <h2 className="text-xl font-semibold mb-4">
-            Property Videos
-          </h2>
-
-          <div className="space-y-4">
-
-            {videos.map((video: string, index: number) => (
-
-              <video
-                key={index}
-                controls
-                className="w-full rounded-xl"
-              >
-                <source src={video} type="video/mp4" />
-              </video>
-
-            ))}
-
-          </div>
-
-        </div>
-
-      )}
-
-
-      {/* Virtual Tour */}
-
-      {tours.length > 0 && (
-
-        <div className="mt-10">
-
-          <h2 className="text-xl font-semibold mb-4">
-            Virtual Tour
-          </h2>
-
-          {!showTour && (
-            <button
-              onClick={() => setShowTour(true)}
-              className="bg-black text-white px-6 py-3 rounded-lg"
-            >
-              Explore the Property in 360°
-            </button>
-          )}
-
-          {showTour && (
-            <div className="mt-4">
-              <VirtualTour image={tours[0]} />
-            </div>
-          )}
-
-        </div>
-
-      )}
-
-
       {/* Contact & Save */}
 
       <div className="mt-10 flex flex-col md:flex-row md:items-center md:gap-4 gap-3">
