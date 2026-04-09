@@ -24,7 +24,7 @@ export default function HeroSection() {
         </h1>
 
         <p className="text-white/90 mt-2">
-          Search verified properties across Nigeria
+          Search verified properties across UNN
         </p>
 
         <div className="w-full max-w-md mx-auto mt-6 bg-white shadow-lg rounded-xl p-4 text-black">
