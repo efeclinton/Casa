@@ -87,7 +87,7 @@ export default function Navbar() {
 
     <nav className="w-full bg-white shadow">
 
-      <div className="max-w-6xl mx-auto flex justify-between items-center p-5">
+      <div className="max-w-6xl mx-auto h-16 px-5 flex justify-between items-center">
 
         {/* Logo */}
         <Link href="/" className="text-2xl font-bold">

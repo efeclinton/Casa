@@ -33,7 +33,7 @@ export default async function Home() {
 
       <HeroSection />
 
-      <section className="p-10 mt-6">
+      <section className="p-10 mt-8 md:mt-12">
 
         <h2 className="text-2xl font-semibold mb-6">
           Featured Properties
