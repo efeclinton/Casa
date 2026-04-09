@@ -215,9 +215,49 @@ export default function PropertyPage() {
     ensure()
   }
 
-  const handleReport = () => {
-    if (!property?.id) return
-    alert("Report submitted. We'll review this listing.")
+  const handleReport = async () => {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!property?.id) {
+      console.error("Report aborted: property.id is undefined")
+      return
+    }
+
+    if (!user?.id) {
+      alert("You must be logged in")
+      return
+    }
+
+    const reason = prompt("Why are you reporting this listing?")
+    const cleanReason = reason?.trim()
+
+    if (!cleanReason) {
+      alert("Please enter a reason")
+      return
+    }
+
+    const payload = {
+      property_id: property.id,
+      user_id: user.id,
+      reason: cleanReason
+    }
+
+    console.log("SENDING REPORT:", {
+      property_id: property.id,
+      user_id: user.id,
+      reason: cleanReason
+    })
+
+    const { error } = await supabase
+      .from("flagged_properties")
+      .insert([payload])
+
+    if (error) {
+      console.error("REPORT ERROR FULL:", JSON.stringify(error, null, 2))
+      alert("Failed to report listing")
+      return
+    }
+
+    alert("Listing reported successfully")
   }
 
   const openGallery = (index: number) => {
