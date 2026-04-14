@@ -31,7 +31,7 @@ export default function LoginPage() {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
-        redirectTo: "https://casa-sandy.vercel.app"
+        redirectTo: `${window.location.origin}/auth/callback`
       }
     })
 

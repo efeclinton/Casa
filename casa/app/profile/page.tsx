@@ -11,6 +11,10 @@ export default function ProfilePage() {
   const [user, setUser] = useState<any>(null)
   const [profile, setProfile] = useState<any>(null)
   const [loading, setLoading] = useState(true)
+  const [isEditing, setIsEditing] = useState(false)
+  const [fullNameInput, setFullNameInput] = useState("")
+  const [phoneNumberInput, setPhoneNumberInput] = useState("")
+  const [savingProfile, setSavingProfile] = useState(false)
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [uploading, setUploading] = useState(false)
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
@@ -34,6 +38,8 @@ export default function ProfilePage() {
         .single()
 
       setProfile(data)
+      setFullNameInput(data?.full_name || "")
+      setPhoneNumberInput(data?.phone_number || data?.phone || "")
 
       // Fetch listings count if user is an agent
       if (data?.agent_status !== "none") {
@@ -144,6 +150,55 @@ export default function ProfilePage() {
     setUploading(false)
   }
 
+  const startEditingProfile = () => {
+    setFullNameInput(profile?.full_name || "")
+    setPhoneNumberInput(profile?.phone_number || profile?.phone || "")
+    setIsEditing(true)
+  }
+
+  const cancelEditingProfile = () => {
+    setFullNameInput(profile?.full_name || "")
+    setPhoneNumberInput(profile?.phone_number || profile?.phone || "")
+    setIsEditing(false)
+  }
+
+  const saveProfile = async () => {
+    setSavingProfile(true)
+
+    const { data: { user: currentUser } } = await supabase.auth.getUser()
+    if (!currentUser) {
+      alert("You must be logged in to update your profile")
+      setSavingProfile(false)
+      return
+    }
+
+    const full_name = fullNameInput.trim()
+    const phone_number = phoneNumberInput.trim()
+
+    const { error } = await supabase
+      .from("profiles")
+      .update({ full_name, phone_number })
+      .eq("id", currentUser.id)
+
+    if (error) {
+      alert("Failed to update profile: " + error.message)
+      setSavingProfile(false)
+      return
+    }
+
+    setProfile((prev: any) => ({
+      ...prev,
+      full_name,
+      phone_number
+    }))
+    setIsEditing(false)
+    setSavingProfile(false)
+    alert("Profile updated successfully")
+  }
+
+  const isProfileIncomplete = !profile?.full_name || !(profile?.phone_number || profile?.phone)
+  const profileActionText = isProfileIncomplete ? "Complete Profile" : "Edit Profile"
+
   return (
     <main className="max-w-2xl mx-auto p-10">
       <h1 className="text-3xl font-bold mb-6">Profile</h1>
@@ -193,9 +248,59 @@ export default function ProfilePage() {
             )}
           </div>
           <div className="flex-1 space-y-2">
-            <p><strong>Full Name:</strong> {profile?.full_name}</p>
-            <p><strong>Email:</strong> {user?.email}</p>
-            <p><strong>Phone Number:</strong> {profile?.phone}</p>
+            {isEditing ? (
+              <>
+                <div>
+                  <strong>Full Name:</strong>
+                  <input
+                    type="text"
+                    value={fullNameInput}
+                    onChange={(e) => setFullNameInput(e.target.value)}
+                    className="mt-1 w-full border rounded px-3 py-2"
+                    placeholder="Enter full name"
+                  />
+                </div>
+                <p><strong>Email:</strong> {user?.email}</p>
+                <div>
+                  <strong>Phone Number:</strong>
+                  <input
+                    type="text"
+                    value={phoneNumberInput}
+                    onChange={(e) => setPhoneNumberInput(e.target.value)}
+                    className="mt-1 w-full border rounded px-3 py-2"
+                    placeholder="Enter phone number"
+                  />
+                </div>
+                <div className="pt-2 flex gap-2">
+                  <button
+                    onClick={saveProfile}
+                    disabled={savingProfile}
+                    className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50"
+                  >
+                    {savingProfile ? "Saving..." : "Save"}
+                  </button>
+                  <button
+                    onClick={cancelEditingProfile}
+                    disabled={savingProfile}
+                    className="px-4 py-2 bg-gray-200 text-gray-800 rounded hover:bg-gray-300 disabled:opacity-50"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </>
+            ) : (
+              <>
+                <p><strong>Full Name:</strong> {profile?.full_name || "Not provided"}</p>
+                <p><strong>Email:</strong> {user?.email}</p>
+                <p><strong>Phone Number:</strong> {(profile?.phone_number || profile?.phone) || "Not provided"}</p>
+                <button
+                  onClick={startEditingProfile}
+                  className="mt-2 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+                >
+                  {profileActionText}
+                </button>
+              </>
+            )}
           </div>
         </div>
       </section>
