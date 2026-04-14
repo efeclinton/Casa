@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import Link from "next/link"
 import { supabase } from "../../lib/supabaseClient"
 
 export default function SavedListingsPage() {
@@ -70,21 +71,45 @@ export default function SavedListingsPage() {
         {saved.length === 0 ? (
           <p className="text-gray-500">You have no saved listings yet.</p>
         ) : (
-          <div className="space-y-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {saved.map(item => {
               if (!item.property) return null
               const property = item.property
+              const image = Array.isArray(property.images) && property.images.length > 0
+                ? property.images[0]
+                : null
+
               return (
-                <div key={item.savedId} className="border p-4 rounded">
-                  <h2 className="text-xl font-semibold">{property.title}</h2>
-                  <p>Price: ₦{property.price}</p>
-                  <p>Location: {property.location}</p>
-                  <button
-                    onClick={() => unsave(item.savedId)}
-                    className="mt-3 bg-red-600 text-white px-3 py-2 rounded"
-                  >
-                    Unsave
-                  </button>
+                <div
+                  key={item.savedId}
+                  className="relative rounded-xl shadow-md overflow-hidden bg-white transition-transform duration-200 hover:scale-[1.02] hover:shadow-lg"
+                >
+                  <Link href={`/property/${item.propertyId}`} className="block">
+                    {image ? (
+                      <img
+                        src={image}
+                        alt={property.title}
+                        className="w-full h-48 object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-48 bg-gray-200 flex items-center justify-center text-gray-400 text-sm">
+                        No Image
+                      </div>
+                    )}
+                    <div className="p-4">
+                      <h2 className="text-lg font-semibold text-gray-900 line-clamp-1">{property.title}</h2>
+                      <p className="text-green-700 font-medium mt-1">₦{Number(property.price).toLocaleString()}</p>
+                      <p className="text-gray-500 text-sm mt-1">{property.location}</p>
+                    </div>
+                  </Link>
+                  <div className="absolute top-3 right-3">
+                    <button
+                      onClick={(e) => { e.stopPropagation(); unsave(item.savedId) }}
+                      className="bg-red-600 hover:bg-red-700 text-white text-xs px-3 py-1.5 rounded-full shadow"
+                    >
+                      Unsave
+                    </button>
+                  </div>
                 </div>
               )
             })}
