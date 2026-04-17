@@ -19,6 +19,7 @@ export default function AgentProfilePage() {
   const [user, setUser] = useState<any>(null)
   const [hasContacted, setHasContacted] = useState(false)
   const [userReview, setUserReview] = useState<any>(null)
+  const [showContactModal, setShowContactModal] = useState(false)
 
   const [rating, setRating] = useState(5)
   const [comment, setComment] = useState("")
@@ -212,6 +213,27 @@ export default function AgentProfilePage() {
       return
     }
 
+    setShowContactModal(true)
+  }
+
+  const handleContinueContact = async () => {
+    if (!user) {
+      router.push(`/login?redirect=/agent/${agentId}`)
+      return
+    }
+
+    let phone = agent?.phone_number ? String(agent.phone_number) : String(agent?.phone || "")
+    if (!phone) return
+
+    if (phone.startsWith("0")) {
+      phone = "234" + phone.slice(1)
+    }
+
+    const whatsappMessage = encodeURIComponent(
+      `Hello, I'm interested in the property listings by ${agent.full_name} on Casa.`
+    )
+    const whatsappLink = `https://wa.me/${phone}?text=${whatsappMessage}`
+
     const { error } = await supabase
       .from("agent_contacts")
       .insert({ agent_id: agentId, user_id: user.id })
@@ -220,7 +242,9 @@ export default function AgentProfilePage() {
       console.error("Could not insert contact record", error)
     }
 
-    window.alert("Contact recorded. Please use your preferred communication channel.")
+    setHasContacted(true)
+    setShowContactModal(false)
+    window.open(whatsappLink, "_blank")
   }
 
   if (loading) return (<main className="p-10">Loading agent...</main>)
@@ -274,6 +298,51 @@ export default function AgentProfilePage() {
           </div>
         )}
       </section>
+
+      {showContactModal && (
+        <div
+          className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
+          onClick={() => setShowContactModal(false)}
+        >
+          <div
+            className="bg-white rounded-lg shadow-lg max-w-md w-full p-6"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2 className="text-xl font-bold text-gray-900 mb-4">
+              Before you contact the agent
+            </h2>
+
+            <div className="text-gray-700 mb-6 space-y-3 text-sm">
+              <p>Please take a moment to stay safe:</p>
+              <ul className="space-y-2 ml-4">
+                <li className="flex gap-2">
+                  <span className="text-green-600 font-bold">•</span>
+                  <span>Do not send money directly to any agent. Payments should only be made to the landlord or caretaker after proper verification.</span>
+                </li>
+                <li className="flex gap-2">
+                  <span className="text-green-600 font-bold">•</span>
+                  <span>Speak to people living in the property to confirm details before making any decision.</span>
+                </li>
+              </ul>
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowContactModal(false)}
+                className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg font-semibold hover:bg-gray-50 transition"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleContinueContact}
+                className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 transition"
+              >
+                Continue to WhatsApp
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <section className="p-6 bg-white rounded-lg shadow">
         <h2 className="text-2xl font-semibold mb-4">Reviews</h2>
