@@ -24,6 +24,7 @@ export default function PropertyPage() {
   const [showGalleryModal, setShowGalleryModal] = useState(false)
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
   const [touchStart, setTouchStart] = useState<number | null>(null)
+  const [showContactModal, setShowContactModal] = useState(false)
 
   useEffect(() => {
 
@@ -181,7 +182,21 @@ export default function PropertyPage() {
   }
 
   const handleContact = () => {
-    const ensure = async () => {
+    const checkAuth = async () => {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) {
+        authRedirect()
+        return
+      }
+      // Show modal instead of directly contacting
+      setShowContactModal(true)
+    }
+
+    checkAuth()
+  }
+
+  const handleContinueContact = () => {
+    const proceed = async () => {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) {
         authRedirect()
@@ -209,10 +224,12 @@ export default function PropertyPage() {
         console.error("Could not save contact record", contactError)
       }
 
+      // Close modal and redirect
+      setShowContactModal(false)
       window.open(whatsappLink, "_blank")
     }
 
-    ensure()
+    proceed()
   }
 
   const handleReport = async () => {
@@ -588,6 +605,55 @@ export default function PropertyPage() {
             {/* Counter */}
             <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 bg-black/60 text-white px-4 py-2 rounded-lg text-sm">
               {currentImageIndex + 1} / {images.length}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Safety Modal */}
+      {showContactModal && (
+        <div
+          className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
+          onClick={() => setShowContactModal(false)}
+        >
+          <div
+            className="bg-white rounded-lg shadow-lg max-w-md w-full p-6"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Title */}
+            <h2 className="text-xl font-bold text-gray-900 mb-4">
+              Before you contact the agent
+            </h2>
+
+            {/* Safety Message */}
+            <div className="text-gray-700 mb-6 space-y-3 text-sm">
+              <p>Please take a moment to stay safe:</p>
+              <ul className="space-y-2 ml-4">
+                <li className="flex gap-2">
+                  <span className="text-green-600 font-bold">•</span>
+                  <span>Do not send money directly to any agent. Payments should only be made to the landlord or caretaker after proper verification.</span>
+                </li>
+                <li className="flex gap-2">
+                  <span className="text-green-600 font-bold">•</span>
+                  <span>Speak to people living in the property to confirm details before making any decision.</span>
+                </li>
+              </ul>
+            </div>
+
+            {/* Buttons */}
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowContactModal(false)}
+                className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg font-semibold hover:bg-gray-50 transition"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleContinueContact}
+                className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 transition"
+              >
+                Continue to WhatsApp
+              </button>
             </div>
           </div>
         </div>
