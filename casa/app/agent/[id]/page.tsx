@@ -315,7 +315,7 @@ export default function AgentProfilePage() {
             {reviews.map((review) => (
               <div key={review.id} className="border px-4 py-3 rounded-lg">
                 <div className="flex items-start justify-between gap-3 mb-2">
-                  <div className="flex items-start gap-3">
+                  <div className="flex items-start gap-3 flex-1 min-w-0">
                     <img
                       src={getOptimizedAvatarUrl(
                         review.profile?.avatar_url || null,
@@ -324,13 +324,13 @@ export default function AgentProfilePage() {
                       className="w-10 h-10 rounded-full"
                     />
 
-                    <div>
+                    <div className="flex flex-col gap-1 md:gap-0 min-w-0">
                       <p className="font-semibold">{review.profile?.full_name || "Anonymous"}</p>
                       <span className="text-sm text-gray-500">{new Date(review.created_at).toLocaleDateString()}</span>
                     </div>
                   </div>
 
-                  <span className="font-semibold">Rating: {review.rating} / 5</span>
+                  <span className="font-semibold whitespace-nowrap self-start md:self-auto md:whitespace-normal">Rating: {review.rating} / 5</span>
                 </div>
                 <p>{review.comment}</p>
               </div>
