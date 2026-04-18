@@ -5,6 +5,8 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { supabase } from "../lib/supabaseClient"
 
+const SHOW_INTENT_BUTTONS = false
+
 export default function Navbar() {
   const pathname = usePathname()
 
@@ -134,9 +136,13 @@ export default function Navbar() {
 
             <div className="flex flex-col gap-4">
               <Link href="/">Home</Link>
-              <Link href="#">Buy Property</Link>
-              <Link href="#">Rent Property</Link>
-              <Link href="/campus">Campus Stay</Link>
+              {SHOW_INTENT_BUTTONS && (
+                <>
+                  <Link href="#">Buy Property</Link>
+                  <Link href="#">Rent Property</Link>
+                  <Link href="/campus">Campus Stay</Link>
+                </>
+              )}
               <Link href="/saved-listings">Saved Listings</Link>
 
               {user && (

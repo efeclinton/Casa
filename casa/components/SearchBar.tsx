@@ -35,6 +35,27 @@ export default function SearchBar() {
         className="w-full border border-gray-300 rounded-lg px-3 py-2 text-black placeholder-gray-500"
       />
 
+      {/* Popular area chips */}
+      <div>
+        <p className="text-xs text-gray-500 mb-1.5">Popular areas</p>
+        <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none">
+          {["Hilltop", "Odenigwe", "Odim", "Behind Flat", "Town"].map((area) => (
+            <button
+              key={area}
+              type="button"
+              onClick={() => setLocation(area)}
+              className={`shrink-0 px-3 py-1 rounded-full text-xs font-medium border transition-colors ${
+                location === area
+                  ? "bg-black text-white border-black"
+                  : "bg-gray-100 text-gray-700 border-gray-200 hover:bg-gray-200"
+              }`}
+            >
+              {area}
+            </button>
+          ))}
+        </div>
+      </div>
+
       <div className="grid grid-cols-2 gap-3">
 
         <input

@@ -1,6 +1,8 @@
 import SearchBar from "./SearchBar"
 import IntentButtons from "./IntentButtons"
 
+const SHOW_INTENT_BUTTONS = false
+
 export default function HeroSection() {
   return (
     <section
@@ -31,7 +33,9 @@ export default function HeroSection() {
 
           <SearchBar />
 
-          <IntentButtons />
+          {SHOW_INTENT_BUTTONS && (
+            <IntentButtons />
+          )}
 
         </div>
         </div>
