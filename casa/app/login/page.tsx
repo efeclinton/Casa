@@ -2,14 +2,20 @@
 
 import { useState } from "react"
 import { supabase } from "@/lib/supabaseClient"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 
 export default function LoginPage() {
 
   const router = useRouter()
+  const searchParams = useSearchParams()
 
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
+
+  const getSafeRedirectPath = () => {
+    const redirect = searchParams.get("redirect") || "/"
+    return redirect.startsWith("/") ? redirect : "/"
+  }
 
   const handleLogin = async (e:any) => {
     e.preventDefault()
@@ -24,14 +30,16 @@ export default function LoginPage() {
       return
     }
 
-    router.push("/")
+    router.push(getSafeRedirectPath())
   }
 
   const handleGoogleLogin = async () => {
+    const redirect = encodeURIComponent(getSafeRedirectPath())
+
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
-        redirectTo: `${window.location.origin}/auth/callback`
+        redirectTo: `${window.location.origin}/auth/callback?redirect=${redirect}`
       }
     })
 
