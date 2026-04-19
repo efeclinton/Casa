@@ -17,7 +17,10 @@ export const metadata: Metadata = {
   title: "Casa",
   description: "Find verified accommodations across UNN",
   icons: {
-    icon: "/favicon.png",
+    icon: [
+      { url: "/favicon.ico" },
+      { url: "/favicon-v2.png" },
+    ],
   },
 };
 
