@@ -185,6 +185,8 @@ export default function PropertyPage() {
     const checkAuth = async () => {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) {
+        const currentPath = window.location.pathname + window.location.search
+        localStorage.setItem("redirectAfterLogin", currentPath)
         authRedirect()
         return
       }
@@ -199,6 +201,8 @@ export default function PropertyPage() {
     const proceed = async () => {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) {
+        const currentPath = window.location.pathname + window.location.search
+        localStorage.setItem("redirectAfterLogin", currentPath)
         authRedirect()
         return
       }

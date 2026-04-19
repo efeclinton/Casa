@@ -209,6 +209,8 @@ export default function AgentProfilePage() {
 
   const handleContactClick = async () => {
     if (!user) {
+      const currentPath = window.location.pathname + window.location.search
+      localStorage.setItem("redirectAfterLogin", currentPath)
       router.push(`/login?redirect=/agent/${agentId}`)
       return
     }
@@ -218,6 +220,8 @@ export default function AgentProfilePage() {
 
   const handleContinueContact = async () => {
     if (!user) {
+      const currentPath = window.location.pathname + window.location.search
+      localStorage.setItem("redirectAfterLogin", currentPath)
       router.push(`/login?redirect=/agent/${agentId}`)
       return
     }
