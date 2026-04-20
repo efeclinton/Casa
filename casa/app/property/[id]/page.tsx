@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation"
 import { supabase, getOptimizedAvatarUrl } from "../../../lib/supabaseClient"
 import VirtualTour from "../../../components/VirtualTour"
 import Image from "next/image"
+import Head from "next/head"
 
 export default function PropertyPage() {
 
@@ -25,6 +26,7 @@ export default function PropertyPage() {
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
   const [touchStart, setTouchStart] = useState<number | null>(null)
   const [showContactModal, setShowContactModal] = useState(false)
+  const [showToast, setShowToast] = useState(false)
 
   useEffect(() => {
 
@@ -120,6 +122,16 @@ export default function PropertyPage() {
       document.body.style.overflow = 'unset'
     }
   }, [showGalleryModal, currentImageIndex])
+
+  useEffect(() => {
+    if (!showToast) return
+
+    const timeoutId = window.setTimeout(() => {
+      setShowToast(false)
+    }, 2000)
+
+    return () => window.clearTimeout(timeoutId)
+  }, [showToast])
 
   const authRedirect = () => {
     router.push(`/login?redirect=/property/${id}`)
@@ -281,6 +293,29 @@ export default function PropertyPage() {
     alert("Listing reported successfully")
   }
 
+  const handleShare = async () => {
+    if (!property) return
+
+    const shareText = `🏠 ₦${property.price}/${property.rent_period || "year"} in ${property.location} — See full details on Casa`
+
+    const shareData = {
+      title: property.title,
+      text: shareText,
+      url: window.location.href
+    }
+
+    try {
+      if (navigator.share) {
+        await navigator.share(shareData)
+      } else {
+        await navigator.clipboard.writeText(shareData.url)
+        setShowToast(true)
+      }
+    } catch (err) {
+      console.error("Share failed:", err)
+    }
+  }
+
   const openGallery = (index: number) => {
     setCurrentImageIndex(index)
     setShowGalleryModal(true)
@@ -351,9 +386,22 @@ export default function PropertyPage() {
   const images = Array.isArray(property.images) ? property.images : []
   const videos = Array.isArray(property.videos) ? property.videos : []
   const tours = Array.isArray(property.tour_images) ? property.tour_images : []
+  const shareImage = images[0] || property.image || ""
+  const shareDescription = `₦${property.price}/${property.rent_period || "year"} in ${property.location}`
+  const shareUrl = typeof window !== "undefined" ? window.location.href : ""
 
   return (
     <main className="max-w-6xl mx-auto p-10">
+
+      <Head>
+        <title>{property.title} | Casa</title>
+        <meta property="og:title" content={property.title} />
+        <meta property="og:description" content={shareDescription} />
+        <meta property="og:image" content={shareImage} />
+        <meta property="og:url" content={shareUrl} />
+        <meta property="og:type" content="website" />
+        <meta name="twitter:card" content="summary_large_image" />
+      </Head>
 
       {/* Image Gallery */}
 
@@ -536,6 +584,13 @@ export default function PropertyPage() {
             {saving ? "..." : isSaved ? "Unsave Listing" : "Save Listing"}
           </button>
 
+          <button
+            onClick={handleShare}
+            className="bg-gray-700 text-white px-6 py-3 rounded-lg font-semibold hover:bg-gray-800 transition"
+          >
+            Share Listing
+          </button>
+
           {phone ? (
             <button
               onClick={handleContact}
@@ -660,6 +715,23 @@ export default function PropertyPage() {
               </button>
             </div>
           </div>
+        </div>
+      )}
+
+      {showToast && (
+        <div style={{
+          position: "fixed",
+          bottom: "20px",
+          left: "50%",
+          transform: "translateX(-50%)",
+          background: "#000",
+          color: "#fff",
+          padding: "10px 16px",
+          borderRadius: "8px",
+          fontSize: "14px",
+          zIndex: 1000
+        }}>
+          Link copied!
         </div>
       )}
 
