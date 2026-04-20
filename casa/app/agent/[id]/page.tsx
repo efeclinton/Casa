@@ -49,7 +49,8 @@ export default function AgentProfilePage() {
         supabase
           .from("properties")
           .select("id,title,price,location,image")
-          .eq("agent_id", agentId),
+          .eq("agent_id", agentId)
+          .eq("is_active", true),
         supabase
           .from("agent_ratings")
           .select("rating"),

@@ -9,7 +9,7 @@ export default async function Home() {
   const { data: rpcProperties, error } = await supabase
     .rpc("get_featured_properties")
 
-  let properties = rpcProperties
+  let properties = (rpcProperties || []).filter((property: any) => property.is_active === true)
 
   if (error) {
     console.error("Error loading featured properties:", error)
@@ -17,6 +17,7 @@ export default async function Home() {
     const { data: fallbackProperties, error: fallbackError } = await supabase
       .from("properties")
       .select("id,image,price,title,location,rent_period")
+      .eq("is_active", true)
       .limit(6)
 
     if (fallbackError) {

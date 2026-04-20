@@ -28,7 +28,7 @@ export default async function SearchPage({
   const maxPrice = params?.maxPrice
   const rentPeriod = params?.rentPeriod
 
-  let query = supabase.from("properties").select("*")
+  let query = supabase.from("properties").select("*").eq("is_active", true)
 
   if (location) {
     query = query.ilike("location", `%${location}%`)
