@@ -143,6 +143,7 @@ export default function Navbar() {
                   <Link href="/campus">Campus Stay</Link>
                 </>
               )}
+              <Link href="/market">Campus Market</Link>
               <Link href="/saved-listings">Saved Listings</Link>
 
               {user && (
