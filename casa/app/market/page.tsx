@@ -37,7 +37,8 @@ export default async function MarketPage() {
       ) : (
         <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
           {items.map((item) => {
-            const imageUrl = item.images?.length > 0 ? item.images[0] : null
+            const images = Array.isArray(item.images) ? item.images : []
+            const imageUrl = images.length > 0 ? images[0] : null
 
             return (
               <Link
