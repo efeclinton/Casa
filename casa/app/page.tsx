@@ -27,12 +27,19 @@ export default async function Home() {
     }
   }
 
-  const { data: marketPreview } = await supabase
+  const { data: marketData, error: marketError } = await supabase
     .from("market_items")
-    .select("id,title,price,location,image,images")
+    .select("*, user_id(*)")
     .eq("is_active", true)
-    .order("created_at", { ascending: false })
     .limit(6)
+
+  console.log(marketData)
+
+  if (marketError) {
+    console.error("Homepage market fetch error:", marketError)
+  }
+
+  const marketItems = Array.isArray(marketData) ? marketData : []
 
   return (
     <main>
@@ -85,10 +92,10 @@ export default async function Home() {
           </a>
         </div>
 
-        {marketPreview && marketPreview.length > 0 ? (
+        {marketItems.length > 0 ? (
           <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
-            {marketPreview.map((item: any) => {
-              const image = item.image || (Array.isArray(item.images) && item.images.length > 0 ? item.images[0] : null)
+            {marketItems.map((item: any) => {
+              const imageUrl = item.images?.length > 0 ? item.images[0] : null
 
               return (
                 <a
@@ -96,8 +103,8 @@ export default async function Home() {
                   href={`/market/${item.id}`}
                   className="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-lg transition"
                 >
-                  {image ? (
-                    <img src={image} alt={item.title} className="w-full h-40 object-cover" />
+                  {imageUrl ? (
+                    <img src={imageUrl} alt={item.title} className="w-full h-40 object-cover" />
                   ) : (
                     <div className="w-full h-40 bg-gray-100 flex items-center justify-center text-gray-400 text-sm">
                       No Image

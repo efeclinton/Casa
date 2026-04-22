@@ -78,60 +78,89 @@ export default function PostItemPage() {
 
     setSaving(true)
 
-    const uploadedUrls = [...existingImages]
+    const shouldReplaceImages = images.length > 0
+    const uploadedUrls = shouldReplaceImages ? [] : [...existingImages]
 
-    for (const file of images) {
+    for (const [index, file] of images.entries()) {
       const cleanName = file.name.replace(/\s+/g, "-").replace(/[^\w.-]/g, "")
-      const fileName = `market/${Date.now()}-${cleanName}`
+      const uniqueId = typeof crypto !== "undefined" && "randomUUID" in crypto
+        ? crypto.randomUUID()
+        : `${Date.now()}-${index}-${Math.random().toString(36).slice(2, 8)}`
+      const fileName = `market/${uniqueId}-${cleanName}`
 
       const { error } = await supabase.storage
-        .from("property-images")
+        .from("market-images")
         .upload(fileName, file)
 
       if (error) {
-        alert("Image upload failed")
-        setSaving(false)
-        return
+        console.error(`Image upload failed for ${file.name}:`, error)
+        continue
       }
 
-      uploadedUrls.push(
-        `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/property-images/${fileName}`
-      )
-    }
+      const { data: publicUrlData } = supabase.storage
+        .from("market-images")
+        .getPublicUrl(fileName)
 
-    const payload = {
-      title,
-      price: Number(price),
-      location,
-      description,
-      whatsapp_number: whatsappNumber,
-      images: uploadedUrls,
-      image: uploadedUrls[0] || null,
-      user_id: userId
+      if (publicUrlData?.publicUrl) {
+        uploadedUrls.push(publicUrlData.publicUrl)
+      } else {
+        console.error(`Public URL generation failed for ${file.name}`)
+      }
     }
 
     if (editId) {
+      const updatePayload = {
+        title,
+        description,
+        price: Number(price),
+        location,
+        whatsapp_number: whatsappNumber,
+        images: Array.isArray(uploadedUrls) ? uploadedUrls : []
+      }
+
+      console.log("UPDATE PAYLOAD:", updatePayload)
+
       const { error } = await supabase
         .from("market_items")
-        .update(payload)
+        .update(updatePayload)
         .eq("id", editId)
         .eq("user_id", userId)
 
       if (error) {
-        alert("Failed to update item")
+        console.error("UPDATE ERROR:", error)
+        alert(error.message || "Failed to update item")
         setSaving(false)
         return
       }
     } else {
-      const { error } = await supabase
-        .from("market_items")
-        .insert(payload)
+      const user = await supabase.auth.getUser()
+      const currentUserId = user.data.user?.id
 
-      if (error) {
-        alert("Failed to post item")
+      if (!currentUserId) {
+        alert("You must be logged in")
         setSaving(false)
         return
       }
+
+      const { error } = await supabase.from("market_items").insert({
+        title: title,
+        description: description,
+        price: Number(price),
+        location: location,
+        whatsapp_number: whatsappNumber,
+        images: uploadedUrls,
+        user_id: currentUserId,
+        is_active: true
+      })
+
+      if (error) {
+        console.error(error)
+        alert(error.message)
+        setSaving(false)
+        return
+      }
+
+      alert("Item posted successfully")
     }
 
     setSaving(false)

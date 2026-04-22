@@ -13,17 +13,15 @@ type MarketItem = {
 export default async function MarketPage() {
   const { data, error } = await supabase
     .from("market_items")
-    .select("id,title,price,location,image,images")
+    .select("*, user_id(*)")
     .eq("is_active", true)
-    .order("created_at", { ascending: false })
+ 
+  console.log(data)
 
   if (error) {
-    return (
-      <main className="max-w-6xl mx-auto p-10">
-        <h1 className="text-3xl font-bold mb-4">Campus Market</h1>
-        <p className="text-red-600">Unable to load market items right now.</p>
-      </main>
-    )
+    console.error("Fetch error:", error)
+  } else {
+    console.log("Fetched items:", data)
   }
 
   const items: MarketItem[] = data || []
@@ -39,9 +37,7 @@ export default async function MarketPage() {
       ) : (
         <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
           {items.map((item) => {
-            const image =
-              item.image ||
-              (Array.isArray(item.images) && item.images.length > 0 ? item.images[0] : null)
+            const imageUrl = item.images?.length > 0 ? item.images[0] : null
 
             return (
               <Link
@@ -49,8 +45,8 @@ export default async function MarketPage() {
                 href={`/market/${item.id}`}
                 className="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-lg transition"
               >
-                {image ? (
-                  <img src={image} alt={item.title} className="w-full h-40 object-cover" />
+                {imageUrl ? (
+                  <img src={imageUrl} alt={item.title} className="w-full h-40 object-cover" />
                 ) : (
                   <div className="w-full h-40 bg-gray-100 flex items-center justify-center text-gray-400 text-sm">
                     No Image

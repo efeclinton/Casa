@@ -15,9 +15,11 @@ export default function MarketItemDetailPage() {
     const loadItem = async () => {
       const { data } = await supabase
         .from("market_items")
-        .select("*")
+        .select("*, user_id(*)")
         .eq("id", id)
         .single()
+
+      console.log(data)
 
       setItem(data)
       setLoading(false)
@@ -27,17 +29,29 @@ export default function MarketItemDetailPage() {
     loadItem()
   }, [id])
 
-  const images = useMemo(() => {
-    if (!item) return []
-    if (Array.isArray(item.images) && item.images.length > 0) return item.images
-    if (item.image) return [item.image]
-    return []
+  const imageUrl = useMemo(() => {
+    if (!item) return null
+    return item.images?.length > 0 ? item.images[0] : null
   }, [item])
 
   const handleContactSeller = () => {
-    if (!item?.whatsapp_number) return
-    const message = `Hi, I’m interested in your item: ${item.title}`
-    window.open(`https://wa.me/${item.whatsapp_number}?text=${encodeURIComponent(message)}`)
+    console.log("MARKET ITEM USER:", item?.user_id)
+
+    let phone = item?.user_id?.phone ? String(item.user_id.phone) : String(item?.user_id?.phone_number || "")
+
+    if (!phone) {
+      alert("Seller contact not available")
+      return
+    }
+
+    if (phone.startsWith("0")) {
+      phone = "234" + phone.slice(1)
+    }
+
+    const itemUrl = `${window.location.origin}/market/${item.id}`
+    const message = `Hi, I'm interested in your item "${item.title}" on Casa.\nHere is the link: ${itemUrl}`
+    const whatsappLink = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`
+    window.open(whatsappLink, "_blank")
   }
 
   if (loading) {
@@ -50,19 +64,16 @@ export default function MarketItemDetailPage() {
 
   return (
     <main className="max-w-4xl mx-auto p-6 md:p-10 space-y-6">
-      <section className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {images.length > 0 ? (
-          images.map((img: string, index: number) => (
-            <img
-              key={`${img}-${index}`}
-              src={img}
-              alt={`${item.title} ${index + 1}`}
-              className="w-full h-64 object-cover rounded-lg border"
-            />
-          ))
+      <section className="grid grid-cols-1 gap-4">
+        {imageUrl ? (
+          <img
+            src={imageUrl}
+            alt={item.title}
+            className="w-full h-64 object-cover rounded-lg border"
+          />
         ) : (
           <div className="w-full h-64 bg-gray-100 rounded-lg flex items-center justify-center text-gray-400">
-            No Images
+            No Image
           </div>
         )}
       </section>
