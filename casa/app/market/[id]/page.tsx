@@ -31,7 +31,8 @@ export default function MarketItemDetailPage() {
 
   const imageUrl = useMemo(() => {
     if (!item) return null
-    return item.images?.length > 0 ? item.images[0] : null
+    const images = item.images ?? []
+    return images.length > 0 ? images[0] : null
   }, [item])
 
   const handleContactSeller = () => {
