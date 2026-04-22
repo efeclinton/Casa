@@ -49,7 +49,8 @@ export default function AgentProfilePage() {
         supabase
           .from("properties")
           .select("id,title,price,location,image")
-          .eq("agent_id", agentId),
+          .eq("agent_id", agentId)
+          .eq("is_active", true),
         supabase
           .from("agent_ratings")
           .select("rating"),
@@ -209,6 +210,8 @@ export default function AgentProfilePage() {
 
   const handleContactClick = async () => {
     if (!user) {
+      const currentPath = window.location.pathname + window.location.search
+      localStorage.setItem("redirectAfterLogin", currentPath)
       router.push(`/login?redirect=/agent/${agentId}`)
       return
     }
@@ -218,6 +221,8 @@ export default function AgentProfilePage() {
 
   const handleContinueContact = async () => {
     if (!user) {
+      const currentPath = window.location.pathname + window.location.search
+      localStorage.setItem("redirectAfterLogin", currentPath)
       router.push(`/login?redirect=/agent/${agentId}`)
       return
     }

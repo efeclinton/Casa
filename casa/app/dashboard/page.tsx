@@ -13,6 +13,7 @@ type Property = {
   title: string;
   location: string;
   rent_period: string;
+  is_active: boolean;
 }
 
 type MarketItem = {
@@ -27,10 +28,12 @@ export default function Dashboard() {
   const router = useRouter()
 
   const [loading, setLoading] = useState(true)
+  const [togglingId, setTogglingId] = useState<string | null>(null)
   const [properties, setProperties] = useState<Property[]>([])
   const [marketItems, setMarketItems] = useState<MarketItem[]>([])
   const [isAgent, setIsAgent] = useState(false)
   const [currentUserId, setCurrentUserId] = useState("")
+  const [filter, setFilter] = useState("all")
 
   useEffect(() => {
 
@@ -159,10 +162,55 @@ const deleteMarketItem = async (item: MarketItem) => {
 
   setMarketItems((prev) => prev.filter((x) => x.id !== item.id))
 }
+   const toggleListingStatus = async (property: Property) => {
+
+    if (togglingId === property.id) return
+
+    const nextIsActive = !property.is_active
+
+    setTogglingId(property.id)
+
+    try {
+
+      const { error } = await supabase
+        .from("properties")
+        .update({ is_active: nextIsActive })
+        .eq("id", property.id)
+
+      if (error) {
+
+        console.log(error)
+        alert("Failed to update listing status")
+        return
+
+      }
+
+      setProperties((prev) =>
+        prev.map((p) =>
+          p.id === property.id ? { ...p, is_active: nextIsActive } : p
+        )
+      )
+
+      alert(nextIsActive ? "Listing activated" : "Listing deactivated")
+
+    } finally {
+
+      setTogglingId(null)
+
+    }
+
+   }
 
   if (loading) {
     return <p className="p-10">Loading...</p>
   }
+
+  const listings = properties
+  const filteredListings = listings.filter((property) => {
+    if (filter === "active") return property.is_active === true
+    if (filter === "inactive") return property.is_active === false
+    return true
+  })
 
   return (
 
@@ -176,11 +224,67 @@ const deleteMarketItem = async (item: MarketItem) => {
           My Listings
         </h1>
 
-        {properties.length > 0 ? (
+        <div style={{
+          display: "flex",
+          gap: "8px",
+          marginBottom: "16px",
+          background: "#f5f5f5",
+          padding: "6px",
+          borderRadius: "10px",
+          width: "fit-content"
+        }}>
+          <button
+            onClick={() => setFilter("all")}
+            style={{
+              padding: "6px 14px",
+              borderRadius: "8px",
+              border: "none",
+              cursor: "pointer",
+              background: filter === "all" ? "#000" : "transparent",
+              color: filter === "all" ? "#fff" : "#333",
+              fontWeight: "500",
+              transition: "all 0.2s ease"
+            }}
+          >
+            All
+          </button>
+          <button
+            onClick={() => setFilter("active")}
+            style={{
+              padding: "6px 14px",
+              borderRadius: "8px",
+              border: "none",
+              cursor: "pointer",
+              background: filter === "active" ? "#000" : "transparent",
+              color: filter === "active" ? "#fff" : "#333",
+              fontWeight: "500",
+              transition: "all 0.2s ease"
+            }}
+          >
+            Active
+          </button>
+          <button
+            onClick={() => setFilter("inactive")}
+            style={{
+              padding: "6px 14px",
+              borderRadius: "8px",
+              border: "none",
+              cursor: "pointer",
+              background: filter === "inactive" ? "#000" : "transparent",
+              color: filter === "inactive" ? "#fff" : "#333",
+              fontWeight: "500",
+              transition: "all 0.2s ease"
+            }}
+          >
+            Inactive
+          </button>
+        </div>
+
+        {filteredListings.length > 0 ? (
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
 
-            {properties.map((property: Property) => (
+            {filteredListings.map((property: Property) => (
 
               <div key={property.id}>
 
@@ -208,6 +312,18 @@ const deleteMarketItem = async (item: MarketItem) => {
                     className="text-red-600 text-sm"
                   >
                     Delete
+                  </button>
+
+                  <button
+                    onClick={() => toggleListingStatus(property)}
+                    disabled={togglingId === property.id}
+                    className="text-sm text-amber-700 disabled:opacity-60 disabled:cursor-not-allowed"
+                  >
+                    {togglingId === property.id
+                      ? "Updating..."
+                      : property.is_active
+                        ? "Deactivate Listing"
+                        : "Activate Listing"}
                   </button>
 
                 </div>

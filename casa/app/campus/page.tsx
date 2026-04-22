@@ -32,6 +32,7 @@ export default function CampusPage() {
     const { data, error } = await supabase
       .from("properties")
       .select("*")
+      .eq("is_active", true)
       // Only load campus listings (case-insensitive, allows "campus" or "Campus stay")
       .ilike("listing_type", "%campus%")
 

@@ -19,12 +19,30 @@ export default function EditProperty() {
   const [location, setLocation] = useState("")
   const [phone, setPhone] = useState("")
   const [rentPeriod, setRentPeriod] = useState("")
+  const [listingType, setListingType] = useState("rent")
+  const [school, setSchool] = useState("")
+  const [description, setDescription] = useState("")
 
   const [images, setImages] = useState<File[]>([])
   const [existingImages, setExistingImages] = useState<string[]>([])
 
   const [videos, setVideos] = useState<File[]>([])
   const [existingVideos, setExistingVideos] = useState<string[]>([])
+  const [tourLinks, setTourLinks] = useState<string[]>([""])
+
+  const schools = [
+    "University of Benin (UNIBEN)",
+    "University of Nigeria Nsukka (UNN)",
+    "University of Nigeria Enugu Campus (UNEC)",
+    "University of Ibadan (UI)",
+    "Obafemi Awolowo University (OAU)",
+    "University of Lagos (UNILAG)",
+    "Lagos State University (LASU)",
+    "Ahmadu Bello University (ABU)",
+    "Federal University of Technology Owerri (FUTO)",
+    "Covenant University",
+    "Babcock University"
+  ]
 
   useEffect(() => {
 
@@ -46,9 +64,13 @@ export default function EditProperty() {
       setLocation(data.location)
       setPhone(data.phone)
       setRentPeriod(data.rent_period)
+      setListingType(data.listing_type || "rent")
+      setSchool(data.school || "")
+      setDescription(data.description || "")
 
-      setExistingImages(data.images || [])
+      setExistingImages(data.images || (data.image ? [data.image] : []))
       setExistingVideos(data.videos || [])
+      setTourLinks(data.tour_images?.length ? data.tour_images : [""])
 
       setLoading(false)
     }
@@ -65,11 +87,39 @@ export default function EditProperty() {
     setExistingVideos(prev => prev.filter(v => v !== video))
   }
 
+  const validateTourLinks = () => {
+
+    const allowedDomains = [
+      "momento360.com",
+      "panoraven.com",
+      "kuula.co"
+    ]
+
+    for (const link of tourLinks) {
+
+      if (!link) continue
+
+      const valid = allowedDomains.some(domain =>
+        link.toLowerCase().includes(domain)
+      )
+
+      if (!valid) {
+        alert("Tour links must come from Panoraven, Momento360, or Kuula.")
+        return false
+      }
+
+    }
+
+    return true
+  }
+
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
 
     e.preventDefault()
 
     if (saving) return
+
+    if (!validateTourLinks()) return
 
     setSaving(true)
     setMessage("")
@@ -84,7 +134,11 @@ export default function EditProperty() {
 
         for (const file of images) {
 
-          const fileName = `${Date.now()}-${Math.random()}-${file.name}`
+          const cleanName = file.name
+            .replace(/\s+/g, "-")
+            .replace(/[^\w.-]/g, "")
+
+          const fileName = `${Date.now()}-${cleanName}`
 
           const { error } = await supabase.storage
             .from("property-images")
@@ -131,6 +185,10 @@ export default function EditProperty() {
           location,
           phone,
           rent_period: rentPeriod,
+          listing_type: listingType,
+          school,
+          description,
+          tour_images: tourLinks.filter(link => link !== ""),
           image: imageUrls.length > 0 ? imageUrls[0] : null,
           images: imageUrls,
           videos: videoUrls
@@ -181,40 +239,37 @@ export default function EditProperty() {
 
           <input
             type="text"
+            placeholder="Property Title"
             value={title}
             onChange={(e)=>setTitle(e.target.value)}
             className="w-full border p-3 rounded"
           />
 
-          <input
-            type="number"
-            value={price}
-            onChange={(e)=>setPrice(e.target.value)}
-            className="w-full border p-3 rounded"
-          />
-
-          <input
-            type="text"
-            value={location}
-            onChange={(e)=>setLocation(e.target.value)}
-            className="w-full border p-3 rounded"
-          />
-
           <select
-            value={rentPeriod}
-            onChange={(e)=>setRentPeriod(e.target.value)}
+            value={listingType}
+            onChange={(e)=>setListingType(e.target.value)}
             className="w-full border p-3 rounded"
           >
-            <option value="year">Per Year</option>
-            <option value="month">Per Month</option>
+            <option value="rent">For Rent</option>
+            <option value="sale">For Sale</option>
+            <option value="campus">Campus Stay</option>
           </select>
 
-          <input
-            type="text"
-            value={phone}
-            onChange={(e)=>setPhone(e.target.value)}
-            className="w-full border p-3 rounded"
-          />
+          {listingType === "campus" && (
+            <select
+              value={school}
+              onChange={(e)=>setSchool(e.target.value)}
+              className="w-full border p-3 rounded"
+            >
+              <option value="">Select School</option>
+
+              {schools.map((s,index)=>(
+                <option key={index} value={s}>
+                  {s}
+                </option>
+              ))}
+            </select>
+          )}
 
           {/* Existing Images */}
 
@@ -254,13 +309,30 @@ export default function EditProperty() {
 
           {/* Upload new images */}
 
-          <input
-            type="file"
-            multiple
-            accept="image/*"
-            onChange={(e)=>setImages(Array.from(e.target.files || []))}
-            className="w-full border p-3 rounded"
-          />
+          <div>
+
+            <p className="font-medium mb-1">Upload Property Images</p>
+
+            <input
+              type="file"
+              multiple
+              accept="image/*"
+              onChange={(e)=>{
+
+                const files = Array.from(e.target.files || [])
+
+                if(files.length > 10){
+                  alert("Maximum 10 images allowed")
+                  return
+                }
+
+                setImages(files)
+
+              }}
+              className="w-full border p-3 rounded"
+            />
+
+          </div>
 
           {/* Existing Videos */}
 
@@ -298,18 +370,146 @@ export default function EditProperty() {
 
           {/* Upload new videos */}
 
+          <div>
+
+            <p className="font-medium mb-1">Upload Property Videos</p>
+
+            <input
+              type="file"
+              multiple
+              accept="video/mp4,video/webm"
+              onChange={(e)=>{
+
+                const files = Array.from(e.target.files || [])
+
+                if(files.length > 3){
+                  alert("Maximum 3 videos allowed")
+                  return
+                }
+
+                setVideos(files)
+
+              }}
+              className="w-full border p-3 rounded"
+            />
+
+          </div>
+
+          {/* VIRTUAL TOUR INSTRUCTIONS */}
+
+          <div className="border p-4 rounded-lg bg-gray-50">
+
+            <p className="font-semibold mb-2">
+              Add a 360° Virtual Tour (Optional)
+            </p>
+
+            <p className="text-sm text-gray-700 mb-3">
+              A virtual tour helps renters explore the property before visiting.
+            </p>
+
+            <div className="text-sm text-gray-600 space-y-1 mb-4">
+
+              <p><strong>How to create a tour:</strong></p>
+
+              <p>1. Install <strong>360 Photo Cam</strong> from Play Store or App Store</p>
+              <p>2. Stand in the middle of the room and take a 360 photo</p>
+              <p>3. Upload the photo to <strong>Panoraven</strong> or <strong>Momento360</strong></p>
+              <p>4. Copy the share link</p>
+              <p>5. Paste the link below</p>
+
+            </div>
+
+            {tourLinks.map((link,index)=>(
+
+              <div key={index} className="flex items-center gap-2 mb-2">
+                <input
+                  type="text"
+                  placeholder="Paste Panoraven or Momento360 tour link"
+                  value={link}
+                  onChange={(e)=>{
+
+                    const updated = [...tourLinks]
+                    updated[index] = e.target.value
+                    setTourLinks(updated)
+
+                  }}
+                  className="w-full border p-3 rounded"
+                />
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (tourLinks.length === 1) {
+                      setTourLinks([""])
+                      return
+                    }
+                    setTourLinks(tourLinks.filter((_, i) => i !== index))
+                  }}
+                  className="bg-black text-white text-xs px-2 py-1 rounded"
+                >
+                  ✕
+                </button>
+              </div>
+
+            ))}
+
+            <button
+              type="button"
+              onClick={()=>setTourLinks([...tourLinks,""])}
+              className="text-green-600 text-sm"
+            >
+              + Add another tour
+            </button>
+
+          </div>
+
           <input
-            type="file"
-            multiple
-            accept="video/mp4,video/webm"
-            onChange={(e)=>setVideos(Array.from(e.target.files || []))}
+            type="number"
+            placeholder="Price (e.g. 300000)"
+            value={price}
+            onChange={(e)=>setPrice(e.target.value)}
             className="w-full border p-3 rounded"
+          />
+
+          <input
+            type="text"
+            placeholder="Location"
+            value={location}
+            onChange={(e)=>setLocation(e.target.value)}
+            className="w-full border p-3 rounded"
+          />
+
+          <select
+            value={rentPeriod}
+            onChange={(e)=>setRentPeriod(e.target.value)}
+            className="w-full border p-3 rounded"
+          >
+            <option value="">Select Rent Period</option>
+            <option value="year">Per Year</option>
+            <option value="month">Per Month</option>
+          </select>
+
+          <input
+            type="text"
+            placeholder="Whatsapp Number"
+            value={phone}
+            onChange={(e)=>setPhone(e.target.value)}
+            className="w-full border p-3 rounded"
+          />
+
+          <textarea
+            placeholder="Describe the property..."
+            value={description}
+            onChange={(e)=>setDescription(e.target.value)}
+            className="w-full border p-3 rounded h-32"
           />
 
           <button
             type="submit"
             disabled={saving}
-            className="bg-green-600 text-white px-6 py-3 rounded-lg disabled:opacity-50"
+            className={`px-6 py-3 rounded-lg text-white ${
+              saving ? "bg-gray-400" : "bg-green-600"
+            }`}
           >
             {saving ? "Updating..." : "Update Property"}
           </button>
