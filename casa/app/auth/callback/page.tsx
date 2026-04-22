@@ -17,14 +17,14 @@ export default function AuthCallbackPage() {
     const handleCallback = async () => {
       const { data: { session } } = await supabase.auth.getSession()
       if (session) {
-        const redirectPath = localStorage.getItem("redirectAfterLogin")
+     const redirectPath = localStorage.getItem("redirectAfterLogin")
 
-        if (redirectPath) {
-          localStorage.removeItem("redirectAfterLogin")
-          window.location.href = redirectPath
-        } else {
-          window.location.href = "/"
-        }
+if (redirectPath) {
+  localStorage.removeItem("redirectAfterLogin")
+  router.replace(redirectPath)
+} else {
+  router.replace(getSafeRedirectPath())
+}
       } else {
         router.replace("/login")
       }
