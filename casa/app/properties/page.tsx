@@ -46,43 +46,43 @@ export default async function PropertiesPage({
   }
 
   return (
-    <div className="max-w-6xl mx-auto px-4 py-8">
-      <h1 className="text-2xl font-semibold mb-6">All Properties</h1>
+    <div className="w-full max-w-6xl mx-auto px-4 py-6 sm:py-8">
+      <h1 className="text-lg sm:text-xl lg:text-2xl font-semibold mb-4 sm:mb-6">All Properties</h1>
 
       {/* FILTER */}
-      <form method="GET" className="bg-white p-4 rounded shadow mb-6">
+      <form method="GET" className="bg-white p-4 sm:p-5 rounded-xl shadow mb-6 space-y-3 sm:space-y-4">
         <input
           name="location"
           type="text"
           placeholder="Search location..."
           defaultValue={location}
-          className="border p-2 rounded w-full mb-3"
+          className="border p-2.5 rounded-lg w-full text-sm sm:text-base"
         />
 
-        <div className="flex gap-2">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <input
             name="minPrice"
             type="number"
             placeholder="Min price"
             defaultValue={minPrice}
-            className="border p-2 rounded w-full"
+            className="border p-2.5 rounded-lg w-full text-sm sm:text-base"
           />
           <input
             name="maxPrice"
             type="number"
             placeholder="Max price"
             defaultValue={maxPrice}
-            className="border p-2 rounded w-full"
+            className="border p-2.5 rounded-lg w-full text-sm sm:text-base"
           />
         </div>
 
-        <button type="submit" className="mt-3 w-full bg-black text-white py-2 rounded">
+        <button type="submit" className="w-full sm:w-auto bg-black text-white py-2.5 px-4 rounded-lg min-h-10 text-sm sm:text-base">
           Apply Filters
         </button>
       </form>
 
       {/* LIST */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-6">
         {properties?.map((property: any) => (
           <PropertyCard
             key={property.id}

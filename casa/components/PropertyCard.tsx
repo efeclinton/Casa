@@ -28,34 +28,36 @@ export default function PropertyCard({
     "https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=1200&auto=format&fit=crop&q=80"
 
   return (
-    <Link href={`/property/${id}`}>
+    <Link href={`/property/${id}`} className="h-full">
 
-      <div className="bg-white rounded-xl shadow overflow-hidden hover:shadow-lg transition cursor-pointer">
+      <div className="bg-white rounded-xl shadow overflow-hidden hover:shadow-lg transition cursor-pointer h-full flex flex-col">
 
         <img
           src={image || fallbackImage}
           alt={title}
-          className="w-full h-[220px] object-cover"
+          className="w-full h-48 sm:h-52 object-cover"
           onError={(e) => {
             (e.currentTarget as HTMLImageElement).src = fallbackImage
           }}
         />
 
-        <div className="p-4">
+        <div className="p-4 flex flex-col justify-between flex-1">
+          <div>
 
-          <p className="text-xl font-semibold">
-            {formattedPrice}
-          </p>
+            <p className="text-lg sm:text-xl font-semibold">
+              {formattedPrice}
+            </p>
 
-          <h3 className="text-lg mt-2">
-            {title}
-          </h3>
+            <h3 className="text-base sm:text-lg mt-2 line-clamp-2 min-h-[3rem]">
+              {title}
+            </h3>
 
-          <p className="text-gray-500">
-            {location}
-          </p>
+            <p className="text-sm sm:text-base text-gray-500 line-clamp-2">
+              {location}
+            </p>
+          </div>
 
-          <p className="text-green-600 text-sm font-medium mt-2">
+          <p className="text-green-600 text-sm font-medium mt-3">
             View details →
           </p>
 

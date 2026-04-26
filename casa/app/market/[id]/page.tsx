@@ -76,11 +76,11 @@ export default function MarketItemDetailPage() {
   }
 
   if (loading) {
-    return <main className="max-w-4xl mx-auto p-10">Loading item...</main>
+    return <main className="w-full max-w-4xl mx-auto px-4 py-6 sm:py-8">Loading item...</main>
   }
 
   if (!item) {
-    return <main className="max-w-4xl mx-auto p-10">Item not found.</main>
+    return <main className="w-full max-w-4xl mx-auto px-4 py-6 sm:py-8">Item not found.</main>
   }
 
   const sellerId =
@@ -89,13 +89,13 @@ export default function MarketItemDetailPage() {
       : item.user_id
 
   return (
-    <main className="max-w-4xl mx-auto p-6 md:p-10 space-y-6">
+    <main className="w-full max-w-4xl mx-auto px-4 py-6 sm:py-8 space-y-6">
       <section className="grid grid-cols-1 gap-4">
         {imageUrl ? (
           <img
             src={imageUrl}
             alt={item.title}
-            className="w-full h-64 object-cover rounded-lg border"
+            className="w-full h-56 sm:h-64 object-cover rounded-lg border"
           />
         ) : (
           <div className="w-full h-64 bg-gray-100 rounded-lg flex items-center justify-center text-gray-400">
@@ -104,13 +104,13 @@ export default function MarketItemDetailPage() {
         )}
       </section>
 
-      <section className="bg-white rounded-xl shadow p-6 space-y-3">
-        <h1 className="text-3xl font-bold">{item.title}</h1>
-        <p className="text-2xl text-green-700 font-semibold">₦{Number(item.price).toLocaleString()}</p>
-        <p className="text-gray-600">{item.location}</p>
-        <p className="text-gray-800 leading-relaxed">{item.description}</p>
+      <section className="bg-white rounded-xl shadow p-4 sm:p-6 space-y-3">
+        <h1 className="text-lg sm:text-xl lg:text-2xl font-bold">{item.title}</h1>
+        <p className="text-lg sm:text-xl lg:text-2xl text-green-700 font-semibold">₦{Number(item.price).toLocaleString()}</p>
+        <p className="text-sm sm:text-base text-gray-600">{item.location}</p>
+        <p className="text-sm sm:text-base text-gray-800 leading-relaxed">{item.description}</p>
 
-        <div className="flex items-center gap-3 mt-4">
+        <div className="flex items-center gap-3 mt-4 flex-wrap">
           {item.profiles?.avatar_url ? (
             <img
               src={item.profiles.avatar_url}
@@ -135,7 +135,7 @@ export default function MarketItemDetailPage() {
 
         {sellerId && (
           <Link href={`/agent/${sellerId}`}>
-            <button className="mt-3 px-3 py-2 border border-gray-300 text-gray-700 rounded hover:bg-gray-100 text-sm">
+            <button className="mt-3 w-full sm:w-auto px-3 py-2.5 min-h-10 border border-gray-300 text-gray-700 rounded hover:bg-gray-100 text-sm">
               View Seller Profile
             </button>
           </Link>
@@ -143,7 +143,7 @@ export default function MarketItemDetailPage() {
 
         <button
           onClick={handleContactSeller}
-          className="mt-4 px-5 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition"
+          className="mt-4 w-full sm:w-auto px-5 py-3 min-h-10 bg-green-600 text-white rounded-lg hover:bg-green-700 transition"
         >
           Contact Seller
         </button>

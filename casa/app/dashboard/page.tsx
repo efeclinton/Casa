@@ -202,7 +202,7 @@ const deleteMarketItem = async (item: MarketItem) => {
    }
 
   if (loading) {
-    return <p className="p-10">Loading...</p>
+    return <p className="w-full max-w-6xl mx-auto px-4 py-6 sm:py-8">Loading...</p>
   }
 
   const listings = properties
@@ -214,67 +214,38 @@ const deleteMarketItem = async (item: MarketItem) => {
 
   return (
 
-    <main>
+    <main className="w-full overflow-x-hidden">
 
       
 
-      <section className="p-10">
+      <section className="w-full max-w-6xl mx-auto px-4 py-6 sm:py-8">
 
-        <h1 className="text-2xl font-semibold mb-6">
+        <h1 className="text-lg sm:text-xl lg:text-2xl font-semibold mb-4 sm:mb-6">
           My Listings
         </h1>
 
-        <div style={{
-          display: "flex",
-          gap: "8px",
-          marginBottom: "16px",
-          background: "#f5f5f5",
-          padding: "6px",
-          borderRadius: "10px",
-          width: "fit-content"
-        }}>
+        <div className="inline-flex flex-wrap gap-2 mb-4 sm:mb-6 bg-gray-100 p-1.5 rounded-lg">
           <button
             onClick={() => setFilter("all")}
-            style={{
-              padding: "6px 14px",
-              borderRadius: "8px",
-              border: "none",
-              cursor: "pointer",
-              background: filter === "all" ? "#000" : "transparent",
-              color: filter === "all" ? "#fff" : "#333",
-              fontWeight: "500",
-              transition: "all 0.2s ease"
-            }}
+            className={`px-3 py-2 rounded-md min-h-10 text-sm font-medium transition ${
+              filter === "all" ? "bg-black text-white" : "text-gray-700"
+            }`}
           >
             All
           </button>
           <button
             onClick={() => setFilter("active")}
-            style={{
-              padding: "6px 14px",
-              borderRadius: "8px",
-              border: "none",
-              cursor: "pointer",
-              background: filter === "active" ? "#000" : "transparent",
-              color: filter === "active" ? "#fff" : "#333",
-              fontWeight: "500",
-              transition: "all 0.2s ease"
-            }}
+            className={`px-3 py-2 rounded-md min-h-10 text-sm font-medium transition ${
+              filter === "active" ? "bg-black text-white" : "text-gray-700"
+            }`}
           >
             Active
           </button>
           <button
             onClick={() => setFilter("inactive")}
-            style={{
-              padding: "6px 14px",
-              borderRadius: "8px",
-              border: "none",
-              cursor: "pointer",
-              background: filter === "inactive" ? "#000" : "transparent",
-              color: filter === "inactive" ? "#fff" : "#333",
-              fontWeight: "500",
-              transition: "all 0.2s ease"
-            }}
+            className={`px-3 py-2 rounded-md min-h-10 text-sm font-medium transition ${
+              filter === "inactive" ? "bg-black text-white" : "text-gray-700"
+            }`}
           >
             Inactive
           </button>
@@ -282,7 +253,7 @@ const deleteMarketItem = async (item: MarketItem) => {
 
         {filteredListings.length > 0 ? (
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-6">
 
             {filteredListings.map((property: Property) => (
 
@@ -298,7 +269,7 @@ const deleteMarketItem = async (item: MarketItem) => {
                 />
 
                 {/* Edit + Delete buttons */}
-                <div className="flex gap-4 mt-2">
+                <div className="flex flex-wrap gap-3 mt-2">
 
                   <Link
                     href={`/edit-property/${property.id}`}
@@ -344,12 +315,12 @@ const deleteMarketItem = async (item: MarketItem) => {
 
       </section>
 
-      <section className="px-10 pb-10">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-2xl font-semibold">My Items</h2>
+      <section className="w-full max-w-6xl mx-auto px-4 pb-6 sm:pb-8">
+        <div className="flex items-center justify-between mb-4 gap-3">
+          <h2 className="text-lg sm:text-xl lg:text-2xl font-semibold">My Items</h2>
 
           {isAgent && (
-            <Link href="/dashboard/post-item" className="px-4 py-2 bg-black text-white rounded text-sm">
+            <Link href="/dashboard/post-item" className="w-full sm:w-auto text-center px-4 py-2.5 min-h-10 bg-black text-white rounded text-sm">
               Post Item
             </Link>
           )}
@@ -360,7 +331,7 @@ const deleteMarketItem = async (item: MarketItem) => {
         ) : (
           <div className="space-y-3">
             {marketItems.map((item) => (
-              <div key={item.id} className="border rounded-lg p-4 flex items-center justify-between gap-4">
+              <div key={item.id} className="border rounded-lg p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
                   <p className="font-semibold">{item.title}</p>
                   <p className="text-sm text-gray-600">₦{Number(item.price).toLocaleString()}</p>
@@ -369,7 +340,7 @@ const deleteMarketItem = async (item: MarketItem) => {
                   </p>
                 </div>
 
-                <div className="flex items-center gap-3 text-sm">
+                <div className="flex flex-wrap items-center gap-3 text-sm">
                   <Link href={`/dashboard/post-item?edit=${item.id}`} className="text-blue-600">Edit</Link>
                   <button onClick={() => deleteMarketItem(item)} className="text-red-600">Delete</button>
                   <button onClick={() => toggleMarketItem(item)} className="text-indigo-600">

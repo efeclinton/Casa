@@ -45,20 +45,20 @@ export default async function Home() {
   const marketItems = Array.isArray(marketData) ? marketData : []
 
   return (
-    <main>
+    <main className="w-full overflow-x-hidden">
 
       
 
       <HeroSection />
 
-      <section className="p-10 mt-8 md:mt-12">
+      <section className="w-full max-w-6xl mx-auto px-4 py-6 sm:py-8 mt-2 sm:mt-4">
 
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="text-2xl font-semibold">
+        <div className="flex justify-between items-center gap-3 mb-4 sm:mb-6">
+          <h2 className="text-lg sm:text-xl lg:text-2xl font-semibold">
             Featured Properties
           </h2>
           <Link href="/properties">
-            <span className="text-sm text-green-600 cursor-pointer hover:underline">
+            <span className="text-sm sm:text-base text-green-600 cursor-pointer hover:underline whitespace-nowrap">
               View all →
             </span>
           </Link>
@@ -66,11 +66,11 @@ export default async function Home() {
 
         {properties && properties.length > 0 ? (
 
-          <div className="flex gap-4 overflow-x-auto scroll-smooth pb-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-6">
 
             {properties.map((property:any) => (
 
-              <div key={property.id} className="min-w-[280px] flex-shrink-0">
+              <div key={property.id} className="w-full h-full">
                   <PropertyCard
                   image={property.image}
                   price={property.price}
@@ -95,16 +95,16 @@ export default async function Home() {
 
       </section>
 
-      <section className="p-10 pt-0">
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-2xl font-semibold">Campus Market</h2>
+      <section className="w-full max-w-6xl mx-auto px-4 pb-6 sm:pb-8">
+        <div className="flex items-center justify-between mb-4 sm:mb-6 gap-3">
+          <h2 className="text-lg sm:text-xl lg:text-2xl font-semibold">Campus Market</h2>
           <a href="/market" className="text-green-700 font-medium hover:underline">
             View all
           </a>
         </div>
 
         {marketItems.length > 0 ? (
-          <div className="flex gap-4 overflow-x-auto scroll-smooth pb-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-6">
             {marketItems.map((item: any) => {
               const imageUrl = item.images?.length > 0 ? item.images[0] : null
 
@@ -112,7 +112,7 @@ export default async function Home() {
                 <a
                   key={item.id}
                   href={`/market/${item.id}`}
-                  className="min-w-[200px] flex-shrink-0 bg-white rounded-xl shadow-md overflow-hidden hover:shadow-lg transition"
+                  className="w-full bg-white rounded-xl shadow-md overflow-hidden hover:shadow-lg transition flex flex-col h-full"
                 >
                   {imageUrl ? (
                     <img src={imageUrl} alt={item.title} className="w-full h-40 object-cover" />
@@ -121,10 +121,10 @@ export default async function Home() {
                       No Image
                     </div>
                   )}
-                  <div className="p-3 space-y-1">
-                    <h3 className="font-semibold line-clamp-1">{item.title}</h3>
-                    <p className="text-green-700 font-medium">₦{Number(item.price).toLocaleString()}</p>
-                    <p className="text-gray-500 text-sm line-clamp-1">{item.location}</p>
+                  <div className="p-3 sm:p-4 space-y-1 flex flex-col justify-between flex-1">
+                    <h3 className="font-semibold text-sm sm:text-base line-clamp-2">{item.title}</h3>
+                    <p className="text-green-700 font-medium text-sm sm:text-base">₦{Number(item.price).toLocaleString()}</p>
+                    <p className="text-gray-500 text-sm line-clamp-2">{item.location}</p>
                   </div>
                 </a>
               )

@@ -359,7 +359,7 @@ export default function PropertyPage() {
 
   if (loading) {
     return (
-      <main className="p-10">
+      <main className="w-full max-w-6xl mx-auto px-4 py-6 sm:py-8">
         <p>Loading property...</p>
       </main>
     )
@@ -367,8 +367,8 @@ export default function PropertyPage() {
 
   if (!property) {
     return (
-      <main className="p-10">
-        <h1 className="text-xl font-semibold">
+      <main className="w-full max-w-6xl mx-auto px-4 py-6 sm:py-8">
+        <h1 className="text-lg sm:text-xl font-semibold">
           Property not found
         </h1>
       </main>
@@ -391,7 +391,7 @@ export default function PropertyPage() {
   const shareUrl = typeof window !== "undefined" ? window.location.href : ""
 
   return (
-    <main className="max-w-6xl mx-auto p-10">
+    <main className="w-full max-w-6xl mx-auto px-4 py-6 sm:py-8">
 
       <Head>
         <title>{property.title} | Casa</title>
@@ -405,10 +405,10 @@ export default function PropertyPage() {
 
       {/* Image Gallery */}
 
-      <div className="grid grid-cols-4 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
 
-        <div className="col-span-4 md:col-span-2 row-span-2">
-          <div className="w-full aspect-square md:aspect-auto md:h-[420px] overflow-hidden rounded-xl">
+        <div className="sm:col-span-2 lg:col-span-2 row-span-2">
+          <div className="w-full h-64 sm:h-80 lg:h-[420px] overflow-hidden rounded-xl">
             <img
               src={images[0] || property.image}
               alt="Main property image"
@@ -419,7 +419,7 @@ export default function PropertyPage() {
         </div>
 
         {images.slice(1,5).map((img: string, index: number) => (
-          <div key={index} className="w-full aspect-square md:aspect-auto md:h-[200px] overflow-hidden rounded-lg">
+          <div key={index} className="w-full h-40 sm:h-44 lg:h-[200px] overflow-hidden rounded-lg">
             <img
               src={img}
               alt={`Property image ${index + 2}`}
@@ -432,8 +432,8 @@ export default function PropertyPage() {
       </div>
 
       {agentProfile && (
-        <div className="mt-6 mb-4 p-6 bg-white rounded-lg shadow">
-          <a href={`/agent/${agentProfile.id}`} className="flex items-center gap-4 cursor-pointer hover:bg-gray-50 p-4 rounded">
+        <div className="mt-6 mb-4 p-4 sm:p-6 bg-white rounded-lg shadow">
+          <a href={`/agent/${agentProfile.id}`} className="flex items-center gap-3 sm:gap-4 cursor-pointer hover:bg-gray-50 p-3 sm:p-4 rounded">
             <div className="relative w-16 h-16">
               <Image
                 src={getAgentAvatarSrc(agentProfile.avatar_url, agentProfile.full_name)}
@@ -446,7 +446,7 @@ export default function PropertyPage() {
               />
             </div>
             <div>
-              <h3 className="text-xl font-bold">{agentProfile.full_name}</h3>
+              <h3 className="text-base sm:text-lg lg:text-xl font-bold">{agentProfile.full_name}</h3>
               <p className="text-sm text-gray-500">
                 ⭐ {agentReviewsCount > 0
                   ? `${agentRating.toFixed(1)} / 5 (${agentReviewsCount} reviews)`
@@ -462,11 +462,11 @@ export default function PropertyPage() {
 
       <div className="mt-6">
 
-        <h1 className="text-3xl font-bold">
+        <h1 className="text-lg sm:text-xl lg:text-2xl font-bold">
           {property.title}
         </h1>
 
-        <p className="text-2xl font-semibold mt-2">
+        <p className="text-lg sm:text-xl lg:text-2xl font-semibold mt-2">
           {formattedPrice}
         </p>
 
@@ -491,7 +491,7 @@ export default function PropertyPage() {
 
               <button
                 onClick={() => setShowTour(true)}
-                className="bg-black text-white px-6 py-4 rounded-lg inline-flex items-center justify-center gap-2"
+                className="bg-black text-white px-4 sm:px-6 py-2.5 sm:py-3 rounded-lg inline-flex items-center justify-center gap-2 min-h-10 w-full sm:w-auto"
               >
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
@@ -529,7 +529,7 @@ export default function PropertyPage() {
 
         <div className="mt-8 max-w-4xl mx-auto w-full">
 
-          <h2 className="text-lg font-semibold mb-4 text-center md:text-left">
+          <h2 className="text-lg sm:text-xl font-semibold mb-4 text-center md:text-left">
             Watch the Property Video
           </h2>
 
@@ -560,11 +560,11 @@ export default function PropertyPage() {
 
         <div className="mt-8">
 
-          <h2 className="text-xl font-semibold mb-3">
+          <h2 className="text-lg sm:text-xl font-semibold mb-3">
             Description
           </h2>
 
-          <p className="text-gray-700 whitespace-pre-line">
+          <p className="text-sm sm:text-base text-gray-700 whitespace-pre-line">
             {property.description}
           </p>
 
@@ -574,19 +574,19 @@ export default function PropertyPage() {
       {/* Contact, Save & Report */}
 
       <div className="mt-10">
-        <div className="flex flex-col md:flex-row md:items-center md:gap-4 gap-3">
+        <div className="flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-3">
 
           <button
             onClick={handleToggleSave}
             disabled={saving}
-            className="bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700 transition"
+            className="bg-blue-600 text-white px-4 sm:px-6 py-2.5 sm:py-3 min-h-10 rounded-lg font-semibold hover:bg-blue-700 transition w-full sm:w-auto"
           >
             {saving ? "..." : isSaved ? "Unsave Listing" : "Save Listing"}
           </button>
 
           <button
             onClick={handleShare}
-            className="bg-gray-700 text-white px-6 py-3 rounded-lg font-semibold hover:bg-gray-800 transition"
+            className="bg-gray-700 text-white px-4 sm:px-6 py-2.5 sm:py-3 min-h-10 rounded-lg font-semibold hover:bg-gray-800 transition w-full sm:w-auto"
           >
             Share Listing
           </button>
@@ -594,7 +594,7 @@ export default function PropertyPage() {
           {phone ? (
             <button
               onClick={handleContact}
-              className="bg-green-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-green-700 transition"
+              className="bg-green-600 text-white px-4 sm:px-6 py-2.5 sm:py-3 min-h-10 rounded-lg font-semibold hover:bg-green-700 transition w-full sm:w-auto"
             >
               Contact on WhatsApp
             </button>
@@ -606,7 +606,7 @@ export default function PropertyPage() {
 
         <button
           onClick={handleReport}
-          className="w-full mt-3 py-3 rounded-xl border border-red-500 text-red-500 hover:bg-red-50 text-sm font-medium"
+          className="w-full mt-3 py-2.5 min-h-10 rounded-xl border border-red-500 text-red-500 hover:bg-red-50 text-sm font-medium"
         >
           Report this listing
         </button>
@@ -623,7 +623,7 @@ export default function PropertyPage() {
           {/* Close Button */}
           <button
             onClick={handleCloseGallery}
-            className="absolute top-4 right-4 text-white text-3xl hover:text-gray-300 transition z-50"
+            className="absolute top-4 right-4 text-white text-2xl sm:text-3xl h-10 w-10 inline-flex items-center justify-center hover:text-gray-300 transition z-50"
           >
             ✕
           </button>
@@ -645,7 +645,7 @@ export default function PropertyPage() {
                 e.stopPropagation()
                 handlePrevImage()
               }}
-              className="absolute left-4 top-1/2 transform -translate-y-1/2 bg-white/20 hover:bg-white/40 text-white text-3xl w-12 h-12 flex items-center justify-center rounded transition"
+              className="absolute left-2 sm:left-4 top-1/2 transform -translate-y-1/2 bg-white/20 hover:bg-white/40 text-white text-2xl sm:text-3xl w-10 h-10 sm:w-12 sm:h-12 flex items-center justify-center rounded transition"
             >
               ‹
             </button>
@@ -656,7 +656,7 @@ export default function PropertyPage() {
                 e.stopPropagation()
                 handleNextImage()
               }}
-              className="absolute right-4 top-1/2 transform -translate-y-1/2 bg-white/20 hover:bg-white/40 text-white text-3xl w-12 h-12 flex items-center justify-center rounded transition"
+              className="absolute right-2 sm:right-4 top-1/2 transform -translate-y-1/2 bg-white/20 hover:bg-white/40 text-white text-2xl sm:text-3xl w-10 h-10 sm:w-12 sm:h-12 flex items-center justify-center rounded transition"
             >
               ›
             </button>
@@ -680,7 +680,7 @@ export default function PropertyPage() {
             onClick={(e) => e.stopPropagation()}
           >
             {/* Title */}
-            <h2 className="text-xl font-bold text-gray-900 mb-4">
+            <h2 className="text-lg sm:text-xl font-bold text-gray-900 mb-4">
               Before you contact the agent
             </h2>
 
@@ -700,16 +700,16 @@ export default function PropertyPage() {
             </div>
 
             {/* Buttons */}
-            <div className="flex gap-3">
+            <div className="flex flex-col sm:flex-row gap-3">
               <button
                 onClick={() => setShowContactModal(false)}
-                className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg font-semibold hover:bg-gray-50 transition"
+                className="flex-1 px-4 py-2.5 min-h-10 border border-gray-300 text-gray-700 rounded-lg font-semibold hover:bg-gray-50 transition"
               >
                 Cancel
               </button>
               <button
                 onClick={handleContinueContact}
-                className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 transition"
+                className="flex-1 px-4 py-2.5 min-h-10 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 transition"
               >
                 Continue to WhatsApp
               </button>
@@ -719,18 +719,7 @@ export default function PropertyPage() {
       )}
 
       {showToast && (
-        <div style={{
-          position: "fixed",
-          bottom: "20px",
-          left: "50%",
-          transform: "translateX(-50%)",
-          background: "#000",
-          color: "#fff",
-          padding: "10px 16px",
-          borderRadius: "8px",
-          fontSize: "14px",
-          zIndex: 1000
-        }}>
+        <div className="fixed bottom-5 left-1/2 -translate-x-1/2 bg-black text-white px-4 py-2.5 rounded-lg text-sm z-[1000]">
           Link copied!
         </div>
       )}
