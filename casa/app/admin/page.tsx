@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react"
 import { supabase } from "../../lib/supabaseClient"
 import { useRouter } from "next/navigation"
+import Link from "next/link"
 
 export default function AdminPage() {
 
@@ -21,6 +22,7 @@ export default function AdminPage() {
 
   const [loading,setLoading] = useState(false)
   const [checkingAdmin,setCheckingAdmin] = useState(true)
+  const [userProfile,setUserProfile] = useState<any>(null)
 
   const [categoryFilter, setCategoryFilter] = useState("all")
 
@@ -46,9 +48,15 @@ export default function AdminPage() {
         return
       }
 
-      const adminEmail = "efeclinton04@gmail.com"
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("role")
+        .eq("id", user.id)
+        .single()
 
-      if(user.email !== adminEmail){
+      setUserProfile(profile)
+
+      if(profile?.role !== "admin"){
         router.push("/")
         return
       }
@@ -529,11 +537,13 @@ export default function AdminPage() {
             </h2>
             <div className="space-y-2">
               {flaggedListings.map(flag => (
-                <div key={flag.property_id} className="border p-3 rounded">
-                  <p className="font-semibold">{flag.properties?.title}</p>
-                  <p className="text-sm text-gray-500">{flag.properties?.location}</p>
-                  <p className="text-sm mt-1">Reason: {flag.reason}</p>
-                </div>
+                <Link href={`/property/${flag.property_id}`} key={flag.property_id}>
+                  <div className="border p-3 rounded cursor-pointer hover:shadow-md transition">
+                    <p className="font-semibold">{flag.properties?.title}</p>
+                    <p className="text-sm text-gray-500">{flag.properties?.location}</p>
+                    <p className="text-sm mt-1">Reason: {flag.reason}</p>
+                  </div>
+                </Link>
               ))}
             </div>
           </div>
@@ -595,54 +605,71 @@ export default function AdminPage() {
                 const reviewCount = agent.reviewCount || 0
 
                 return (
-                  <div
-                    key={agent.id}
-                    className="border p-3 rounded flex justify-between items-center"
-                  >
-                    <div>
-                      <p className="font-semibold">
-                        {agent.full_name || "No name"}
-                      </p>
-                      <p className="text-sm text-gray-500">
-                        {agent.email}
-                      </p>
-                      <div className="text-sm mt-2 space-y-1">
-                        <p>Status: {agent.status || "unknown"}</p>
-                        <p>Listings: {listingCount}</p>
-                        <p>Contacts: {contactCount}</p>
-                        <p>Rating: ⭐ {avgRating.toFixed(1)} ({reviewCount})</p>
+                  <Link href={`/agent/${agent.id}`} key={agent.id}>
+                    <div
+                      className="border p-3 rounded flex justify-between items-center cursor-pointer hover:shadow-md transition"
+                    >
+                      <div>
+                        <p className="font-semibold">
+                          {agent.full_name || "No name"}
+                        </p>
+                        <p className="text-sm text-gray-500">
+                          {agent.email}
+                        </p>
+                        <div className="text-sm mt-2 space-y-1">
+                          <p>Status: {agent.status || "unknown"}</p>
+                          <p>Listings: {listingCount}</p>
+                          <p>Contacts: {contactCount}</p>
+                          <p>Rating: ⭐ {avgRating.toFixed(1)} ({reviewCount})</p>
+                        </div>
                       </div>
-                    </div>
 
-                    <div className="flex flex-col items-end gap-2">
-                      <button
-                        onClick={() => loadAgentListings(agent)}
-                        className="text-blue-600"
-                      >
-                        View Listings
-                      </button>
-                      <div className="flex gap-2 mt-2">
+                      <div className="flex flex-col items-end gap-2">
                         <button
-                          onClick={() => updateAgentStatus(agent.id, "suspended")}
-                          className="bg-yellow-500 text-white px-3 py-1 rounded"
+                          onClick={(e) => {
+                            e.preventDefault()
+                            e.stopPropagation()
+                            loadAgentListings(agent)
+                          }}
+                          className="text-blue-600"
                         >
-                          Suspend
+                          View Listings
                         </button>
-                        <button
-                          onClick={() => updateAgentStatus(agent.id, "banned")}
-                          className="bg-red-600 text-white px-3 py-1 rounded"
-                        >
-                          Ban
-                        </button>
-                        <button
-                          onClick={() => updateAgentStatus(agent.id, "active")}
-                          className="bg-green-600 text-white px-3 py-1 rounded"
-                        >
-                          Activate
-                        </button>
+                        <div className="flex gap-2 mt-2">
+                          <button
+                            onClick={(e) => {
+                              e.preventDefault()
+                              e.stopPropagation()
+                              updateAgentStatus(agent.id, "suspended")
+                            }}
+                            className="bg-yellow-500 text-white px-3 py-1 rounded"
+                          >
+                            Suspend
+                          </button>
+                          <button
+                            onClick={(e) => {
+                              e.preventDefault()
+                              e.stopPropagation()
+                              updateAgentStatus(agent.id, "banned")
+                            }}
+                            className="bg-red-600 text-white px-3 py-1 rounded"
+                          >
+                            Ban
+                          </button>
+                          <button
+                            onClick={(e) => {
+                              e.preventDefault()
+                              e.stopPropagation()
+                              updateAgentStatus(agent.id, "active")
+                            }}
+                            className="bg-green-600 text-white px-3 py-1 rounded"
+                          >
+                            Activate
+                          </button>
+                        </div>
                       </div>
                     </div>
-                  </div>
+                  </Link>
                 )
               })}
             </div>
@@ -772,51 +799,58 @@ export default function AdminPage() {
 
             return(
 
-              <div
-                key={property.id}
-                className="border p-4 rounded flex justify-between items-center"
-              >
+              <Link href={`/property/${property.id}`} key={property.id}>
+                <div
+                  className="border p-4 rounded flex justify-between items-center cursor-pointer hover:shadow-md transition"
+                >
 
-                <div>
+                  <div>
 
-                  <p className="font-semibold">
-                    {property.title}
-                  </p>
+                    <p className="font-semibold">
+                      {property.title}
+                    </p>
 
-                  <p className="text-sm text-gray-500">
-                    {property.location}
-                  </p>
+                    <p className="text-sm text-gray-500">
+                      {property.location}
+                    </p>
 
-                  <p className="text-sm">
-                    {price}
-                  </p>
+                    <p className="text-sm">
+                      {price}
+                    </p>
 
-                  <p className="text-sm mt-1 font-medium">
-                    Category: {property.listing_type}
-                  </p>
+                    <p className="text-sm mt-1 font-medium">
+                      Category: {property.listing_type}
+                    </p>
+
+                    {property.is_duplicate && (
+                      <span className="inline-block mt-2 text-xs bg-yellow-100 text-yellow-700 px-2 py-1 rounded">
+                        Duplicate
+                      </span>
+                    )}
+
+                  </div>
+
+                  <div className="flex gap-4">
+
+                    <span className="text-blue-600">
+                      View
+                    </span>
+
+                    <button
+                      onClick={(e)=>{
+                        e.preventDefault()
+                        e.stopPropagation()
+                        deleteListing(property)
+                      }}
+                      className="text-red-600"
+                    >
+                      Delete
+                    </button>
+
+                  </div>
 
                 </div>
-
-                <div className="flex gap-4">
-
-                  <a
-                    href={`/property/${property.id}`}
-                    target="_blank"
-                    className="text-blue-600"
-                  >
-                    View
-                  </a>
-
-                  <button
-                    onClick={()=>deleteListing(property)}
-                    className="text-red-600"
-                  >
-                    Delete
-                  </button>
-
-                </div>
-
-              </div>
+              </Link>
 
             )
 

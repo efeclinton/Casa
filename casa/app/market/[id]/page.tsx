@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react"
 import { useParams } from "next/navigation"
 import { supabase } from "../../../lib/supabaseClient"
+import Link from "next/link"
 
 export default function MarketItemDetailPage() {
   const params = useParams()
@@ -10,12 +11,13 @@ export default function MarketItemDetailPage() {
 
   const [item, setItem] = useState<any>(null)
   const [loading, setLoading] = useState(true)
+  const [rating, setRating] = useState<any>(null)
 
   useEffect(() => {
     const loadItem = async () => {
       const { data } = await supabase
         .from("market_items")
-        .select("*, user_id(*)")
+        .select("*, profiles ( id, full_name, phone, avatar_url )")
         .eq("id", id)
         .single()
 
@@ -29,6 +31,24 @@ export default function MarketItemDetailPage() {
     loadItem()
   }, [id])
 
+  useEffect(() => {
+    const fetchRating = async () => {
+      const { data } = await supabase
+        .from("agent_ratings")
+        .select("rating")
+        .eq("agent_id", item.user_id?.id ?? item.user_id)
+
+      if (data && data.length > 0) {
+        const avg =
+          data.reduce((sum, r) => sum + r.rating, 0) / data.length
+
+        setRating(avg.toFixed(1))
+      }
+    }
+
+    if (item?.user_id) fetchRating()
+  }, [item?.user_id])
+
   const imageUrl = useMemo(() => {
     if (!item) return null
     const images = item.images ?? []
@@ -36,22 +56,22 @@ export default function MarketItemDetailPage() {
   }, [item])
 
   const handleContactSeller = () => {
-    console.log("MARKET ITEM USER:", item?.user_id)
-
-    let phone = item?.user_id?.phone ? String(item.user_id.phone) : String(item?.user_id?.phone_number || "")
+    const phone = item.profiles?.phone
 
     if (!phone) {
       alert("Seller contact not available")
       return
     }
 
-    if (phone.startsWith("0")) {
-      phone = "234" + phone.slice(1)
+    let phoneStr = String(phone)
+
+    if (phoneStr.startsWith("0")) {
+      phoneStr = "234" + phoneStr.slice(1)
     }
 
     const itemUrl = `${window.location.origin}/market/${item.id}`
     const message = `Hi, I'm interested in your item "${item.title}" on Casa.\nHere is the link: ${itemUrl}`
-    const whatsappLink = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`
+    const whatsappLink = `https://wa.me/${phoneStr}?text=${encodeURIComponent(message)}`
     window.open(whatsappLink, "_blank")
   }
 
@@ -62,6 +82,11 @@ export default function MarketItemDetailPage() {
   if (!item) {
     return <main className="max-w-4xl mx-auto p-10">Item not found.</main>
   }
+
+  const sellerId =
+    typeof item.user_id === "object"
+      ? item.user_id?.id
+      : item.user_id
 
   return (
     <main className="max-w-4xl mx-auto p-6 md:p-10 space-y-6">
@@ -84,6 +109,37 @@ export default function MarketItemDetailPage() {
         <p className="text-2xl text-green-700 font-semibold">₦{Number(item.price).toLocaleString()}</p>
         <p className="text-gray-600">{item.location}</p>
         <p className="text-gray-800 leading-relaxed">{item.description}</p>
+
+        <div className="flex items-center gap-3 mt-4">
+          {item.profiles?.avatar_url ? (
+            <img
+              src={item.profiles.avatar_url}
+              alt="Seller"
+              className="w-10 h-10 rounded-full object-cover"
+            />
+          ) : (
+            <div className="w-10 h-10 rounded-full bg-gray-300 flex items-center justify-center">
+              {item.profiles?.full_name?.charAt(0) || "U"}
+            </div>
+          )}
+          <div>
+            <p className="font-medium">
+              {item.profiles?.full_name || item.profiles?.email || "Seller"}
+            </p>
+            <p className="text-sm text-yellow-600">
+              ⭐ {rating || "No ratings yet"}
+            </p>
+            <p className="text-sm text-gray-500">Seller</p>
+          </div>
+        </div>
+
+        {sellerId && (
+          <Link href={`/agent/${sellerId}`}>
+            <button className="mt-3 px-3 py-2 border border-gray-300 text-gray-700 rounded hover:bg-gray-100 text-sm">
+              View Seller Profile
+            </button>
+          </Link>
+        )}
 
         <button
           onClick={handleContactSeller}

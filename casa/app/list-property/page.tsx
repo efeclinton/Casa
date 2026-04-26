@@ -16,7 +16,7 @@ export default function ListProperty() {
   const [location, setLocation] = useState("")
   const [phone, setPhone] = useState("")
   const [rentPeriod, setRentPeriod] = useState("")
-  const [listingType, setListingType] = useState("rent")
+  const [listingType, setListingType] = useState("campus")
 
   const [school, setSchool] = useState("")
   const [description, setDescription] = useState("")
@@ -205,6 +205,25 @@ export default function ListProperty() {
 
     /* INSERT PROPERTY */
 
+    const newTitle = title.trim()
+    const newLocation = location.trim()
+
+    const { data: existing } = await supabase
+      .from("properties")
+      .select("id, title")
+      .ilike("title", newTitle)
+      .eq("location", newLocation)
+
+    const isDuplicate = (existing?.length || 0) > 0
+
+    if (isDuplicate) {
+      const proceed = confirm("This listing may already exist. Do you want to continue?")
+      if (!proceed) {
+        setIsSubmitting(false)
+        return
+      }
+    }
+
     const { error } = await supabase
       .from("properties")
       .insert([
@@ -227,7 +246,8 @@ export default function ListProperty() {
           owner_id: user.id,
           owner_name: ownerName,
           owner_email: ownerEmail,
-          owner_phone: ownerPhone
+          owner_phone: ownerPhone,
+          ...(isDuplicate ? { is_duplicate: true } : {})
         }
       ])
 
@@ -297,6 +317,7 @@ export default function ListProperty() {
         />
 
 
+        {false && (
         <select
           value={listingType}
           onChange={(e)=>setListingType(e.target.value)}
@@ -306,6 +327,7 @@ export default function ListProperty() {
           <option value="sale">For Sale</option>
           <option value="campus">Campus Stay</option>
         </select>
+        )}
 
 
         {listingType === "campus" && (
