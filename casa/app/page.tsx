@@ -1,5 +1,6 @@
 import HeroSection from "../components/HeroSection"
 import PropertyCard from "../components/PropertyCard"
+import Link from "next/link"
 import { supabase } from "../lib/supabaseClient"
 
 export default async function Home() {
@@ -18,6 +19,7 @@ export default async function Home() {
       .from("properties")
       .select("id,image,price,title,location,rent_period")
       .eq("is_active", true)
+      .order("created_at", { ascending: false })
       .limit(6)
 
     if (fallbackError) {
@@ -31,6 +33,7 @@ export default async function Home() {
     .from("market_items")
     .select("*, user_id(*)")
     .eq("is_active", true)
+    .order("created_at", { ascending: false })
     .limit(6)
 
   console.log(marketData)
@@ -50,25 +53,33 @@ export default async function Home() {
 
       <section className="p-10 mt-8 md:mt-12">
 
-        <h2 className="text-2xl font-semibold mb-6">
-          Featured Properties
-        </h2>
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="text-2xl font-semibold">
+            Featured Properties
+          </h2>
+          <Link href="/properties">
+            <span className="text-sm text-green-600 cursor-pointer hover:underline">
+              View all →
+            </span>
+          </Link>
+        </div>
 
         {properties && properties.length > 0 ? (
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="flex gap-4 overflow-x-auto scroll-smooth pb-4">
 
             {properties.map((property:any) => (
 
-              <PropertyCard
-                key={property.id}
-                image={property.image}
-                price={property.price}
-                title={property.title}
-                location={property.location}
-                rent_period={property.rent_period}
-                id={property.id}
-              />
+              <div key={property.id} className="min-w-[280px] flex-shrink-0">
+                  <PropertyCard
+                  image={property.image}
+                  price={property.price}
+                  title={property.title}
+                  location={property.location}
+                  rent_period={property.rent_period}
+                  id={property.id}
+                />
+              </div>
 
             ))}
 
@@ -93,7 +104,7 @@ export default async function Home() {
         </div>
 
         {marketItems.length > 0 ? (
-          <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
+          <div className="flex gap-4 overflow-x-auto scroll-smooth pb-4">
             {marketItems.map((item: any) => {
               const imageUrl = item.images?.length > 0 ? item.images[0] : null
 
@@ -101,7 +112,7 @@ export default async function Home() {
                 <a
                   key={item.id}
                   href={`/market/${item.id}`}
-                  className="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-lg transition"
+                  className="min-w-[200px] flex-shrink-0 bg-white rounded-xl shadow-md overflow-hidden hover:shadow-lg transition"
                 >
                   {imageUrl ? (
                     <img src={imageUrl} alt={item.title} className="w-full h-40 object-cover" />
