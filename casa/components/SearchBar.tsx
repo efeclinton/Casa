@@ -32,7 +32,7 @@ export default function SearchBar() {
         placeholder="Search location..."
         value={location}
         onChange={(e) => setLocation(e.target.value)}
-        className="w-full border border-gray-300 rounded-lg px-3 py-2 text-black placeholder-gray-500"
+        className="w-full border border-gray-300 rounded-lg px-3 py-2.5 min-h-10 text-sm sm:text-base text-black placeholder-gray-500"
       />
 
       {/* Popular area chips */}
@@ -56,14 +56,14 @@ export default function SearchBar() {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
 
         <input
           type="number"
           placeholder="Min price"
           value={minPrice}
           onChange={(e) => setMinPrice(e.target.value)}
-          className="w-full border border-gray-300 rounded-lg px-3 py-2 text-black placeholder-gray-500"
+          className="w-full border border-gray-300 rounded-lg px-3 py-2.5 min-h-10 text-sm sm:text-base text-black placeholder-gray-500"
         />
 
         <input
@@ -71,7 +71,7 @@ export default function SearchBar() {
           placeholder="Max price"
           value={maxPrice}
           onChange={(e) => setMaxPrice(e.target.value)}
-          className="w-full border border-gray-300 rounded-lg px-3 py-2 text-black placeholder-gray-500"
+          className="w-full border border-gray-300 rounded-lg px-3 py-2.5 min-h-10 text-sm sm:text-base text-black placeholder-gray-500"
         />
 
       </div>
@@ -79,7 +79,7 @@ export default function SearchBar() {
       <select
         value={rentPeriod}
         onChange={(e) => setRentPeriod(e.target.value)}
-        className="w-full border rounded-lg px-4 py-3"
+        className="w-full border rounded-lg px-4 py-2.5 min-h-10 text-sm sm:text-base"
       >
         <option value="">Rent period</option>
         <option value="year">Per Year</option>
@@ -88,7 +88,7 @@ export default function SearchBar() {
 
       <button
         onClick={handleSearch}
-        className="w-full bg-black text-white py-3 rounded-lg"
+        className="w-full bg-black text-white py-2.5 min-h-10 rounded-lg text-sm sm:text-base"
       >
         Search
       </button>
