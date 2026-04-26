@@ -55,15 +55,15 @@ export default async function SearchPage({
 
       
 
-      <section className="p-10">
+      <section className="w-full max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
 
-        <h1 className="text-2xl font-semibold mb-6">
+        <h1 className="text-lg sm:text-xl lg:text-2xl font-semibold mb-4 sm:mb-6 break-words">
           Results for &quot;{location}&quot;
         </h1>
 
         {properties.length > 0 ? (
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-6">
 
             {properties.map((property: Property) => (
               <PropertyCard

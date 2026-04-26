@@ -89,10 +89,10 @@ export default function Navbar() {
 
     <nav className="w-full bg-white shadow">
 
-      <div className="max-w-6xl mx-auto h-16 px-5 flex justify-between items-center">
+      <div className="w-full max-w-6xl mx-auto h-16 px-4 sm:px-6 flex justify-between items-center">
 
         {/* Logo */}
-        <Link href="/" className="text-2xl font-bold">
+        <Link href="/" className="text-xl sm:text-2xl font-bold">
           Casa
         </Link>
 
@@ -111,7 +111,7 @@ export default function Navbar() {
           {/* Menu Icon */}
           <button
             onClick={() => setMenuOpen(!menuOpen)}
-            className="text-2xl"
+            className="text-2xl h-10 w-10 inline-flex items-center justify-center"
           >
             ☰
           </button>
@@ -126,16 +126,16 @@ export default function Navbar() {
             onClick={() => setMenuOpen(false)}
           />
 
-          <div className="fixed right-0 top-0 h-full w-64 bg-white z-50 shadow-lg p-6 transition-transform duration-300 translate-x-0">
+          <div className="fixed right-0 top-0 h-full w-full max-w-xs bg-white z-50 shadow-lg p-5 sm:p-6 transition-transform duration-300 translate-x-0 overflow-y-auto">
             <button
               onClick={() => setMenuOpen(false)}
-              className="text-xl mb-4"
+              className="text-lg sm:text-xl mb-4 h-10 px-2"
             >
               ✕ Close
             </button>
 
             <div className="flex flex-col gap-4">
-              <Link href="/">Home</Link>
+              <Link href="/" className="text-sm sm:text-base">Home</Link>
               {SHOW_INTENT_BUTTONS && (
                 <>
                   <Link href="#">Buy Property</Link>
@@ -143,22 +143,23 @@ export default function Navbar() {
                   <Link href="/campus">Campus Stay</Link>
                 </>
               )}
-              <Link href="/saved-listings">Saved Listings</Link>
+              <Link href="/market" className="text-sm sm:text-base">Campus Market</Link>
+              <Link href="/saved-listings" className="text-sm sm:text-base">Saved Listings</Link>
 
               {user && (
-                <Link href="/profile">Profile</Link>
+                <Link href="/profile" className="text-sm sm:text-base">Profile</Link>
               )}
 
               {user && (
-                <Link href="/notifications">Notifications</Link>
+                <Link href="/notifications" className="text-sm sm:text-base">Notifications</Link>
               )}
 
               {user && profile && profile.agent_status === "approved" && (
-                <Link href="/list-property">Post Property</Link>
+                <Link href="/list-property" className="text-sm sm:text-base">Post Property</Link>
               )}
 
               {user && profile && profile.agent_status === "none" && (
-                <Link href="/become-agent">Become an Agent</Link>
+                <Link href="/become-agent" className="text-sm sm:text-base">Become an Agent</Link>
               )}
 
               {user && profile && profile.agent_status === "pending" && (
@@ -166,17 +167,17 @@ export default function Navbar() {
               )}
 
               {user && (
-                <Link href="/dashboard">My Listings</Link>
+                <Link href="/dashboard" className="text-sm sm:text-base">My Listings</Link>
               )}
 
               {!user && (
-                <Link href="/login">Login</Link>
+                <Link href="/login" className="text-sm sm:text-base">Login</Link>
               )}
 
               {user && (
                 <button
                   onClick={handleLogout}
-                  className="text-left"
+                  className="text-left text-sm sm:text-base h-10"
                 >
                   Logout
                 </button>

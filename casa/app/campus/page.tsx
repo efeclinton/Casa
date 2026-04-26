@@ -153,26 +153,26 @@ export default function CampusPage() {
 
       
 
-      <section className="max-w-6xl mx-auto p-10">
+      <section className="w-full max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
 
-        <h1 className="text-3xl font-bold mb-2">
+        <h1 className="text-lg sm:text-xl lg:text-2xl font-bold mb-2">
           Campus Accommodation
         </h1>
 
-        <p className="text-gray-500 mb-6">
+        <p className="text-sm sm:text-base text-gray-500 mb-4 sm:mb-6">
           Find verified off-campus housing near universities
         </p>
 
         {/* Filters */}
 
-        <div className="grid md:grid-cols-4 gap-3 mb-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6">
 
           <input
             type="text"
             placeholder="Search location or school (e.g. Hilltop, UNIBEN)"
             value={location}
             onChange={(e) => setLocation(e.target.value)}
-            className="border p-3 rounded"
+            className="w-full border p-3 rounded"
           />
 
           <input
@@ -180,13 +180,13 @@ export default function CampusPage() {
             placeholder="Max price"
             value={price}
             onChange={(e) => setPrice(e.target.value)}
-            className="border p-3 rounded"
+            className="w-full border p-3 rounded"
           />
 
           <select
             value={period}
             onChange={(e) => setPeriod(e.target.value)}
-            className="border p-3 rounded"
+            className="w-full border p-3 rounded"
           >
             <option value="">Rent Period</option>
             <option value="year">Per Year</option>
@@ -196,7 +196,7 @@ export default function CampusPage() {
           <button
             onClick={applyFilters}
             disabled={isSearching}
-            className="bg-black text-white rounded hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full h-10 sm:h-11 bg-black text-white rounded hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isSearching ? "Searching..." : "Apply Filters"}
           </button>
@@ -211,13 +211,13 @@ export default function CampusPage() {
             Popular Locations
           </p>
 
-          <div className="flex gap-3 flex-wrap">
+          <div className="flex gap-2 sm:gap-3 flex-wrap">
 
             {["Hilltop", "Ekosodin", "GRA", "Sabo"].map((loc) => (
               <button
                 key={loc}
                 onClick={() => quickFilter(loc)}
-                className="px-4 py-2 border rounded-full hover:bg-gray-100"
+                className="px-4 py-2.5 border rounded-full hover:bg-gray-100 text-sm sm:text-base"
               >
                 {loc}
               </button>
@@ -225,7 +225,7 @@ export default function CampusPage() {
 
             <button
               onClick={resetFilters}
-              className="px-4 py-2 border rounded-full hover:bg-gray-100"
+              className="px-4 py-2.5 border rounded-full hover:bg-gray-100 text-sm sm:text-base"
             >
               Show All
             </button>
@@ -238,7 +238,7 @@ export default function CampusPage() {
 
         {filtered.length ? (
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-6">
 
             {filtered.map(property => (
               <PropertyCard

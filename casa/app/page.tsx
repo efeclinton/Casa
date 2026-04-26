@@ -26,6 +26,13 @@ export default async function Home() {
     }
   }
 
+  const { data: marketPreview } = await supabase
+    .from("market_items")
+    .select("id,title,price,location,image,images")
+    .eq("is_active", true)
+    .order("created_at", { ascending: false })
+    .limit(6)
+
   return (
     <main>
 
@@ -33,15 +40,15 @@ export default async function Home() {
 
       <HeroSection />
 
-      <section className="p-10 mt-8 md:mt-12">
+      <section className="w-full max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-8 mt-2 sm:mt-4">
 
-        <h2 className="text-2xl font-semibold mb-6">
+        <h2 className="text-lg sm:text-xl lg:text-2xl font-semibold mb-4 sm:mb-6">
           Featured Properties
         </h2>
 
         {properties && properties.length > 0 ? (
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-6">
 
             {properties.map((property:any) => (
 
@@ -67,6 +74,46 @@ export default async function Home() {
 
         )}
 
+      </section>
+
+      <section className="w-full max-w-6xl mx-auto px-4 sm:px-6 pb-6 sm:pb-8">
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-lg sm:text-xl lg:text-2xl font-semibold">Campus Market</h2>
+          <a href="/market" className="text-sm sm:text-base text-green-700 font-medium hover:underline">
+            View all
+          </a>
+        </div>
+
+        {marketPreview && marketPreview.length > 0 ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
+            {marketPreview.map((item: any) => {
+              const image = item.image || (Array.isArray(item.images) && item.images.length > 0 ? item.images[0] : null)
+
+              return (
+                <a
+                  key={item.id}
+                  href={`/market/${item.id}`}
+                  className="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-lg transition h-full flex flex-col"
+                >
+                  {image ? (
+                    <img src={image} alt={item.title} className="w-full h-40 sm:h-44 object-cover" />
+                  ) : (
+                    <div className="w-full h-40 bg-gray-100 flex items-center justify-center text-gray-400 text-sm">
+                      No Image
+                    </div>
+                  )}
+                  <div className="p-3 sm:p-4 space-y-1 flex-1 flex flex-col">
+                    <h3 className="font-semibold text-sm sm:text-base line-clamp-2">{item.title}</h3>
+                    <p className="text-green-700 font-medium text-sm sm:text-base">₦{Number(item.price).toLocaleString()}</p>
+                    <p className="text-gray-500 text-sm line-clamp-2 mt-auto">{item.location}</p>
+                  </div>
+                </a>
+              )
+            })}
+          </div>
+        ) : (
+          <p className="text-gray-500">No market items yet.</p>
+        )}
       </section>
 
     </main>
