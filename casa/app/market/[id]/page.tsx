@@ -5,13 +5,32 @@ import { useParams } from "next/navigation"
 import { supabase } from "../../../lib/supabaseClient"
 import Link from "next/link"
 
+type SellerProfile = {
+  id?: string
+  full_name?: string
+  email?: string
+  phone?: string
+  avatar_url?: string
+}
+
+type MarketItem = {
+  id: string
+  user_id?: string | SellerProfile
+  profiles?: SellerProfile
+  images?: string[]
+  title: string
+  price: number
+  location?: string
+  description?: string
+}
+
 export default function MarketItemDetailPage() {
   const params = useParams()
   const id = params.id as string
 
-  const [item, setItem] = useState<any>(null)
+  const [item, setItem] = useState<MarketItem | null>(null)
   const [loading, setLoading] = useState(true)
-  const [rating, setRating] = useState<any>(null)
+  const [rating, setRating] = useState<string | null>(null)
 
   useEffect(() => {
     const loadItem = async () => {
@@ -33,10 +52,17 @@ export default function MarketItemDetailPage() {
 
   useEffect(() => {
     const fetchRating = async () => {
+      if (!item?.user_id) return
+
+      const agentId =
+        typeof item.user_id === "object"
+          ? item.user_id?.id
+          : item.user_id
+
       const { data } = await supabase
         .from("agent_ratings")
         .select("rating")
-        .eq("agent_id", item.user_id?.id ?? item.user_id)
+        .eq("agent_id", agentId)
 
       if (data && data.length > 0) {
         const avg =
@@ -46,7 +72,7 @@ export default function MarketItemDetailPage() {
       }
     }
 
-    if (item?.user_id) fetchRating()
+    fetchRating()
   }, [item?.user_id])
 
   const imageUrl = useMemo(() => {
@@ -56,6 +82,8 @@ export default function MarketItemDetailPage() {
   }, [item])
 
   const handleContactSeller = () => {
+    if (!item) return
+
     const phone = item.profiles?.phone
 
     if (!phone) {

@@ -4,10 +4,18 @@ import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { supabase } from "../../lib/supabaseClient"
 
+type Notification = {
+  id: string
+  title?: string
+  message?: string
+  created_at?: string
+  read?: boolean
+}
+
 export default function NotificationsPage() {
   const router = useRouter()
   const [loading, setLoading] = useState(true)
-  const [notifications, setNotifications] = useState<any[]>([])
+  const [notifications, setNotifications] = useState<Notification[]>([])
 
   useEffect(() => {
     const loadNotifications = async () => {
@@ -37,7 +45,7 @@ export default function NotificationsPage() {
     loadNotifications()
   }, [router])
 
-  const handleNotificationClick = async (notification: any) => {
+  const handleNotificationClick = async (notification: Notification) => {
     if (!notification || notification.read) {
       return
     }

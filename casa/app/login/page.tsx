@@ -3,6 +3,7 @@
 import { useState } from "react"
 import { supabase } from "@/lib/supabaseClient"
 import { useRouter, useSearchParams } from "next/navigation"
+import Link from "next/link"
 
 export default function LoginPage() {
 
@@ -17,7 +18,7 @@ export default function LoginPage() {
     return redirect.startsWith("/") ? redirect : "/"
   }
 
-  const handleLogin = async (e:any) => {
+  const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
 
     const { error } = await supabase.auth.signInWithPassword({
@@ -95,7 +96,7 @@ export default function LoginPage() {
       </button>
 
       <p className="mt-4 text-sm">
-        Don't have an account? <a href="/signup" className="text-green-600">Sign up</a>
+        Don&apos;t have an account? <Link href="/signup" className="text-green-600">Sign up</Link>
       </p>
 
     </main>

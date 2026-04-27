@@ -5,37 +5,73 @@ import { supabase } from "../../lib/supabaseClient"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 
+type Property = {
+  id: string
+  title?: string
+  location?: string
+  price: number
+  rent_period?: string
+  listing_type?: string
+  is_duplicate?: boolean
+}
+
+type AgentApplication = {
+  id: string
+  user_id: string
+  full_name?: string
+  email?: string
+}
+
+type RatingSummary = {
+  agent_id: string
+  avg_rating?: number
+  review_count?: number
+}
+
+type AgentRating = {
+  rating?: number
+}
+
+type Agent = {
+  id: string
+  full_name?: string
+  email?: string
+  status?: string
+  agent_contacts?: unknown[]
+  agent_ratings?: AgentRating[]
+  listing_count?: number
+  avgRating?: number
+  reviewCount?: number
+}
+
+type FlaggedListing = {
+  property_id: string
+  user_id?: string
+  reason?: string
+  properties?: {
+    title?: string
+    location?: string
+  }
+}
+
 export default function AdminPage() {
 
   const router = useRouter()
 
   const [query,setQuery] = useState("")
-  const [properties,setProperties] = useState<any[]>([])
-  const [applications,setApplications] = useState<any[]>([])
-  const [agents,setAgents] = useState<any[]>([])
-  const [selectedAgent,setSelectedAgent] = useState<any>(null)
-  const [agentListings,setAgentListings] = useState<any[]>([])
+  const [properties,setProperties] = useState<Property[]>([])
+  const [applications,setApplications] = useState<AgentApplication[]>([])
+  const [agents,setAgents] = useState<Agent[]>([])
+  const [selectedAgent,setSelectedAgent] = useState<Agent | null>(null)
+  const [agentListings,setAgentListings] = useState<Property[]>([])
   const [agentQuery,setAgentQuery] = useState("")
   const [minRating, setMinRating] = useState(0)
-  const [flagged,setFlagged] = useState<any[]>([])
+  const [flagged,setFlagged] = useState<FlaggedListing[]>([])
   const [loadingAgents,setLoadingAgents] = useState(false)
 
   const [loading,setLoading] = useState(false)
   const [checkingAdmin,setCheckingAdmin] = useState(true)
-  const [userProfile,setUserProfile] = useState<any>(null)
-
   const [categoryFilter, setCategoryFilter] = useState("all")
-
-  const resolveAgentDocumentUrl = (value: string) => {
-    if (!value) return "#"
-    if (value.startsWith("http://") || value.startsWith("https://")) {
-      return value
-    }
-    const { data } = supabase.storage
-      .from("agent-documents")
-      .getPublicUrl(value)
-    return data.publicUrl
-  }
 
   useEffect(()=>{
 
@@ -53,8 +89,6 @@ export default function AdminPage() {
         .select("role")
         .eq("id", user.id)
         .single()
-
-      setUserProfile(profile)
 
       if(profile?.role !== "admin"){
         router.push("/")
@@ -95,7 +129,7 @@ export default function AdminPage() {
 
   }
 
-  const approveAgent = async (app:any) => {
+  const approveAgent = async (app: AgentApplication) => {
 
     if(!app?.id || !app?.user_id){
       alert("Invalid application data")
@@ -130,7 +164,7 @@ export default function AdminPage() {
     loadApplications()
   }
 
-  const rejectAgent = async (app:any) => {
+  const rejectAgent = async (app: AgentApplication) => {
 
     if(!app?.id || !app?.user_id){
       alert("Invalid application data")
@@ -155,7 +189,7 @@ export default function AdminPage() {
   // FILTER LOGIC (FIXED)
   // ======================
 
-  const applyCategoryFilter = (data:any[], type:string) => {
+  const applyCategoryFilter = (data:Property[], type:string) => {
     if(type === "all") return data
     return data.filter(p => p.listing_type === type)
   }
@@ -222,18 +256,18 @@ export default function AdminPage() {
 
     const counts: Record<string, number> = {};
 
-    (properties || []).forEach((p: any) => {
+    (properties || []).forEach((p: { agent_id?: string | null }) => {
       if (!p.agent_id) return
       counts[p.agent_id] = (counts[p.agent_id] || 0) + 1
     })
 
-    const ratingMap: Record<string, any> = {}
+    const ratingMap: Record<string, RatingSummary> = {}
 
-    ;(ratings || []).forEach((r: any) => {
+    ;(ratings || []).forEach((r: RatingSummary) => {
       ratingMap[r.agent_id] = r
     })
 
-    const agentsWithCounts = (agents || []).map((a: any) => {
+    const agentsWithCounts = (agents || []).map((a: Agent) => {
       const r = ratingMap[a.id]
 
       return {
@@ -261,7 +295,14 @@ export default function AdminPage() {
     }
 
     console.log("FETCHED FLAGGED:", data)
-    setFlagged(data || [])
+    const normalizedFlagged = (data || []).map((flag) => ({
+      ...flag,
+      properties: Array.isArray(flag.properties)
+        ? flag.properties[0]
+        : flag.properties
+    }))
+
+    setFlagged(normalizedFlagged)
   }
 
   const updateAgentStatus = async (agentId:string, status:string) => {
@@ -350,32 +391,15 @@ export default function AdminPage() {
 
       setAgents(unique)
 
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Agent search error:", err)
-      alert("Agent search failed: " + err.message)
+      alert("Agent search failed: " + (err instanceof Error ? err.message : "Unknown error"))
     }
 
     setLoadingAgents(false)
   }
 
-  const loadAgents = async () => {
-
-    const { data, error } = await supabase
-      .from("profiles")
-      .select("*")
-      .eq("role", "agent")
-
-    if (error) {
-      console.log(error)
-      alert("Failed to load agents")
-      return
-    }
-
-    setAgents(data || [])
-
-  }
-
-  const loadAgentListings = async (agent: any) => {
+  const loadAgentListings = async (agent: Agent) => {
 
     setSelectedAgent(agent)
 
@@ -397,7 +421,7 @@ export default function AdminPage() {
   const filteredAgents = agents.filter(agent => {
     const ratings = agent.agent_ratings || []
     const avg = ratings.length
-      ? ratings.reduce((a: any, b: any) => a + (b.rating || 0), 0) / ratings.length
+      ? ratings.reduce((a, b) => a + (b.rating || 0), 0) / ratings.length
       : 0
 
     return avg >= minRating
@@ -472,7 +496,7 @@ export default function AdminPage() {
 
   }
 
-  const deleteListing = async (property:any)=>{
+  const deleteListing = async (property: Property)=>{
 
     const confirmDelete = confirm("Delete this listing?")
     if(!confirmDelete) return
@@ -498,7 +522,7 @@ export default function AdminPage() {
 
     <main>
 
-      <section className="max-w-5xl mx-auto p-10">
+      <section className="max-w-5xl mx-auto px-4 py-6 sm:p-10">
 
         <h1 className="text-3xl font-bold mb-6">
           Admin Dashboard
@@ -572,17 +596,17 @@ export default function AdminPage() {
             <option value={4}>4+ Stars</option>
           </select>
 
-          <div className="flex gap-3">
+          <div className="flex flex-col sm:flex-row gap-3">
             <button
               onClick={searchAgents}
-              className="bg-black text-white px-6 rounded"
+              className="bg-black text-white px-6 py-2.5 rounded"
             >
               Search
             </button>
 
             <button
               onClick={loadAllAgents}
-              className="bg-gray-600 text-white px-6 rounded"
+              className="bg-gray-600 text-white px-6 py-2.5 rounded"
             >
               View All
             </button>
@@ -607,7 +631,7 @@ export default function AdminPage() {
                 return (
                   <Link href={`/agent/${agent.id}`} key={agent.id}>
                     <div
-                      className="border p-3 rounded flex justify-between items-center cursor-pointer hover:shadow-md transition"
+                    className="border p-3 rounded flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 cursor-pointer hover:shadow-md transition"
                     >
                       <div>
                         <p className="font-semibold">
@@ -624,7 +648,7 @@ export default function AdminPage() {
                         </div>
                       </div>
 
-                      <div className="flex flex-col items-end gap-2">
+                      <div className="flex flex-col sm:items-end gap-2 w-full sm:w-auto">
                         <button
                           onClick={(e) => {
                             e.preventDefault()
@@ -635,7 +659,7 @@ export default function AdminPage() {
                         >
                           View Listings
                         </button>
-                        <div className="flex gap-2 mt-2">
+                        <div className="flex flex-wrap gap-2 mt-2">
                           <button
                             onClick={(e) => {
                               e.preventDefault()
@@ -691,7 +715,7 @@ export default function AdminPage() {
                 {agentListings.map(property => (
                   <div
                     key={property.id}
-                    className="border p-4 rounded flex justify-between items-center"
+                    className="border p-4 rounded flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3"
                   >
                     <div>
                       <p className="font-semibold">
@@ -762,7 +786,7 @@ export default function AdminPage() {
 
         </div>
 
-        <div className="flex gap-3 mb-6">
+        <div className="flex flex-col sm:flex-row gap-3 mb-6">
 
           <input
             type="text"
@@ -774,14 +798,14 @@ export default function AdminPage() {
 
           <button
             onClick={searchListings}
-            className="bg-black text-white px-6 rounded"
+            className="bg-black text-white px-6 py-2.5 rounded"
           >
             Search
           </button>
 
           <button
             onClick={()=>loadAllListings(categoryFilter)}
-            className="bg-gray-700 text-white px-6 rounded"
+            className="bg-gray-700 text-white px-6 py-2.5 rounded"
           >
             View All
           </button>
@@ -801,7 +825,7 @@ export default function AdminPage() {
 
               <Link href={`/property/${property.id}`} key={property.id}>
                 <div
-                  className="border p-4 rounded flex justify-between items-center cursor-pointer hover:shadow-md transition"
+                  className="border p-4 rounded flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 cursor-pointer hover:shadow-md transition"
                 >
 
                   <div>
@@ -830,7 +854,7 @@ export default function AdminPage() {
 
                   </div>
 
-                  <div className="flex gap-4">
+                  <div className="flex gap-4 w-full sm:w-auto">
 
                     <span className="text-blue-600">
                       View

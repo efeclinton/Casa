@@ -3,6 +3,7 @@
 import { useState } from "react"
 import { supabase } from "../../lib/supabaseClient"
 import { useRouter } from "next/navigation"
+import Link from "next/link"
 
 export default function SignupPage() {
 
@@ -16,7 +17,7 @@ export default function SignupPage() {
 
   const [loading, setLoading] = useState(false)
 
-  const handleSignup = async (e: any) => {
+  const handleSignup = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
 
     if (loading) return
@@ -131,9 +132,9 @@ export default function SignupPage() {
 
       <p className="mt-4 text-sm">
         Already have an account?{" "}
-        <a href="/login" className="text-green-600">
+        <Link href="/login" className="text-green-600">
           Login
-        </a>
+        </Link>
       </p>
 
     </main>

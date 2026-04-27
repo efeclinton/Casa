@@ -1,11 +1,34 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useCallback, useEffect, useState } from "react"
 import { useParams, useRouter } from "next/navigation"
 import { supabase, getOptimizedAvatarUrl } from "../../../lib/supabaseClient"
 import VirtualTour from "../../../components/VirtualTour"
 import Image from "next/image"
 import Head from "next/head"
+import Link from "next/link"
+
+type Property = {
+  id: string
+  title: string
+  price: number
+  rent_period?: string
+  location?: string
+  image?: string
+  images?: string[]
+  videos?: string[]
+  tour_images?: string[]
+  description?: string
+  phone?: string
+  owner_id?: string
+  agent_id?: string
+}
+
+type AgentProfile = {
+  id: string
+  full_name: string
+  avatar_url?: string | null
+}
 
 export default function PropertyPage() {
 
@@ -13,8 +36,8 @@ export default function PropertyPage() {
   const router = useRouter()
   const id = params.id as string
 
-  const [property, setProperty] = useState<any>(null)
-  const [agentProfile, setAgentProfile] = useState<any>(null)
+  const [property, setProperty] = useState<Property | null>(null)
+  const [agentProfile, setAgentProfile] = useState<AgentProfile | null>(null)
   const [agentRating, setAgentRating] = useState<number>(0)
   const [agentReviewsCount, setAgentReviewsCount] = useState(0)
   const [loading, setLoading] = useState(true)
@@ -27,6 +50,22 @@ export default function PropertyPage() {
   const [touchStart, setTouchStart] = useState<number | null>(null)
   const [showContactModal, setShowContactModal] = useState(false)
   const [showToast, setShowToast] = useState(false)
+
+  const handleCloseGallery = useCallback(() => {
+    setShowGalleryModal(false)
+  }, [])
+
+  const handleNextImage = useCallback(() => {
+    const imgs = Array.isArray(property?.images) ? property.images : []
+    if (imgs.length === 0) return
+    setCurrentImageIndex((prev) => (prev + 1) % imgs.length)
+  }, [property])
+
+  const handlePrevImage = useCallback(() => {
+    const imgs = Array.isArray(property?.images) ? property.images : []
+    if (imgs.length === 0) return
+    setCurrentImageIndex((prev) => (prev - 1 + imgs.length) % imgs.length)
+  }, [property])
 
   useEffect(() => {
 
@@ -121,7 +160,7 @@ export default function PropertyPage() {
       window.removeEventListener('keydown', handleKeyDown)
       document.body.style.overflow = 'unset'
     }
-  }, [showGalleryModal, currentImageIndex])
+  }, [showGalleryModal, currentImageIndex, handleCloseGallery, handleNextImage, handlePrevImage])
 
   useEffect(() => {
     if (!showToast) return
@@ -184,11 +223,6 @@ export default function PropertyPage() {
     setSaving(false)
   }
 
-  const getAgentInitials = (name: string) => {
-    if (!name) return "?"
-    return name.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2)
-  }
-
   const getAgentAvatarSrc = (avatarUrl: string | null, name: string) => {
     return getOptimizedAvatarUrl(avatarUrl, name)
   }
@@ -218,6 +252,8 @@ export default function PropertyPage() {
         authRedirect()
         return
       }
+
+      if (!property) return
 
       let phone = property?.phone ? String(property.phone) : ""
       if (!phone) return
@@ -321,20 +357,6 @@ export default function PropertyPage() {
     setShowGalleryModal(true)
   }
 
-  const handleCloseGallery = () => {
-    setShowGalleryModal(false)
-  }
-
-  const handleNextImage = () => {
-    const imgs = Array.isArray(property?.images) ? property.images : []
-    setCurrentImageIndex((prev) => (prev + 1) % imgs.length)
-  }
-
-  const handlePrevImage = () => {
-    const imgs = Array.isArray(property?.images) ? property.images : []
-    setCurrentImageIndex((prev) => (prev - 1 + imgs.length) % imgs.length)
-  }
-
   const handleTouchStart = (e: React.TouchEvent) => {
     setTouchStart(e.touches[0].clientX)
   }
@@ -433,10 +455,10 @@ export default function PropertyPage() {
 
       {agentProfile && (
         <div className="mt-6 mb-4 p-4 sm:p-6 bg-white rounded-lg shadow">
-          <a href={`/agent/${agentProfile.id}`} className="flex items-center gap-3 sm:gap-4 cursor-pointer hover:bg-gray-50 p-3 sm:p-4 rounded">
+          <Link href={`/agent/${agentProfile.id}`} className="flex items-center gap-3 sm:gap-4 cursor-pointer hover:bg-gray-50 p-3 sm:p-4 rounded">
             <div className="relative w-16 h-16">
               <Image
-                src={getAgentAvatarSrc(agentProfile.avatar_url, agentProfile.full_name)}
+                src={getAgentAvatarSrc(agentProfile.avatar_url || null, agentProfile.full_name)}
                 alt={`${agentProfile.full_name} avatar`}
                 width={64}
                 height={64}
@@ -453,7 +475,7 @@ export default function PropertyPage() {
                   : "No rating yet"}
               </p>
             </div>
-          </a>
+          </Link>
         </div>
       )}
 

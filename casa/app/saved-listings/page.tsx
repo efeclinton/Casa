@@ -4,8 +4,19 @@ import { useEffect, useState } from "react"
 import Link from "next/link"
 import { supabase } from "../../lib/supabaseClient"
 
+type SavedListing = {
+  savedId: string
+  propertyId: string
+  property: {
+    title?: string
+    price?: number
+    location?: string
+    images?: string[]
+  } | null
+}
+
 export default function SavedListingsPage() {
-  const [saved, setSaved] = useState<any[]>([])
+  const [saved, setSaved] = useState<SavedListing[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -29,10 +40,12 @@ export default function SavedListingsPage() {
         return
       }
 
-      const structured = (data || []).map((item: any) => ({
+      const structured = (data || []).map((item) => ({
         savedId: item.id,
         propertyId: item.property_id,
-        property: item.properties
+        property: Array.isArray(item.properties)
+          ? item.properties[0] || null
+          : item.properties
       }))
 
       setSaved(structured)

@@ -1,11 +1,23 @@
-export function getListingScore(property: any) {
+type RankedProperty = {
+  tour_images?: unknown[]
+  images?: unknown[]
+  videos?: unknown[]
+  description?: string
+  title?: string
+  created_at?: string
+  views?: number
+  messages?: number
+  avg_time_on_page?: number
+}
+
+export function getListingScore(property: RankedProperty) {
 
   let score = 0
 
   /* ---------------- QUALITY SIGNALS ---------------- */
 
   // Virtual tour
-  if (property.tour_images?.length > 0) {
+  if ((property.tour_images?.length || 0) > 0) {
     score += 40
   }
 
@@ -17,7 +29,7 @@ export function getListingScore(property: any) {
   else if (imageCount >= 3) score += 10
 
   // Video
-  if (property.videos?.length > 0) {
+  if ((property.videos?.length || 0) > 0) {
     score += 20
   }
 
@@ -28,7 +40,7 @@ export function getListingScore(property: any) {
   else if (descLength > 120) score += 10
 
   // Title quality
-  if (property.title?.length > 20) {
+  if ((property.title?.length || 0) > 20) {
     score += 5
   }
 

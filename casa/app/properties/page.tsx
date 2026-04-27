@@ -1,6 +1,15 @@
 import { supabase } from "@/lib/supabaseClient";
 import PropertyCard from "@/components/PropertyCard";
 
+type Property = {
+  id: string;
+  image?: string;
+  price: number;
+  title: string;
+  location: string;
+  rent_period: string;
+}
+
 export default async function PropertiesPage({
   searchParams,
 }: {
@@ -83,7 +92,7 @@ export default async function PropertiesPage({
 
       {/* LIST */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-6">
-        {properties?.map((property: any) => (
+        {properties?.map((property: Property) => (
           <PropertyCard
             key={property.id}
             image={property.image}

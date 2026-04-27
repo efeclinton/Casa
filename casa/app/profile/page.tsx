@@ -4,12 +4,24 @@ import { useState, useEffect } from "react"
 import { supabase, getOptimizedAvatarUrl } from "../../lib/supabaseClient"
 import { useRouter } from "next/navigation"
 import Image from "next/image"
+import Link from "next/link"
+import type { User } from "@supabase/supabase-js"
+
+type Profile = {
+  id?: string
+  full_name?: string
+  email?: string
+  phone?: string
+  phone_number?: string
+  avatar_url?: string
+  agent_status?: string
+}
 
 export default function ProfilePage() {
 
   const router = useRouter()
-  const [user, setUser] = useState<any>(null)
-  const [profile, setProfile] = useState<any>(null)
+  const [user, setUser] = useState<User | null>(null)
+  const [profile, setProfile] = useState<Profile | null>(null)
   const [loading, setLoading] = useState(true)
   const [isEditing, setIsEditing] = useState(false)
   const [fullNameInput, setFullNameInput] = useState("")
@@ -67,7 +79,7 @@ export default function ProfilePage() {
 
   if (loading) {
     return (
-      <main className="max-w-2xl mx-auto p-10">
+      <main className="max-w-2xl mx-auto px-4 py-6 sm:p-10">
         <div className="text-center">Loading...</div>
       </main>
     )
@@ -142,9 +154,9 @@ export default function ProfilePage() {
 
       alert("Profile photo updated")
 
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Upload error:', error)
-      alert('Failed to upload photo: ' + error.message)
+      alert('Failed to upload photo: ' + (error instanceof Error ? error.message : "Unknown error"))
     }
 
     setUploading(false)
@@ -186,7 +198,7 @@ export default function ProfilePage() {
       return
     }
 
-    setProfile((prev: any) => ({
+    setProfile((prev) => ({
       ...prev,
       full_name,
       phone_number
@@ -198,19 +210,21 @@ export default function ProfilePage() {
 
   const isProfileIncomplete = !profile?.full_name || !(profile?.phone_number || profile?.phone)
   const profileActionText = isProfileIncomplete ? "Complete Profile" : "Edit Profile"
+  const userDisplayName =
+    `${user?.user_metadata?.first_name || ""} ${user?.user_metadata?.last_name || ""}`.trim() || "User"
 
   return (
-    <main className="max-w-2xl mx-auto p-10">
+    <main className="max-w-2xl mx-auto px-4 py-6 sm:p-10">
       <h1 className="text-3xl font-bold mb-6">Profile</h1>
 
       <section className="mb-8 p-6 bg-white rounded-lg shadow">
         <h2 className="text-2xl font-semibold mb-4">Profile Info</h2>
-        <div className="flex items-start space-x-6 mb-4">
+        <div className="flex flex-col sm:flex-row items-start gap-6 mb-4">
           <div className="flex flex-col items-center space-y-2">
             {(previewUrl || profile?.avatar_url) ? (
               <div className="relative w-24 h-24">
                 <Image
-                  src={previewUrl || getOptimizedAvatarUrl(profile?.avatar_url, user?.user_metadata?.first_name + ' ' + user?.user_metadata?.last_name)}
+                  src={previewUrl || getOptimizedAvatarUrl(profile?.avatar_url || null, userDisplayName)}
                   alt="Profile"
                   width={96}
                   height={96}
@@ -271,7 +285,7 @@ export default function ProfilePage() {
                     placeholder="Enter phone number"
                   />
                 </div>
-                <div className="pt-2 flex gap-2">
+                <div className="pt-2 flex flex-col sm:flex-row gap-2">
                   <button
                     onClick={saveProfile}
                     disabled={savingProfile}
@@ -318,12 +332,12 @@ export default function ProfilePage() {
         </div>
 
         {role === "User" && (
-          <a
+          <Link
             href="/become-agent"
             className="inline-block mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
           >
             Apply to become an agent
-          </a>
+          </Link>
         )}
 
         {getStatusMessage() && (

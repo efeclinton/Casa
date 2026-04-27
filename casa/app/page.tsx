@@ -3,6 +3,24 @@ import PropertyCard from "../components/PropertyCard"
 import Link from "next/link"
 import { supabase } from "../lib/supabaseClient"
 
+type Property = {
+  id: string
+  image?: string
+  price: number
+  title: string
+  location: string
+  rent_period: string
+  is_active?: boolean
+}
+
+type MarketItem = {
+  id: string
+  images?: string[]
+  title: string
+  price: number
+  location?: string
+}
+
 export default async function Home() {
 
   // Try the RPC first (keeps existing ranking behavior),
@@ -10,7 +28,7 @@ export default async function Home() {
   const { data: rpcProperties, error } = await supabase
     .rpc("get_featured_properties")
 
-  let properties = (rpcProperties || []).filter((property: any) => property.is_active === true)
+  let properties = (rpcProperties || []).filter((property: Property) => property.is_active === true)
 
   if (error) {
     console.error("Error loading featured properties:", error)
@@ -68,7 +86,7 @@ export default async function Home() {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-6">
 
-            {properties.map((property:any) => (
+            {properties.map((property: Property) => (
 
               <div key={property.id} className="w-full h-full">
                   <PropertyCard
@@ -98,18 +116,18 @@ export default async function Home() {
       <section className="w-full max-w-6xl mx-auto px-4 pb-6 sm:pb-8">
         <div className="flex items-center justify-between mb-4 sm:mb-6 gap-3">
           <h2 className="text-lg sm:text-xl lg:text-2xl font-semibold">Campus Market</h2>
-          <a href="/market" className="text-green-700 font-medium hover:underline">
+          <Link href="/market" className="text-green-700 font-medium hover:underline">
             View all
-          </a>
+          </Link>
         </div>
 
         {marketItems.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-6">
-            {marketItems.map((item: any) => {
-              const imageUrl = item.images?.length > 0 ? item.images[0] : null
+            {marketItems.map((item: MarketItem) => {
+              const imageUrl = Array.isArray(item.images) && item.images.length > 0 ? item.images[0] : null
 
               return (
-                <a
+                <Link
                   key={item.id}
                   href={`/market/${item.id}`}
                   className="w-full bg-white rounded-xl shadow-md overflow-hidden hover:shadow-lg transition flex flex-col h-full"
@@ -126,7 +144,7 @@ export default async function Home() {
                     <p className="text-green-700 font-medium text-sm sm:text-base">₦{Number(item.price).toLocaleString()}</p>
                     <p className="text-gray-500 text-sm line-clamp-2">{item.location}</p>
                   </div>
-                </a>
+                </Link>
               )
             })}
           </div>

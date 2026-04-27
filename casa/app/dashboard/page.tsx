@@ -9,6 +9,8 @@ import Link from "next/link"
 type Property = {
   id: string;
   image: string;
+  images?: string[];
+  videos?: string[];
   price: number;
   title: string;
   location: string;
@@ -77,7 +79,7 @@ export default function Dashboard() {
 
   }, [router])
 
- const deleteProperty = async (property:any) => {
+ const deleteProperty = async (property: Property) => {
 
   const confirmDelete = confirm("Delete this listing?")
 
@@ -123,8 +125,8 @@ export default function Dashboard() {
 
   }
 
-  setProperties((prev:any) =>
-    prev.filter((p:any) => p.id !== property.id)
+  setProperties((prev) =>
+    prev.filter((p) => p.id !== property.id)
   )
 
 }

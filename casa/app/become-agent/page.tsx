@@ -21,7 +21,7 @@ export default function BecomeAgentPage() {
   const [govId, setGovId] = useState<File | null>(null)
   const [selfie, setSelfie] = useState<File | null>(null)
 
-  const handleChange = (e: any) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setForm({ ...form, [e.target.name]: e.target.value })
   }
 
@@ -130,9 +130,9 @@ export default function BecomeAgentPage() {
       setGovId(null)
       setSelfie(null)
 
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.log(err)
-      alert(err?.message || "Something went wrong")
+      alert(err instanceof Error ? err.message : "Something went wrong")
     }
 
     setLoading(false)

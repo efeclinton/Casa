@@ -131,7 +131,7 @@ export default function ListProperty() {
       if (profile?.agent_status !== "approved") {
         throw new Error("Not allowed to create listing")
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       alert("You cannot create listings because your account is currently restricted.")
       console.log(error)
       setIsSubmitting(false)

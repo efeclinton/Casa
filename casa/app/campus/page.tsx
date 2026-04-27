@@ -5,21 +5,30 @@ import { supabase } from "../../lib/supabaseClient"
 import PropertyCard from "../../components/PropertyCard"
 import { getListingScore } from "../../lib/ranking"
 
+type CampusProperty = {
+  id: string
+  image?: string
+  price: number
+  title: string
+  location: string
+  rent_period: string
+  listing_type?: string
+  school?: string
+  description?: string
+  score?: number
+}
+
 export default function CampusPage() {
 
-  const [properties, setProperties] = useState<any[]>([])
-  const [filtered, setFiltered] = useState<any[]>([])
+  const [properties, setProperties] = useState<CampusProperty[]>([])
+  const [filtered, setFiltered] = useState<CampusProperty[]>([])
 
   const [location, setLocation] = useState("")
   const [price, setPrice] = useState("")
   const [period, setPeriod] = useState("")
   const [isSearching, setIsSearching] = useState(false)
 
-  useEffect(() => {
-    loadListings()
-  }, [])
-
-  const normalize = (text: any) =>
+  const normalize = (text: unknown) =>
     (text || "")
       .toString()
       .toLowerCase()
@@ -45,7 +54,7 @@ export default function CampusPage() {
     }
 
     const ranked = (data || [])
-      .map((p: any) => ({
+      .map((p: CampusProperty) => ({
         ...p,
         score: getListingScore(p)
       }))
@@ -56,6 +65,10 @@ export default function CampusPage() {
     setProperties(ranked)
     setFiltered(ranked)
   }
+
+  useEffect(() => {
+    void Promise.resolve().then(loadListings)
+  }, [])
 
   // ✅ APPLY FILTERS
   const applyFilters = () => {

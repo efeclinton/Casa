@@ -5,7 +5,7 @@
 import Link from "next/link"
 
 interface PropertyCardProps {
-  image: string;
+  image?: string;
   price: number;
   title: string;
   location: string;

@@ -4,21 +4,58 @@ import { useEffect, useState } from "react"
 import { useParams, useRouter } from "next/navigation"
 import { supabase, getOptimizedAvatarUrl } from "../../../lib/supabaseClient"
 import Image from "next/image"
+import Link from "next/link"
+import type { User } from "@supabase/supabase-js"
+
+type AgentProfile = {
+  id: string
+  full_name?: string
+  avatar_url?: string | null
+  phone?: string
+  phone_number?: string
+}
+
+type Listing = {
+  id: string
+  title?: string
+  price?: number
+  location?: string
+  image?: string
+}
+
+type ReviewProfile = {
+  id: string
+  full_name?: string
+  avatar_url?: string | null
+}
+
+type Review = {
+  id: string
+  rating: number
+  comment?: string
+  created_at: string
+  user_id: string
+  profile?: ReviewProfile
+}
+
+type RatingRow = {
+  rating?: number
+}
 
 export default function AgentProfilePage() {
   const params = useParams()
   const router = useRouter()
   const agentId = params.id as string
 
-  const [agent, setAgent] = useState<any>(null)
+  const [agent, setAgent] = useState<AgentProfile | null>(null)
   const [loading, setLoading] = useState(true)
-  const [listings, setListings] = useState<any[]>([])
+  const [listings, setListings] = useState<Listing[]>([])
   const [avgRating, setAvgRating] = useState(0)
   const [totalReviews, setTotalReviews] = useState(0)
-  const [reviews, setReviews] = useState<any[]>([])
-  const [user, setUser] = useState<any>(null)
+  const [reviews, setReviews] = useState<Review[]>([])
+  const [user, setUser] = useState<User | null>(null)
   const [hasContacted, setHasContacted] = useState(false)
-  const [userReview, setUserReview] = useState<any>(null)
+  const [userReview, setUserReview] = useState<Review | null>(null)
   const [showContactModal, setShowContactModal] = useState(false)
 
   const [rating, setRating] = useState(5)
@@ -70,8 +107,8 @@ export default function AgentProfilePage() {
 
       const reviewList = reviewsData || []
 
-      const userIds = Array.from(new Set(reviewList.map((r: any) => r.user_id).filter(Boolean)))
-      let profileMap: Record<string, any> = {}
+      const userIds = Array.from(new Set(reviewList.map((r: Review) => r.user_id).filter(Boolean)))
+      const profileMap: Record<string, ReviewProfile> = {}
 
       if (userIds.length > 0) {
         const { data: profilesData } = await supabase
@@ -79,12 +116,12 @@ export default function AgentProfilePage() {
           .select("id, full_name, avatar_url")
           .in("id", userIds)
 
-        ;(profilesData || []).forEach((p: any) => {
+        ;(profilesData || []).forEach((p: ReviewProfile) => {
           profileMap[p.id] = p
         })
       }
 
-      const reviewsWithUser = reviewList.map((r: any) => ({
+      const reviewsWithUser = reviewList.map((r: Review) => ({
         ...r,
         profile: profileMap[r.user_id]
       }))
@@ -93,7 +130,7 @@ export default function AgentProfilePage() {
 
       const ratingValues = ratingsData || []
       if (ratingValues.length > 0) {
-        const sum = (ratingValues as any[]).reduce((acc, x) => acc + (x.rating || 0), 0)
+        const sum = (ratingValues as RatingRow[]).reduce((acc, x) => acc + (x.rating || 0), 0)
         setAvgRating(Number((sum / ratingValues.length).toFixed(1)))
         setTotalReviews(ratingValues.length)
       } else {
@@ -111,7 +148,7 @@ export default function AgentProfilePage() {
 
         setHasContacted(!!contactResult.data)
 
-        const existingReview = reviewsWithUser.find((r: any) => r.user_id === currentUser.id)
+        const existingReview = reviewsWithUser.find((r) => r.user_id === currentUser.id)
         if (existingReview) {
           setUserReview(existingReview)
           setRating(existingReview.rating)
@@ -171,8 +208,8 @@ export default function AgentProfilePage() {
         .eq("agent_id", agentId)
         .order("created_at", { ascending: false })
 
-      const reviewUserIds = Array.from(new Set((newReviews || []).map((r: any) => r.user_id).filter(Boolean)))
-      let refreshedProfileMap: Record<string, any> = {}
+      const reviewUserIds = Array.from(new Set((newReviews || []).map((r: Review) => r.user_id).filter(Boolean)))
+      const refreshedProfileMap: Record<string, ReviewProfile> = {}
 
       if (reviewUserIds.length > 0) {
         const { data: refreshedProfiles } = await supabase
@@ -180,12 +217,12 @@ export default function AgentProfilePage() {
           .select("id, full_name, avatar_url")
           .in("id", reviewUserIds)
 
-        ;(refreshedProfiles || []).forEach((p: any) => {
+        ;(refreshedProfiles || []).forEach((p: ReviewProfile) => {
           refreshedProfileMap[p.id] = p
         })
       }
 
-      const reviewsWithUser = (newReviews || []).map((r: any) => ({
+      const reviewsWithUser = (newReviews || []).map((r: Review) => ({
         ...r,
         profile: refreshedProfileMap[r.user_id]
       }))
@@ -194,15 +231,15 @@ export default function AgentProfilePage() {
 
       const ratingValues = newReviews || []
       if (ratingValues.length > 0) {
-        const sum = (ratingValues as any[]).reduce((acc, x) => acc + (x.rating || 0), 0)
+        const sum = (ratingValues as RatingRow[]).reduce((acc, x) => acc + (x.rating || 0), 0)
         setAvgRating(Number((sum / ratingValues.length).toFixed(1)))
         setTotalReviews(ratingValues.length)
       }
 
       alert("Review saved")
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error(err)
-      alert(err.message || "Unable to submit review")
+      alert(err instanceof Error ? err.message : "Unable to submit review")
     } finally {
       setSubmitting(false)
     }
@@ -226,6 +263,8 @@ export default function AgentProfilePage() {
       router.push(`/login?redirect=/agent/${agentId}`)
       return
     }
+
+    if (!agent) return
 
     let phone = agent?.phone_number ? String(agent.phone_number) : String(agent?.phone || "")
     if (!phone) return
@@ -252,17 +291,17 @@ export default function AgentProfilePage() {
     window.open(whatsappLink, "_blank")
   }
 
-  if (loading) return (<main className="p-10">Loading agent...</main>)
-  if (!agent) return (<main className="p-10">Agent not found</main>)
+  if (loading) return (<main className="px-4 py-6 sm:p-10">Loading agent...</main>)
+  if (!agent) return (<main className="px-4 py-6 sm:p-10">Agent not found</main>)
 
   return (
-    <main className="max-w-5xl mx-auto p-10 space-y-6">
+    <main className="max-w-5xl mx-auto px-4 py-6 sm:p-10 space-y-6">
       <section className="p-6 bg-white rounded-lg shadow">
-        <div className="flex items-center gap-4">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-4">
           <div className="relative w-24 h-24">
             <Image
-              src={getOptimizedAvatarUrl(agent.avatar_url, agent.full_name)}
-              alt={`${agent.full_name} avatar`}
+              src={getOptimizedAvatarUrl(agent.avatar_url || null, agent.full_name || "Agent")}
+              alt={`${agent.full_name || "Agent"} avatar`}
               width={96}
               height={96}
               className="rounded-full object-cover"
@@ -291,14 +330,14 @@ export default function AgentProfilePage() {
         ) : (
           <div className="space-y-4">
             {listings.map((item) => (
-              <a key={item.id} href={`/property/${item.id}`} className="flex gap-4 p-4 border rounded-lg hover:bg-gray-50">
+              <Link key={item.id} href={`/property/${item.id}`} className="flex flex-col sm:flex-row gap-4 p-4 border rounded-lg hover:bg-gray-50">
                 <img src={item.image || "https://via.placeholder.com/120"} alt={item.title} className="w-24 h-24 object-cover rounded" />
                 <div>
                   <h3 className="font-semibold">{item.title}</h3>
                   <p className="text-sm text-gray-600">{item.location}</p>
                   <p className="text-semibold">₦{item.price}</p>
                 </div>
-              </a>
+              </Link>
             ))}
           </div>
         )}
@@ -331,7 +370,7 @@ export default function AgentProfilePage() {
               </ul>
             </div>
 
-            <div className="flex gap-3">
+            <div className="flex flex-col sm:flex-row gap-3">
               <button
                 onClick={() => setShowContactModal(false)}
                 className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg font-semibold hover:bg-gray-50 transition"
@@ -395,6 +434,7 @@ export default function AgentProfilePage() {
                         review.profile?.avatar_url || null,
                         review.profile?.full_name || "Anonymous"
                       )}
+                      alt={review.profile?.full_name || "Anonymous"}
                       className="w-10 h-10 rounded-full"
                     />
 

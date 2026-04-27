@@ -4,20 +4,29 @@ import { useState, useEffect } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { supabase } from "../lib/supabaseClient"
+import type { User } from "@supabase/supabase-js"
 
 const SHOW_INTENT_BUTTONS = false
+
+type Profile = {
+  agent_status?: string
+}
+
+type SubscriptionLike = {
+  unsubscribe: () => void
+}
 
 export default function Navbar() {
   const pathname = usePathname()
 
   const [menuOpen, setMenuOpen] = useState(false)
-  const [user, setUser] = useState<any>(null)
-  const [profile, setProfile] = useState<any>(null)
+  const [user, setUser] = useState<User | null>(null)
+  const [profile, setProfile] = useState<Profile | null>(null)
   const [unreadCount, setUnreadCount] = useState(0)
 
   useEffect(() => {
 
-    const loadUserAndProfile = async (currentUser: any) => {
+    const loadUserAndProfile = async (currentUser: User | null) => {
       setUser(currentUser)
 
       if (currentUser) {
@@ -57,7 +66,7 @@ export default function Navbar() {
     window.addEventListener("notifications-updated", handleNotificationsUpdated)
 
     // Listen for auth state changes
-    let subscription: any = null
+    let subscription: SubscriptionLike | null = null
     try {
       const result = supabase.auth.onAuthStateChange(
         (event, session) => {
