@@ -92,6 +92,10 @@ export default function Navbar() {
     location.reload()
   }
 
+  const closeMenu = () => {
+    setMenuOpen(false)
+  }
+
   return (
 
     <nav className="w-full bg-white shadow">
@@ -130,18 +134,18 @@ export default function Navbar() {
         <>
           <div
             className="fixed inset-0 bg-black/40 z-40"
-            onClick={() => setMenuOpen(false)}
+            onClick={closeMenu}
           />
 
           <div className="fixed right-0 top-0 h-full w-64 bg-white z-50 shadow-lg p-6 transition-transform duration-300 translate-x-0">
             <button
-              onClick={() => setMenuOpen(false)}
+              onClick={closeMenu}
               className="text-xl mb-4"
             >
               ✕ Close
             </button>
 
-            <div className="flex flex-col gap-4">
+            <div className="flex flex-col gap-4" onClickCapture={closeMenu}>
               <Link href="/">Home</Link>
               <Link href="#">Buy Property</Link>
               <Link href="#">Rent Property</Link>

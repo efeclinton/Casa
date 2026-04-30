@@ -94,6 +94,10 @@ export default function Navbar() {
     location.reload()
   }
 
+  const closeMenu = () => {
+    setMenuOpen(false)
+  }
+
   return (
 
     <nav className="w-full bg-white shadow">
@@ -132,18 +136,18 @@ export default function Navbar() {
         <>
           <div
             className="fixed inset-0 bg-black/40 z-40"
-            onClick={() => setMenuOpen(false)}
+            onClick={closeMenu}
           />
 
           <div className="fixed right-0 top-0 h-full w-[85vw] max-w-xs bg-white z-50 shadow-lg p-5 sm:p-6 transition-transform duration-300 translate-x-0 overflow-y-auto">
             <button
-              onClick={() => setMenuOpen(false)}
+              onClick={closeMenu}
               className="text-base sm:text-lg mb-4 h-10 px-2 rounded-md border border-gray-200"
             >
               ✕ Close
             </button>
 
-            <div className="flex flex-col gap-3 text-sm sm:text-base">
+            <div className="flex flex-col gap-3 text-sm sm:text-base" onClickCapture={closeMenu}>
               <Link href="/" className="py-1">Home</Link>
               {SHOW_INTENT_BUTTONS && (
                 <>
