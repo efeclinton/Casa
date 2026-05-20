@@ -358,23 +358,27 @@ const deleteMarketItem = async (item: MarketItem) => {
         {marketItems.length === 0 ? (
           <p className="text-gray-500">You haven&apos;t posted any market item yet.</p>
         ) : (
-          <div className="space-y-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {marketItems.map((item) => (
-              <div key={item.id} className="border rounded-lg p-4 flex items-center justify-between gap-4">
-                <div>
-                  <p className="font-semibold">{item.title}</p>
-                  <p className="text-sm text-gray-600">₦{Number(item.price).toLocaleString()}</p>
-                  <p className={`text-xs font-medium ${item.is_active ? "text-green-700" : "text-gray-500"}`}>
-                    {item.is_active ? "Active" : "Inactive"}
-                  </p>
+              <div key={item.id} className="bg-white rounded-xl shadow-md overflow-hidden border flex flex-col h-full">
+                <div className="w-full h-40 bg-gray-100 flex items-center justify-center text-gray-400 text-sm">
+                  No Image
                 </div>
 
-                <div className="flex items-center gap-3 text-sm">
-                  <Link href={`/dashboard/post-item?edit=${item.id}`} className="text-blue-600">Edit</Link>
-                  <button onClick={() => deleteMarketItem(item)} className="text-red-600">Delete</button>
-                  <button onClick={() => toggleMarketItem(item)} className="text-indigo-600">
-                    {item.is_active ? "Deactivate" : "Activate"}
-                  </button>
+                <div className="p-4 flex flex-col flex-1">
+                  <p className="text-green-700 font-semibold text-lg">₦{Number(item.price).toLocaleString()}</p>
+                  <p className="font-semibold text-gray-900 line-clamp-2 mt-1">{item.title}</p>
+                  <p className={`text-xs font-medium mt-2 ${item.is_active ? "text-green-700" : "text-gray-500"}`}>
+                    {item.is_active ? "Active" : "Inactive"}
+                  </p>
+
+                  <div className="mt-auto pt-4 flex items-center gap-3 text-sm">
+                    <Link href={`/dashboard/post-item?edit=${item.id}`} className="text-blue-600">Edit</Link>
+                    <button onClick={() => deleteMarketItem(item)} className="text-red-600">Delete</button>
+                    <button onClick={() => toggleMarketItem(item)} className="text-indigo-600">
+                      {item.is_active ? "Deactivate" : "Activate"}
+                    </button>
+                  </div>
                 </div>
               </div>
             ))}
