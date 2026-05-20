@@ -85,6 +85,10 @@ export default function Navbar() {
     location.reload()
   }
 
+  const closeMenu = () => {
+    setMenuOpen(false)
+  }
+
   return (
 
     <nav className="w-full bg-white shadow">
@@ -135,31 +139,31 @@ export default function Navbar() {
             </button>
 
             <div className="flex flex-col gap-4">
-              <Link href="/">Home</Link>
+              <Link href="/" onClick={closeMenu}>Home</Link>
               {SHOW_INTENT_BUTTONS && (
                 <>
-                  <Link href="#">Buy Property</Link>
-                  <Link href="#">Rent Property</Link>
-                  <Link href="/campus">Campus Stay</Link>
+                  <Link href="#" onClick={closeMenu}>Buy Property</Link>
+                  <Link href="#" onClick={closeMenu}>Rent Property</Link>
+                  <Link href="/campus" onClick={closeMenu}>Campus Stay</Link>
                 </>
               )}
-              <Link href="/market">Campus Market</Link>
-              <Link href="/saved-listings">Saved Listings</Link>
+              <Link href="/market" onClick={closeMenu}>Campus Market</Link>
+              <Link href="/saved-listings" onClick={closeMenu}>Saved Listings</Link>
 
               {user && (
-                <Link href="/profile">Profile</Link>
+                <Link href="/profile" onClick={closeMenu}>Profile</Link>
               )}
 
               {user && (
-                <Link href="/notifications">Notifications</Link>
+                <Link href="/notifications" onClick={closeMenu}>Notifications</Link>
               )}
 
               {user && profile && profile.agent_status === "approved" && (
-                <Link href="/list-property">Post Property</Link>
+                <Link href="/list-property" onClick={closeMenu}>Post Property</Link>
               )}
 
               {user && profile && profile.agent_status === "none" && (
-                <Link href="/become-agent">Become an Agent</Link>
+                <Link href="/become-agent" onClick={closeMenu}>Become an Agent</Link>
               )}
 
               {user && profile && profile.agent_status === "pending" && (
@@ -167,16 +171,19 @@ export default function Navbar() {
               )}
 
               {user && (
-                <Link href="/dashboard">My Listings</Link>
+                <Link href="/dashboard" onClick={closeMenu}>My Listings</Link>
               )}
 
               {!user && (
-                <Link href="/login">Login</Link>
+                <Link href="/login" onClick={closeMenu}>Login</Link>
               )}
 
               {user && (
                 <button
-                  onClick={handleLogout}
+                  onClick={() => {
+                    closeMenu()
+                    handleLogout()
+                  }}
                   className="text-left"
                 >
                   Logout
