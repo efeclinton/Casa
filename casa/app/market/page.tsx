@@ -32,26 +32,16 @@ export default async function MarketPage({
     .eq("is_active", true)
     .order("created_at", { ascending: false })
 
-    if (q) {
-    // Normalize spaces and split into words so multi-word search works naturally.
+      if (q) {
+    // Normalize and sanitize user input
     const normalized = q.replace(/\s+/g, " ").trim()
+    const safeQ = normalized.replace(/[%_,()]/g, " ")
 
-    // Build tokenized OR search across title + description only.
-    // Example: "bed stand" => (title ILIKE %bed% OR description ILIKE %bed%)
-    //                        AND (title ILIKE %stand% OR description ILIKE %stand%)
-    const terms = normalized
-      .split(" ")
-      .map((t) => t.trim())
-      .filter(Boolean)
-
-    for (const term of terms) {
-      // Escape characters that can break PostgREST filter strings.
-      const safeTerm = term.replace(/[%_,()]/g, " ")
-
-      query = query.or(
-        `title.ilike.%${safeTerm}%,description.ilike.%${safeTerm}%`
-      )
-    }
+    // Single OR clause across both searchable fields
+    // This gives flexible partial matching for full query text, e.g. "bed stand"
+    query = query.or(
+      `title.ilike.%${safeQ}%,description.ilike.%${safeQ}%`
+    )
   }
 
   if (minPrice) {
