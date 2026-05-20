@@ -10,18 +10,49 @@ type MarketItem = {
   images?: string[] | null
 }
 
-export default async function MarketPage() {
-  const { data, error } = await supabase
+export default async function MarketPage({
+  searchParams,
+}: {
+  searchParams: Promise<{
+    q?: string;
+    location?: string;
+    minPrice?: string;
+    maxPrice?: string;
+  }>;
+}) {
+  const params = await searchParams;
+
+  const q = (params?.q || "").trim();
+  const location = (params?.location || "").trim();
+  const minPrice = params?.minPrice;
+  const maxPrice = params?.maxPrice;
+
+  let query = supabase
     .from("market_items")
     .select("*, user_id(*)")
     .eq("is_active", true)
- 
-  console.log(data)
+    .order("created_at", { ascending: false });
 
-  if (error) {
+  if (q) {
+    query = query.or(`title.ilike.%${q}%,description.ilike.%${q}%,category.ilike.%${q}%`);
+  }
+
+  if (location) {
+    query = query.ilike("location", `%${location}%`);
+  }
+
+  if (minPrice) {
+    query = query.gte("price", Number(minPrice));
+  }
+
+  if (maxPrice) {
+    query = query.lte("price", Number(maxPrice));
+  }
+
+  const { data, error } = await query
+ 
+   if (error) {
     console.error("Fetch error:", error)
-  } else {
-    console.log("Fetched items:", data)
   }
 
   const items: MarketItem[] = data || []
@@ -31,6 +62,61 @@ export default async function MarketPage() {
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-3xl font-bold">Campus Market</h1>
       </div>
+
+            {/* FILTER */}
+      <form method="GET" className="bg-white p-4 rounded shadow mb-6">
+        <input
+          name="q"
+          type="text"
+          placeholder="Search item title, description, or category..."
+          defaultValue={q}
+          className="border p-2 rounded w-full mb-3"
+        />
+
+        <input
+          name="location"
+          type="text"
+          placeholder="Search location..."
+          defaultValue={location}
+          className="border p-2 rounded w-full mb-3"
+        />
+
+        {/* POPULAR AREAS */}
+        <div className="flex flex-wrap gap-2 mb-4">
+          {["Hilltop", "Ekosodin", "Sabo", "Ugbowo", "Town"].map((area) => (
+            <button
+              key={area}
+              type="submit"
+              name="location"
+              value={area}
+              className="px-3 py-1 rounded-full bg-gray-100 hover:bg-gray-200 text-sm transition"
+            >
+              {area}
+            </button>
+          ))}
+        </div>
+
+        <div className="flex gap-2">
+          <input
+            name="minPrice"
+            type="number"
+            placeholder="Min price"
+            defaultValue={minPrice}
+            className="border p-2 rounded w-full"
+          />
+          <input
+            name="maxPrice"
+            type="number"
+            placeholder="Max price"
+            defaultValue={maxPrice}
+            className="border p-2 rounded w-full"
+          />
+        </div>
+
+        <button type="submit" className="mt-3 w-full bg-black text-white py-2 rounded">
+          Apply Filters
+        </button>
+      </form>
 
       {items.length === 0 ? (
         <p className="text-gray-500">No active items yet.</p>
