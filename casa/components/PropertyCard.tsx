@@ -28,7 +28,7 @@ export default function PropertyCard({
   return (
     <Link
       href={`/property/${id}`}
-      className="block w-[320px] min-w-[320px] max-w-[320px] flex-shrink-0"
+      className="block w-full sm:w-[320px] sm:min-w-[320px] sm:max-w-[320px] flex-shrink-0"
     >
 
       <div className="bg-white rounded-xl shadow overflow-hidden hover:shadow-lg transition cursor-pointer h-full">

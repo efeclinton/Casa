@@ -66,11 +66,11 @@ export default async function Home() {
 
         {properties && properties.length > 0 ? (
 
-          <div className="flex gap-4 overflow-x-auto scroll-smooth pb-4">
+          <div className="flex overflow-x-auto gap-4 pb-2 lg:grid lg:grid-cols-4 lg:gap-6 lg:overflow-visible scroll-smooth">
 
             {properties.map((property:any) => (
 
-              <div key={property.id} className="min-w-[280px] flex-shrink-0">
+              <div key={property.id} className="w-[280px] flex-shrink-0 lg:w-auto">
                   <PropertyCard
                   image={property.image}
                   price={property.price}
@@ -104,7 +104,7 @@ export default async function Home() {
         </div>
 
         {marketItems.length > 0 ? (
-          <div className="flex gap-4 overflow-x-auto scroll-smooth pb-4">
+          <div className="flex overflow-x-auto gap-4 pb-2 lg:grid lg:grid-cols-3 lg:gap-6 lg:overflow-visible scroll-smooth">
             {marketItems.map((item: any) => {
               const imageUrl = item.images?.length > 0 ? item.images[0] : null
 
@@ -112,7 +112,7 @@ export default async function Home() {
                 <a
                   key={item.id}
                   href={`/market/${item.id}`}
-                  className="min-w-[200px] flex-shrink-0 bg-white rounded-xl shadow-md overflow-hidden hover:shadow-lg transition"
+                  className="w-[200px] flex-shrink-0 lg:w-auto bg-white rounded-xl shadow-md overflow-hidden hover:shadow-lg transition"
                 >
                   {imageUrl ? (
                     <img src={imageUrl} alt={item.title} className="w-full h-40 object-cover" />
