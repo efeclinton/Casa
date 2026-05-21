@@ -1,7 +1,5 @@
 "use client"
 
-"use client"
-
 import Link from "next/link"
 
 interface PropertyCardProps {
@@ -28,9 +26,12 @@ export default function PropertyCard({
     "https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=1200&auto=format&fit=crop&q=80"
 
   return (
-    <Link href={`/property/${id}`} className="h-full">
+    <Link
+      href={`/property/${id}`}
+      className="block w-full sm:w-[320px] sm:min-w-[320px] sm:max-w-[320px] flex-shrink-0"
+    >
 
-      <div className="bg-white rounded-xl shadow overflow-hidden hover:shadow-lg transition cursor-pointer h-full flex flex-col">
+      <div className="bg-white rounded-xl shadow overflow-hidden hover:shadow-lg transition cursor-pointer h-full">
 
         <img
           src={image || fallbackImage}

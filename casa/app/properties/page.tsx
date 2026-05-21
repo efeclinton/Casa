@@ -68,7 +68,22 @@ export default async function PropertiesPage({
           className="border p-2.5 rounded-lg w-full text-sm sm:text-base"
         />
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        {/* POPULAR AREAS */}
+        <div className="flex flex-wrap gap-2 mb-4">
+          {["Hilltop", "Odenigwe", "Odim", "Behind Flat", "Town"].map((area) => (
+            <button
+              key={area}
+              type="submit"
+              name="location"
+              value={area}
+              className="px-3 py-1 rounded-full bg-gray-100 hover:bg-gray-200 text-sm transition"
+            >
+              {area}
+            </button>
+          ))}
+        </div>
+
+        <div className="flex gap-2">
           <input
             name="minPrice"
             type="number"
