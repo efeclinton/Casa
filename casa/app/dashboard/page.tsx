@@ -21,6 +21,7 @@ type MarketItem = {
   title: string;
   price: number;
   is_active: boolean;
+  images?: string[] | null;
 }
 
 export default function Dashboard() {
@@ -61,7 +62,7 @@ export default function Dashboard() {
           .single(),
         supabase
           .from("market_items")
-          .select("id,title,price,is_active")
+          .select("id,title,price,is_active,images")
           .eq("user_id", session.user.id)
           .order("created_at", { ascending: false })
       ])
@@ -358,26 +359,66 @@ const deleteMarketItem = async (item: MarketItem) => {
         {marketItems.length === 0 ? (
           <p className="text-gray-500">You haven&apos;t posted any market item yet.</p>
         ) : (
-          <div className="space-y-3">
-            {marketItems.map((item) => (
-              <div key={item.id} className="border rounded-lg p-4 flex items-center justify-between gap-4">
-                <div>
-                  <p className="font-semibold">{item.title}</p>
-                  <p className="text-sm text-gray-600">₦{Number(item.price).toLocaleString()}</p>
-                  <p className={`text-xs font-medium ${item.is_active ? "text-green-700" : "text-gray-500"}`}>
-                    {item.is_active ? "Active" : "Inactive"}
-                  </p>
-                </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {marketItems.map((item) => {
+              const imageUrl = item.images?.[0] || "https://via.placeholder.com/400x300?text=No+Image"
 
-                <div className="flex items-center gap-3 text-sm">
-                  <Link href={`/dashboard/post-item?edit=${item.id}`} className="text-blue-600">Edit</Link>
-                  <button onClick={() => deleteMarketItem(item)} className="text-red-600">Delete</button>
-                  <button onClick={() => toggleMarketItem(item)} className="text-indigo-600">
-                    {item.is_active ? "Deactivate" : "Activate"}
-                  </button>
-                </div>
-              </div>
-            ))}
+              return (
+                <Link key={item.id} href={`/market/${item.id}`} className="block w-full">
+                  <div className="bg-white rounded-xl shadow overflow-hidden hover:shadow-lg transition w-full">
+                    <img
+                      src={imageUrl}
+                      alt={item.title}
+                      className="w-full h-[220px] object-cover"
+                      onError={(event) => {
+                        event.currentTarget.src = "https://via.placeholder.com/400x300?text=No+Image"
+                      }}
+                    />
+
+                    <div className="p-4 flex flex-col min-h-[140px]">
+                      <p className="text-green-700 font-semibold text-lg">₦{Number(item.price).toLocaleString()}</p>
+                      <p className="font-semibold text-gray-900 line-clamp-2 mt-1">{item.title}</p>
+                      <p className={`text-xs font-medium mt-2 ${item.is_active ? "text-green-700" : "text-gray-500"}`}>
+                        {item.is_active ? "Active" : "Inactive"}
+                      </p>
+
+                      <div className="mt-auto pt-4 flex items-center gap-3 text-sm">
+                        <button
+                          type="button"
+                          onClick={(event) => {
+                            event.stopPropagation()
+                            router.push(`/dashboard/post-item?edit=${item.id}`)
+                          }}
+                          className="text-blue-600"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          type="button"
+                          onClick={(event) => {
+                            event.stopPropagation()
+                            deleteMarketItem(item)
+                          }}
+                          className="text-red-600"
+                        >
+                          Delete
+                        </button>
+                        <button
+                          type="button"
+                          onClick={(event) => {
+                            event.stopPropagation()
+                            toggleMarketItem(item)
+                          }}
+                          className="text-indigo-600"
+                        >
+                          {item.is_active ? "Deactivate" : "Activate"}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </Link>
+              )
+            })}
           </div>
         )}
       </section>
