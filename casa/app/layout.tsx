@@ -32,15 +32,13 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-<<<<<<< HEAD
-        className={`${geistSans.variable} ${geistMono.variable} antialiased overflow-x-hidden`}
-=======
         className={`${poppins.className} ${geistMono.variable} antialiased`}
->>>>>>> rollback-live
       >
         <div className="min-h-screen flex flex-col">
           <Navbar />
-          <main className="flex-1 w-full overflow-x-hidden">{children}</main>
+          <main className="flex-1 w-full overflow-x-hidden">
+            {children}
+          </main>
         </div>
       </body>
     </html>
