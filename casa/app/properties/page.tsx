@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { supabase } from "@/lib/supabaseClient";
 import PropertyCard from "@/components/PropertyCard";
 
@@ -71,15 +72,13 @@ export default async function PropertiesPage({
         {/* POPULAR AREAS */}
         <div className="flex flex-wrap gap-2 mb-4">
           {["Hilltop", "Odenigwe", "Odim", "Behind Flat", "Town"].map((area) => (
-            <button
+            <Link
               key={area}
-              type="submit"
-              name="location"
-              value={area}
+              href={`/properties?location=${encodeURIComponent(area)}`}
               className="px-3 py-1 rounded-full bg-gray-100 hover:bg-gray-200 text-sm transition"
             >
               {area}
-            </button>
+            </Link>
           ))}
         </div>
 
