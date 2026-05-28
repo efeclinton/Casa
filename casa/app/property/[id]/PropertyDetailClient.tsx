@@ -196,12 +196,6 @@ export default function PropertyPage({ propertyId, initialProperty = null }: Pro
     return () => window.clearTimeout(timeoutId)
   }, [showToast])
 
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      setCurrentUrl(window.location.href)
-    }
-  }, [])
-
   const authRedirect = () => {
     router.push(`/login?redirect=/property/${id}`)
   }
