@@ -1,3 +1,4 @@
+import type { Metadata } from "next"
 import Link from "next/link"
 import { supabase } from "../../lib/supabaseClient"
 
@@ -10,6 +11,26 @@ type MarketItem = {
   image?: string | null
   images?: string[] | null
 }
+
+export const metadata: Metadata = {
+  title: "Campus Market | CASA",
+  description:
+    "Browse verified campus market items for UNN students with secure seller profiles and transparent pricing.",
+  openGraph: {
+    title: "Campus Market | CASA",
+    description:
+      "Browse verified campus market items for UNN students with secure seller profiles and transparent pricing.",
+    url: "/market",
+    siteName: "CASA",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Campus Market | CASA",
+    description:
+      "Browse verified campus market items for UNN students with secure seller profiles and transparent pricing.",
+  },
+};
 
 export default async function MarketPage({
   searchParams,

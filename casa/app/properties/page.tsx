@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { supabase } from "@/lib/supabaseClient";
 import PropertyCard from "@/components/PropertyCard";
@@ -10,6 +11,26 @@ type Property = {
   location: string;
   rent_period: string;
 }
+
+export const metadata: Metadata = {
+  title: "All Properties | CASA",
+  description:
+    "Browse verified student accommodation listings near UNN with filters for location, price, and rent period.",
+  openGraph: {
+    title: "All Properties | CASA",
+    description:
+      "Browse verified student accommodation listings near UNN with filters for location, price, and rent period.",
+    url: "/properties",
+    siteName: "CASA",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "All Properties | CASA",
+    description:
+      "Browse verified student accommodation listings near UNN with filters for location, price, and rent period.",
+  },
+};
 
 export default async function PropertiesPage({
   searchParams,

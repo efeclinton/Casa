@@ -1,181 +1,70 @@
-"use client"
+import type { Metadata } from "next"
+import MarketItemDetailClient from "./MarketItemDetailClient"
+import { supabase } from "@/lib/supabaseClient"
 
-import { useEffect, useMemo, useState } from "react"
-import { useParams } from "next/navigation"
-import { supabase } from "../../../lib/supabaseClient"
-import Link from "next/link"
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://casa.example"
+const baseUrl = siteUrl.replace(/\/$/, "")
 
-type SellerProfile = {
-  id?: string
-  full_name?: string
-  email?: string
-  phone?: string
-  avatar_url?: string
+async function getMarketItemData(id: string) {
+  const { data, error } = await supabase
+    .from("market_items")
+    .select("id,title,description,price,location,images")
+    .eq("id", id)
+    .single()
+
+  if (error || !data) return null
+  return data
 }
 
-type MarketItem = {
-  id: string
-  user_id?: string | SellerProfile
-  profiles?: SellerProfile
-  images?: string[]
-  title: string
-  price: number
-  location?: string
-  description?: string
-}
-
-export default function MarketItemDetailPage() {
-  const params = useParams()
-  const id = params.id as string
-
-  const [item, setItem] = useState<MarketItem | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [rating, setRating] = useState<string | null>(null)
-
-  useEffect(() => {
-    const loadItem = async () => {
-      const { data } = await supabase
-        .from("market_items")
-        .select("*, profiles ( id, full_name, phone, avatar_url )")
-        .eq("id", id)
-        .single()
-
-      console.log(data)
-
-      setItem(data)
-      setLoading(false)
-    }
-
-    if (!id) return
-    loadItem()
-  }, [id])
-
-  useEffect(() => {
-    const fetchRating = async () => {
-      if (!item?.user_id) return
-
-      const agentId =
-        typeof item.user_id === "object"
-          ? item.user_id?.id
-          : item.user_id
-
-      const { data } = await supabase
-        .from("agent_ratings")
-        .select("rating")
-        .eq("agent_id", agentId)
-
-      if (data && data.length > 0) {
-        const avg =
-          data.reduce((sum, r) => sum + r.rating, 0) / data.length
-
-        setRating(avg.toFixed(1))
-      }
-    }
-
-    fetchRating()
-  }, [item?.user_id])
-
-  const imageUrl = useMemo(() => {
-    if (!item) return null
-    const images = item.images ?? []
-    return images.length > 0 ? images[0] : null
-  }, [item])
-
-  const handleContactSeller = () => {
-    if (!item) return
-
-    const phone = item.profiles?.phone
-
-    if (!phone) {
-      alert("Seller contact not available")
-      return
-    }
-
-    let phoneStr = String(phone)
-
-    if (phoneStr.startsWith("0")) {
-      phoneStr = "234" + phoneStr.slice(1)
-    }
-
-    const itemUrl = `${window.location.origin}/market/${item.id}`
-    const message = `Hi, I'm interested in your item "${item.title}" on Casa.\nHere is the link: ${itemUrl}`
-    const whatsappLink = `https://wa.me/${phoneStr}?text=${encodeURIComponent(message)}`
-    window.open(whatsappLink, "_blank")
-  }
-
-  if (loading) {
-    return <main className="w-full max-w-4xl mx-auto px-4 py-6 sm:py-8">Loading item...</main>
-  }
+export async function generateMetadata({ params }: { params: { id: string } }): Promise<Metadata> {
+  const item = await getMarketItemData(params.id)
 
   if (!item) {
-    return <main className="w-full max-w-4xl mx-auto px-4 py-6 sm:py-8">Item not found.</main>
+    return {
+      title: "Item not found | CASA",
+      description: "The requested market item could not be found.",
+    }
   }
 
-  const sellerId =
-    typeof item.user_id === "object"
-      ? item.user_id?.id
-      : item.user_id
+  const description =
+    item.description ||
+    `Verified campus market item available at ${item.location || "UNN"} for ₦${item.price.toLocaleString()}.`
 
-  return (
-    <main className="w-full max-w-4xl mx-auto px-4 py-6 sm:py-8 space-y-6">
-      <section className="grid grid-cols-1 gap-4">
-        {imageUrl ? (
-          <img
-            src={imageUrl}
-            alt={item.title}
-            className="w-full h-56 sm:h-64 object-cover rounded-lg border"
-          />
-        ) : (
-          <div className="w-full h-64 bg-gray-100 rounded-lg flex items-center justify-center text-gray-400">
-            No Image
-          </div>
-        )}
-      </section>
+  const imageUrl = Array.isArray(item.images) && item.images.length > 0
+    ? item.images[0]
+    : "/favicon-v2.png"
 
-      <section className="bg-white rounded-xl shadow p-4 sm:p-6 space-y-3">
-        <h1 className="text-lg sm:text-xl lg:text-2xl font-bold">{item.title}</h1>
-        <p className="text-lg sm:text-xl lg:text-2xl text-green-700 font-semibold">₦{Number(item.price).toLocaleString()}</p>
-        <p className="text-sm sm:text-base text-gray-600">{item.location}</p>
-        <p className="text-sm sm:text-base text-gray-800 leading-relaxed">{item.description}</p>
+  const resolvedImage = (() => {
+    try {
+      return new URL(imageUrl, baseUrl).toString()
+    } catch {
+      return imageUrl
+    }
+  })()
 
-        <div className="flex items-center gap-3 mt-4 flex-wrap">
-          {item.profiles?.avatar_url ? (
-            <img
-              src={item.profiles.avatar_url}
-              alt="Seller"
-              className="w-10 h-10 rounded-full object-cover"
-            />
-          ) : (
-            <div className="w-10 h-10 rounded-full bg-gray-300 flex items-center justify-center">
-              {item.profiles?.full_name?.charAt(0) || "U"}
-            </div>
-          )}
-          <div>
-            <p className="font-medium">
-              {item.profiles?.full_name || item.profiles?.email || "Seller"}
-            </p>
-            <p className="text-sm text-yellow-600">
-              ⭐ {rating || "No ratings yet"}
-            </p>
-            <p className="text-sm text-gray-500">Seller</p>
-          </div>
-        </div>
+  return {
+    title: `${item.title} | ₦${item.price.toLocaleString()} | CASA`,
+    description,
+    openGraph: {
+      title: `${item.title} | ₦${item.price.toLocaleString()} | CASA`,
+      description,
+      url: `${baseUrl}/market/${item.id}`,
+      images: [resolvedImage],
+      type: "website",
+      siteName: "CASA",
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: `${item.title} | ₦${item.price.toLocaleString()} | CASA`,
+      description,
+      images: [resolvedImage],
+    },
+    alternates: {
+      canonical: `${baseUrl}/market/${item.id}`,
+    },
+  }
+}
 
-        {sellerId && (
-          <Link href={`/agent/${sellerId}`}>
-            <button className="mt-3 w-full sm:w-auto px-3 py-2.5 min-h-10 border border-gray-300 text-gray-700 rounded hover:bg-gray-100 text-sm">
-              View Seller Profile
-            </button>
-          </Link>
-        )}
-
-        <button
-          onClick={handleContactSeller}
-          className="mt-4 w-full sm:w-auto px-5 py-3 min-h-10 bg-green-600 text-white rounded-lg hover:bg-green-700 transition"
-        >
-          Contact Seller
-        </button>
-      </section>
-    </main>
-  )
+export default function MarketItemPage({ params }: { params: { id: string } }) {
+  return <MarketItemDetailClient itemId={params.id} />
 }

@@ -1,3 +1,4 @@
+import type { Metadata } from "next"
 import HeroSection from "../components/HeroSection"
 import PropertyCard from "../components/PropertyCard"
 import Image from "next/image"
@@ -21,6 +22,34 @@ type MarketItem = {
   price: number
   location?: string
 }
+
+export const metadata: Metadata = {
+  title: "CASA | Verified student accommodation near UNN",
+  description:
+    "Discover verified student accommodation near UNN and the latest campus market items in one trusted platform.",
+  openGraph: {
+    title: "CASA | Verified student accommodation near UNN",
+    description:
+      "Discover verified student accommodation near UNN and the latest campus market items in one trusted platform.",
+    url: "/",
+    siteName: "CASA",
+    type: "website",
+    images: [
+      {
+        url: "/favicon-v2.png",
+        width: 1200,
+        height: 630,
+        alt: "CASA homepage",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "CASA | Verified student accommodation near UNN",
+    description:
+      "Discover verified student accommodation near UNN and the latest campus market items in one trusted platform.",
+  },
+};
 
 export default async function Home() {
 
@@ -49,7 +78,7 @@ export default async function Home() {
   }
 
   const { data: marketData, error: marketError } = await supabase
-    .from<MarketItem>("market_items")
+    .from("market_items")
     .select("id, images, title, price, location")
     .eq("is_active", true)
     .order("created_at", { ascending: false })
@@ -63,6 +92,7 @@ export default async function Home() {
 
   return (
     <main className="w-full overflow-x-hidden">
+      <h1 className="sr-only">CASA – verified student accommodation and campus market items near UNN</h1>
 
       
 
@@ -123,7 +153,7 @@ export default async function Home() {
         {marketItems.length > 0 ? (
           <div className="flex overflow-x-auto gap-4 pb-2 lg:grid lg:grid-cols-3 lg:gap-6 lg:overflow-visible scroll-smooth">
             {marketItems.map((item) => {
-              const imageUrl = item.images?.length > 0 ? item.images[0] : null
+              const imageUrl = item.images && item.images.length > 0 ? item.images[0] : null
 
               return (
                 <Link
