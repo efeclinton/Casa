@@ -22,6 +22,7 @@ type Property = {
   phone?: string
   owner_id?: string
   agent_id?: string
+  is_active?: boolean
 }
 
 type AgentProfile = {
@@ -41,6 +42,7 @@ export default function PropertyPage() {
   const [agentRating, setAgentRating] = useState<number>(0)
   const [agentReviewsCount, setAgentReviewsCount] = useState(0)
   const [loading, setLoading] = useState(true)
+  const [canViewListing, setCanViewListing] = useState(true)
   const [showTour, setShowTour] = useState(false)
   const [isSaved, setIsSaved] = useState(false)
   const [savedId, setSavedId] = useState<string | null>(null)
@@ -70,17 +72,34 @@ export default function PropertyPage() {
   useEffect(() => {
 
     const loadProperty = async () => {
-
-      const { data } = await supabase
+      const { data: propertyData, error: propertyError } = await supabase
         .from("properties")
         .select("*")
         .eq("id", id)
         .single()
 
-      setProperty(data)
+      if (propertyError || !propertyData) {
+        setProperty(null)
+        setCanViewListing(false)
+        setLoading(false)
+        return
+      }
+
+      setProperty(propertyData)
+
+      const { data: { user } } = await supabase.auth.getUser()
+      const isOwner = Boolean(user && (user.id === propertyData.owner_id || user.id === propertyData.agent_id))
+
+      if (propertyData.is_active === false && !isOwner) {
+        setCanViewListing(false)
+        setLoading(false)
+        return
+      }
+
+      setCanViewListing(true)
 
       // Fetch agent info and rating (listings owner_id is agent user id)
-      const agentId = data?.agent_id || data?.owner_id
+      const agentId = propertyData?.agent_id || propertyData?.owner_id
 
       if (agentId) {
         const [{ data: agentData }, { data: ratingData }] = await Promise.all([
@@ -393,6 +412,17 @@ export default function PropertyPage() {
         <h1 className="text-lg sm:text-xl font-semibold">
           Property not found
         </h1>
+      </main>
+    )
+  }
+
+  if (!canViewListing) {
+    return (
+      <main className="w-full max-w-6xl mx-auto px-4 py-6 sm:py-8">
+        <div className="bg-white rounded-xl shadow p-8 text-center">
+          <h1 className="text-xl sm:text-2xl font-semibold mb-3">Listing no longer available</h1>
+          <p className="text-gray-600">This property has been deactivated and is no longer visible to the public.</p>
+        </div>
       </main>
     )
   }

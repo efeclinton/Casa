@@ -31,6 +31,7 @@ export default async function PropertiesPage({
   let query = supabase
     .from("properties")
     .select("*")
+    .eq("is_active", true)
     .order("created_at", { ascending: false });
 
   if (location) {

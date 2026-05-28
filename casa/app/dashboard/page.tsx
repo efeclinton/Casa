@@ -359,6 +359,7 @@ const deleteMarketItem = async (item: MarketItem) => {
                         <button
                           type="button"
                           onClick={(event) => {
+                            event.preventDefault()
                             event.stopPropagation()
                             router.push(`/dashboard/post-item?edit=${item.id}`)
                           }}
@@ -369,6 +370,7 @@ const deleteMarketItem = async (item: MarketItem) => {
                         <button
                           type="button"
                           onClick={(event) => {
+                            event.preventDefault()
                             event.stopPropagation()
                             deleteMarketItem(item)
                           }}
@@ -379,6 +381,7 @@ const deleteMarketItem = async (item: MarketItem) => {
                         <button
                           type="button"
                           onClick={(event) => {
+                            event.preventDefault()
                             event.stopPropagation()
                             toggleMarketItem(item)
                           }}
