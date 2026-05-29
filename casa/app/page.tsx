@@ -13,6 +13,8 @@ type Property = {
   location: string
   rent_period: string
   is_active?: boolean
+  updated_at?: string | null
+  inquiry_count?: number | null
 }
 
 type MarketItem = {
@@ -65,9 +67,7 @@ export default async function Home() {
 
     const { data: fallbackProperties, error: fallbackError } = await supabase
       .from("properties")
-      .select("id,image,price,title,location,rent_period")
-      .eq("is_active", true)
-      .order("created_at", { ascending: false })
+      .select("id,image,price,title,location,rent_period,updated_at,inquiry_count")
       .limit(6)
 
     if (fallbackError) {
@@ -124,6 +124,8 @@ export default async function Home() {
                   title={property.title}
                   location={property.location}
                   rent_period={property.rent_period}
+                  updatedAt={property.updated_at}
+                  inquiryCount={property.inquiry_count ?? 0}
                   id={property.id}
                 />
               </div>

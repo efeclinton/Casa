@@ -16,6 +16,8 @@ type Property = {
   location: string;
   rent_period: string;
   is_active: boolean;
+  updated_at?: string | null;
+  inquiry_count?: number | null;
 }
 
 type MarketItem = {
@@ -204,6 +206,36 @@ const deleteMarketItem = async (item: MarketItem) => {
 
    }
 
+const renewListing = async (property: Property) => {
+  if (togglingId === property.id) return
+
+  setTogglingId(property.id)
+  const now = new Date().toISOString()
+
+  try {
+    const { error } = await supabase
+      .from("properties")
+      .update({ updated_at: now })
+      .eq("id", property.id)
+
+    if (error) {
+      console.log(error)
+      alert("Failed to renew listing")
+      return
+    }
+
+    setProperties((prev) =>
+      prev.map((p) =>
+        p.id === property.id ? { ...p, updated_at: now } : p
+      )
+    )
+
+    alert("Listing renewed")
+  } finally {
+    setTogglingId(null)
+  }
+}
+
   if (loading) {
     return <p className="w-full max-w-6xl mx-auto px-4 py-6 sm:py-8">Loading...</p>
   }
@@ -268,6 +300,8 @@ const deleteMarketItem = async (item: MarketItem) => {
                   title={property.title}
                   location={property.location}
                   rent_period={property.rent_period}
+                  updatedAt={property.updated_at}
+                  inquiryCount={property.inquiry_count ?? 0}
                   id={property.id}
                 />
 
@@ -298,6 +332,14 @@ const deleteMarketItem = async (item: MarketItem) => {
                       : property.is_active
                         ? "Deactivate Listing"
                         : "Activate Listing"}
+                  </button>
+
+                  <button
+                    onClick={() => renewListing(property)}
+                    disabled={togglingId === property.id}
+                    className="text-sm text-emerald-700 disabled:opacity-60 disabled:cursor-not-allowed"
+                  >
+                    {togglingId === property.id ? "Renewing..." : "Renew"}
                   </button>
 
                 </div>

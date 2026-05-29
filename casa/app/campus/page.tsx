@@ -16,6 +16,8 @@ type CampusProperty = {
   school?: string
   description?: string
   score?: number
+  updated_at?: string | null
+  inquiry_count?: number | null
 }
 
 export default function CampusPage() {
@@ -263,6 +265,8 @@ export default function CampusPage() {
                 title={property.title}
                 location={property.location}
                 rent_period={property.rent_period}
+                updatedAt={property.updated_at}
+                inquiryCount={property.inquiry_count ?? 0}
               />
             ))}
 

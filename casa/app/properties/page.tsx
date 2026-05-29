@@ -10,6 +10,8 @@ type Property = {
   title: string;
   location: string;
   rent_period: string;
+  updated_at?: string | null;
+  inquiry_count?: number | null;
 }
 
 export const metadata: Metadata = {
@@ -136,6 +138,8 @@ export default async function PropertiesPage({
             title={property.title}
             location={property.location}
             rent_period={property.rent_period}
+            updatedAt={property.updated_at}
+            inquiryCount={property.inquiry_count ?? 0}
             id={property.id}
           />
         ))}

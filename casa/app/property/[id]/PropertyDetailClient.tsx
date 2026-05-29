@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react"
 import { useParams, useRouter } from "next/navigation"
 import { supabase, getOptimizedAvatarUrl } from "../../../lib/supabaseClient"
+import { formatUpdatedAtFullDate } from "../../../lib/activity"
 import VirtualTour from "../../../components/VirtualTour"
 import Image from "next/image"
 import Head from "next/head"
@@ -23,6 +24,8 @@ type Property = {
   owner_id?: string
   agent_id?: string
   is_active?: boolean
+  updated_at?: string | null
+  inquiry_count?: number | null
 }
 
 type AgentProfile = {
@@ -34,6 +37,44 @@ type AgentProfile = {
 type PropertyDetailClientProps = {
   propertyId?: string
   initialProperty?: Property | null
+}
+
+const logSupabaseError = (message: string, error: unknown) => {
+  if (error && typeof error === "object") {
+    const supabaseError = error as {
+      code?: string
+      message?: string
+      details?: string | null
+      hint?: string | null
+    }
+
+    console.error(message, {
+      code: supabaseError.code,
+      message: supabaseError.message,
+      details: supabaseError.details,
+      hint: supabaseError.hint,
+    })
+    return
+  }
+
+  console.error(message, error)
+}
+
+const savePropertyInquiry = async (propertyId: string, userId: string) => {
+  try {
+    const { error: inquiryError } = await supabase
+      .from("property_inquiries")
+      .insert({
+        property_id: propertyId,
+        user_id: userId,
+      })
+
+    if (inquiryError) {
+      console.log(inquiryError)
+    }
+  } catch (inquiryError) {
+    console.log(inquiryError)
+  }
 }
 
 export default function PropertyPage({ propertyId, initialProperty = null }: PropertyDetailClientProps) {
@@ -95,6 +136,26 @@ export default function PropertyPage({ propertyId, initialProperty = null }: Pro
       const { data: { user } } = await supabase.auth.getUser()
       const isOwner = Boolean(user && (user.id === propertyData.owner_id || user.id === propertyData.agent_id))
 
+      if (user) {
+        const { data: savedListing, error: savedListingError } = await supabase
+          .from("saved_listings")
+          .select("id")
+          .eq("user_id", user.id)
+          .eq("property_id", id)
+          .single()
+
+        if (!savedListingError && savedListing) {
+          setIsSaved(true)
+          setSavedId(savedListing.id)
+        } else {
+          setIsSaved(false)
+          setSavedId(null)
+        }
+      } else {
+        setIsSaved(false)
+        setSavedId(null)
+      }
+
       if (propertyData.is_active === false && !isOwner) {
         setCanViewListing(false)
         setLoading(false)
@@ -141,32 +202,6 @@ export default function PropertyPage({ propertyId, initialProperty = null }: Pro
     loadProperty()
 
   }, [id, setAgentProfile, setAgentRating, setAgentReviewsCount, setLoading])
-
-  useEffect(() => {
-    const checkSaved = async () => {
-      if (!id) return
-
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) return
-
-      const { data, error } = await supabase
-        .from("saved_listings")
-        .select("id")
-        .eq("user_id", user.id)
-        .eq("property_id", id)
-        .single()
-
-      if (!error && data) {
-        setIsSaved(true)
-        setSavedId(data.id)
-      } else {
-        setIsSaved(false)
-        setSavedId(null)
-      }
-    }
-
-    checkSaved()
-  }, [id])
 
   useEffect(() => {
     if (!showGalleryModal) return
@@ -291,14 +326,18 @@ export default function PropertyPage({ propertyId, initialProperty = null }: Pro
       )
       const whatsappLink = `https://wa.me/${phone}?text=${whatsappMessage}`
 
-      // Track contact action
-      const { error: contactError } = await supabase
-        .from("agent_contacts")
-        .insert({ agent_id: property.owner_id, user_id: user.id })
-
-      if (contactError) {
-        console.error("Could not save contact record", contactError)
+      try {
+        const { error: contactError } = await supabase
+          .from("agent_contacts")
+          .insert({ agent_id: property.owner_id, user_id: user.id })
+        if (contactError) {
+          logSupabaseError("Could not save contact record", contactError)
+        }
+      } catch (error) {
+        logSupabaseError("Could not save contact record", error)
       }
+
+      void savePropertyInquiry(property.id, user.id)
 
       // Close modal and redirect
       setShowContactModal(false)
@@ -447,6 +486,18 @@ export default function PropertyPage({ propertyId, initialProperty = null }: Pro
   const shareDescription = `₦${property.price}/${property.rent_period || "year"} in ${property.location}`
   const shareUrl = typeof window !== "undefined" ? window.location.href : ""
 
+  const updatedFullDate = formatUpdatedAtFullDate(property.updated_at)
+  const inquiryCount = property.inquiry_count ?? 0
+  const inquiryCountLabel =
+    inquiryCount >= 100 ? "100+" :
+      inquiryCount >= 50 ? "50+" :
+        inquiryCount >= 25 ? "25+" :
+          inquiryCount >= 3 ? String(inquiryCount) :
+            null
+  const inquiryCountText = inquiryCountLabel
+    ? `${inquiryCountLabel} people have inquired about this accommodation`
+    : null
+
   return (
     <main className="w-full max-w-6xl mx-auto px-4 py-6 sm:py-8">
 
@@ -550,6 +601,18 @@ export default function PropertyPage({ propertyId, initialProperty = null }: Pro
         <p className="text-gray-500 mt-1">
           {property.location}
         </p>
+
+        {updatedFullDate && (
+          <p className="text-sm text-gray-500 mt-3">
+            Last updated: {updatedFullDate}
+          </p>
+        )}
+
+        {inquiryCountText && (
+          <p className="text-sm text-gray-500 mt-1">
+            {inquiryCountText}
+          </p>
+        )}
 
       </div>
 

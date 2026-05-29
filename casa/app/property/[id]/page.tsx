@@ -5,10 +5,14 @@ import { supabase } from "@/lib/supabaseClient"
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://casa.example"
 const baseUrl = siteUrl.replace(/\/$/, "")
 
+type PropertyPageParams = {
+  params: Promise<{ id: string }>
+}
+
 async function getPropertyData(id: string) {
   const { data, error } = await supabase
     .from("properties")
-    .select("id,title,price,rent_period,location,image,images,description,is_active")
+    .select("*")
     .eq("id", id)
     .single()
 
@@ -16,8 +20,9 @@ async function getPropertyData(id: string) {
   return data
 }
 
-export async function generateMetadata({ params }: { params: { id: string } }): Promise<Metadata> {
-  const property = await getPropertyData(params.id)
+export async function generateMetadata({ params }: PropertyPageParams): Promise<Metadata> {
+  const { id } = await params
+  const property = await getPropertyData(id)
 
   if (!property) {
     return {
@@ -26,9 +31,11 @@ export async function generateMetadata({ params }: { params: { id: string } }): 
     }
   }
 
-  const description =
-    property.description ||
-    `Verified accommodation at ${property.location || "UNN"} for ₦${property.price.toLocaleString()} ${property.rent_period || "per month"}.`
+  const priceText = `NGN ${property.price.toLocaleString()} ${property.rent_period || "per month"}`
+  const locationText = property.location || "UNN"
+  const description = property.description
+    ? `${priceText} in ${locationText}. ${property.description}`
+    : `Verified accommodation for ${priceText} in ${locationText}.`
 
   const imageUrl = Array.isArray(property.images) && property.images.length > 0
     ? property.images[0]
@@ -43,10 +50,10 @@ export async function generateMetadata({ params }: { params: { id: string } }): 
   })()
 
   return {
-    title: `${property.title} | ₦${property.price.toLocaleString()} | CASA`,
+    title: `${property.title} | CASA`,
     description,
     openGraph: {
-      title: `${property.title} | ₦${property.price.toLocaleString()} | CASA`,
+      title: `${property.title} | CASA`,
       description,
       url: `${baseUrl}/property/${property.id}`,
       images: [resolvedImage],
@@ -55,7 +62,7 @@ export async function generateMetadata({ params }: { params: { id: string } }): 
     },
     twitter: {
       card: "summary_large_image",
-      title: `${property.title} | ₦${property.price.toLocaleString()} | CASA`,
+      title: `${property.title} | CASA`,
       description,
       images: [resolvedImage],
     },
@@ -65,6 +72,9 @@ export async function generateMetadata({ params }: { params: { id: string } }): 
   }
 }
 
-export default function PropertyPage({ params }: { params: { id: string } }) {
-  return <PropertyDetailClient propertyId={params.id} />
+export default async function PropertyPage({ params }: PropertyPageParams) {
+  const { id } = await params
+  const property = await getPropertyData(id)
+
+  return <PropertyDetailClient propertyId={id} initialProperty={property} />
 }
