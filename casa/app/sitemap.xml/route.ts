@@ -10,7 +10,7 @@ export async function GET() {
       .from("properties")
       .select("id")
       .eq("is_active", true)
-      .order("created_at", { ascending: false }),
+      .order("updated_at", { ascending: false, nullsFirst: false }),
     supabase
       .from("market_items")
       .select("id")

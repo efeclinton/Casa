@@ -180,6 +180,7 @@ export default function EditProperty() {
       const { error } = await supabase
         .from("properties")
         .update({
+          updated_at: new Date().toISOString(),
           title,
           price: Number(price),
           location,

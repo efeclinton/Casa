@@ -4,6 +4,7 @@ import PropertyCard from "../components/PropertyCard"
 import Image from "next/image"
 import Link from "next/link"
 import { supabase } from "../lib/supabaseClient"
+import { getListingAgentId, loadVerificationStatuses } from "../lib/verification"
 
 type Property = {
   id: string
@@ -15,6 +16,8 @@ type Property = {
   is_active?: boolean
   updated_at?: string | null
   inquiry_count?: number | null
+  agent_id?: string | null
+  owner_id?: string | null
 }
 
 type MarketItem = {
@@ -67,7 +70,8 @@ export default async function Home() {
 
     const { data: fallbackProperties, error: fallbackError } = await supabase
       .from("properties")
-      .select("id,image,price,title,location,rent_period,updated_at,inquiry_count")
+      .select("id,image,price,title,location,rent_period,updated_at,inquiry_count,agent_id,owner_id")
+      .order("updated_at", { ascending: false, nullsFirst: false })
       .limit(6)
 
     if (fallbackError) {
@@ -76,6 +80,8 @@ export default async function Home() {
       properties = fallbackProperties
     }
   }
+
+  const verificationStatuses = await loadVerificationStatuses(properties || [])
 
   const { data: marketData, error: marketError } = await supabase
     .from("market_items")
@@ -126,6 +132,7 @@ export default async function Home() {
                   rent_period={property.rent_period}
                   updatedAt={property.updated_at}
                   inquiryCount={property.inquiry_count ?? 0}
+                  agentVerificationStatus={verificationStatuses[getListingAgentId(property) || ""]}
                   id={property.id}
                 />
               </div>

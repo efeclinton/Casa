@@ -4,7 +4,7 @@ type RankedProperty = {
   videos?: unknown[]
   description?: string
   title?: string
-  created_at?: string
+  updated_at?: string | null
   views?: number
   messages?: number
   avg_time_on_page?: number
@@ -46,10 +46,10 @@ export function getListingScore(property: RankedProperty) {
 
   /* ---------------- FRESHNESS ---------------- */
 
-  if (property.created_at) {
+  if (property.updated_at) {
 
     const daysOld =
-      (Date.now() - new Date(property.created_at).getTime())
+      (Date.now() - new Date(property.updated_at).getTime())
       / (1000 * 60 * 60 * 24)
 
     if (daysOld <= 3) score += 25

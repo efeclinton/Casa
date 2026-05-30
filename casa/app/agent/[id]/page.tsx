@@ -6,6 +6,7 @@ import { supabase, getOptimizedAvatarUrl } from "../../../lib/supabaseClient"
 import Image from "next/image"
 import Link from "next/link"
 import type { User } from "@supabase/supabase-js"
+import VerifiedAgentBadge from "../../../components/VerifiedAgentBadge"
 
 type AgentProfile = {
   id: string
@@ -13,6 +14,7 @@ type AgentProfile = {
   avatar_url?: string | null
   phone?: string
   phone_number?: string
+  verification_status?: string | null
 }
 
 type Listing = {
@@ -310,7 +312,15 @@ export default function AgentProfilePage() {
             />
           </div>
           <div>
-            <h1 className="text-3xl font-bold">{agent.full_name}</h1>
+            <div className="flex flex-wrap items-center gap-2">
+              <h1 className="text-3xl font-bold">{agent.full_name}</h1>
+              <VerifiedAgentBadge status={agent.verification_status} />
+            </div>
+            {agent.verification_status === "verified" && (
+              <p className="text-sm font-medium text-blue-700">
+                Identity confirmed by CASA
+              </p>
+            )}
             <p className="text-gray-500">Average Rating: {avgRating.toFixed(1)} / 5</p>
             <p className="text-gray-500">{totalReviews} review{totalReviews === 1 ? "" : "s"}</p>
             <button
@@ -333,7 +343,15 @@ export default function AgentProfilePage() {
               <Link key={item.id} href={`/property/${item.id}`} className="flex flex-col sm:flex-row gap-4 p-4 border rounded-lg hover:bg-gray-50">
                 <img src={item.image || "https://via.placeholder.com/120"} alt={item.title} className="w-24 h-24 object-cover rounded" />
                 <div>
-                  <h3 className="font-semibold">{item.title}</h3>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <h3 className="font-semibold">{item.title}</h3>
+                    <VerifiedAgentBadge status={agent.verification_status} />
+                  </div>
+                  {agent.verification_status === "verified" && (
+                    <p className="text-xs font-medium text-blue-700">
+                      Identity confirmed by CASA
+                    </p>
+                  )}
                   <p className="text-sm text-gray-600">{item.location}</p>
                   <p className="text-semibold">₦{item.price}</p>
                 </div>

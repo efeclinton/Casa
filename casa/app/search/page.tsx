@@ -1,5 +1,6 @@
 import { supabase } from "../../lib/supabaseClient"
 import PropertyCard from "../../components/PropertyCard"
+import { getListingAgentId, loadVerificationStatuses } from "../../lib/verification"
 
 type Property = {
   id: string;
@@ -10,6 +11,8 @@ type Property = {
   rent_period: string;
   updated_at?: string | null;
   inquiry_count?: number | null;
+  agent_id?: string | null;
+  owner_id?: string | null;
 }
 
 export default async function SearchPage({
@@ -30,7 +33,11 @@ export default async function SearchPage({
   const maxPrice = params?.maxPrice
   const rentPeriod = params?.rentPeriod
 
-  let query = supabase.from("properties").select("*").eq("is_active", true)
+  let query = supabase
+    .from("properties")
+    .select("*")
+    .eq("is_active", true)
+    .order("updated_at", { ascending: false, nullsFirst: false })
 
   if (location) {
     query = query.ilike("location", `%${location}%`)
@@ -51,6 +58,7 @@ export default async function SearchPage({
   const { data } = await query
 
   const properties: Property[] = data || []
+  const verificationStatuses = await loadVerificationStatuses(properties)
 
   return (
     <main>
@@ -77,6 +85,7 @@ export default async function SearchPage({
                 rent_period={property.rent_period}
                 updatedAt={property.updated_at}
                 inquiryCount={property.inquiry_count ?? 0}
+                agentVerificationStatus={verificationStatuses[getListingAgentId(property) || ""]}
                 id={property.id}
               />
             ))}

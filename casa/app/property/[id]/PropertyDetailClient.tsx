@@ -8,6 +8,7 @@ import VirtualTour from "../../../components/VirtualTour"
 import Image from "next/image"
 import Head from "next/head"
 import Link from "next/link"
+import VerifiedAgentBadge from "../../../components/VerifiedAgentBadge"
 
 type Property = {
   id: string
@@ -32,6 +33,7 @@ type AgentProfile = {
   id: string
   full_name: string
   avatar_url?: string | null
+  verification_status?: string | null
 }
 
 type PropertyDetailClientProps = {
@@ -171,7 +173,7 @@ export default function PropertyPage({ propertyId, initialProperty = null }: Pro
         const [{ data: agentData }, { data: ratingData }] = await Promise.all([
           supabase
             .from("profiles")
-            .select("id, full_name, avatar_url")
+            .select("id, full_name, avatar_url, verification_status")
             .eq("id", agentId)
             .single(),
           supabase
@@ -574,7 +576,15 @@ export default function PropertyPage({ propertyId, initialProperty = null }: Pro
               />
             </div>
             <div>
-              <h3 className="text-base sm:text-lg lg:text-xl font-bold">{agentProfile.full_name}</h3>
+              <div className="flex flex-wrap items-center gap-2">
+                <h3 className="text-base sm:text-lg lg:text-xl font-bold">{agentProfile.full_name}</h3>
+                <VerifiedAgentBadge status={agentProfile.verification_status} />
+              </div>
+              {agentProfile.verification_status === "verified" && (
+                <p className="mt-1 text-xs font-medium text-blue-700">
+                  Identity confirmed by CASA
+                </p>
+              )}
               <p className="text-sm text-gray-500">
                 ⭐ {agentReviewsCount > 0
                   ? `${agentRating.toFixed(1)} / 5 (${agentReviewsCount} reviews)`

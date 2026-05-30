@@ -228,6 +228,7 @@ export default function ListProperty() {
       .from("properties")
       .insert([
         {
+          updated_at: new Date().toISOString(),
           title,
           price: Number(price),
           location,

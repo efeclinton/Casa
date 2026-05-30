@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { supabase } from "@/lib/supabaseClient";
 import PropertyCard from "@/components/PropertyCard";
+import { getListingAgentId, loadVerificationStatuses } from "@/lib/verification";
 
 type Property = {
   id: string;
@@ -12,6 +13,8 @@ type Property = {
   rent_period: string;
   updated_at?: string | null;
   inquiry_count?: number | null;
+  agent_id?: string | null;
+  owner_id?: string | null;
 }
 
 export const metadata: Metadata = {
@@ -55,7 +58,7 @@ export default async function PropertiesPage({
     .from("properties")
     .select("*")
     .eq("is_active", true)
-    .order("created_at", { ascending: false });
+    .order("updated_at", { ascending: false, nullsFirst: false });
 
   if (location) {
     query = query.ilike("location", `%${location}%`);
@@ -78,6 +81,8 @@ export default async function PropertiesPage({
   if (error) {
     console.error(error);
   }
+
+  const verificationStatuses = await loadVerificationStatuses(properties || []);
 
   return (
     <div className="w-full max-w-6xl mx-auto px-4 py-6 sm:py-8">
@@ -140,6 +145,7 @@ export default async function PropertiesPage({
             rent_period={property.rent_period}
             updatedAt={property.updated_at}
             inquiryCount={property.inquiry_count ?? 0}
+            agentVerificationStatus={verificationStatuses[getListingAgentId(property) || ""]}
             id={property.id}
           />
         ))}

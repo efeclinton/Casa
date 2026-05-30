@@ -2,6 +2,7 @@
 
 import Link from "next/link"
 import { formatUpdatedAtLabel } from "@/lib/activity"
+import VerifiedAgentBadge from "./VerifiedAgentBadge"
 
 interface PropertyCardProps {
   image?: string
@@ -12,6 +13,7 @@ interface PropertyCardProps {
   id: string
   updatedAt?: string | null
   inquiryCount?: number
+  agentVerificationStatus?: string | null
 }
 
 export default function PropertyCard({
@@ -23,6 +25,7 @@ export default function PropertyCard({
   id,
   updatedAt,
   inquiryCount,
+  agentVerificationStatus,
 }: PropertyCardProps) {
   const formattedPrice = `₦${Math.round(price / 1000)}k / ${rent_period}`
 
@@ -55,7 +58,6 @@ export default function PropertyCard({
               <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-gray-500">
                 {updatedText && (
                   <span className="inline-flex items-center gap-1 rounded-full bg-gray-100 px-2 py-1">
-                    <span aria-hidden="true">🕒</span>
                     {updatedText}
                   </span>
                 )}
@@ -70,6 +72,12 @@ export default function PropertyCard({
             <h3 className="text-base sm:text-lg mt-3 line-clamp-2 min-h-[3rem]">{title}</h3>
 
             <p className="text-sm sm:text-base text-gray-500 line-clamp-2">{location}</p>
+
+            <VerifiedAgentBadge
+              status={agentVerificationStatus}
+              showDescription
+              className="mt-3"
+            />
           </div>
 
           <p className="text-green-600 text-sm font-medium mt-3">View details →</p>

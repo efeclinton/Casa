@@ -4,6 +4,7 @@ import { useEffect, useState } from "react"
 import { supabase } from "../../lib/supabaseClient"
 import PropertyCard from "../../components/PropertyCard"
 import { getListingScore } from "../../lib/ranking"
+import { getListingAgentId, loadVerificationStatuses } from "../../lib/verification"
 
 type CampusProperty = {
   id: string
@@ -18,12 +19,15 @@ type CampusProperty = {
   score?: number
   updated_at?: string | null
   inquiry_count?: number | null
+  agent_id?: string | null
+  owner_id?: string | null
 }
 
 export default function CampusPage() {
 
   const [properties, setProperties] = useState<CampusProperty[]>([])
   const [filtered, setFiltered] = useState<CampusProperty[]>([])
+  const [verificationStatuses, setVerificationStatuses] = useState<Record<string, string | null>>({})
 
   const [location, setLocation] = useState("")
   const [price, setPrice] = useState("")
@@ -44,6 +48,7 @@ export default function CampusPage() {
       .from("properties")
       .select("*")
       .eq("is_active", true)
+      .order("updated_at", { ascending: false, nullsFirst: false })
       // Only load campus listings (case-insensitive, allows "campus" or "Campus stay")
       .ilike("listing_type", "%campus%")
 
@@ -66,6 +71,7 @@ export default function CampusPage() {
 
     setProperties(ranked)
     setFiltered(ranked)
+    setVerificationStatuses(await loadVerificationStatuses(ranked))
   }
 
   useEffect(() => {
@@ -267,6 +273,7 @@ export default function CampusPage() {
                 rent_period={property.rent_period}
                 updatedAt={property.updated_at}
                 inquiryCount={property.inquiry_count ?? 0}
+                agentVerificationStatus={verificationStatuses[getListingAgentId(property) || ""]}
               />
             ))}
 

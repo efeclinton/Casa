@@ -5,6 +5,7 @@ import { useParams } from "next/navigation"
 import { supabase } from "../../../lib/supabaseClient"
 import Head from "next/head"
 import Link from "next/link"
+import VerifiedAgentBadge from "../../../components/VerifiedAgentBadge"
 
 type SellerProfile = {
   id?: string
@@ -12,6 +13,7 @@ type SellerProfile = {
   email?: string
   phone?: string
   avatar_url?: string
+  verification_status?: string | null
 }
 
 type MarketItem = {
@@ -41,7 +43,7 @@ export default function MarketItemDetailPage({ itemId }: MarketItemDetailClientP
     const loadItem = async () => {
       const { data } = await supabase
         .from("market_items")
-        .select("*, profiles ( id, full_name, phone, avatar_url )")
+        .select("*, profiles ( id, full_name, phone, avatar_url, verification_status )")
         .eq("id", id)
         .single()
 
@@ -184,9 +186,17 @@ export default function MarketItemDetailPage({ itemId }: MarketItemDetailClientP
             </div>
           )}
           <div>
-            <p className="font-medium">
-              {item.profiles?.full_name || item.profiles?.email || "Seller"}
-            </p>
+            <div className="flex flex-wrap items-center gap-2">
+              <p className="font-medium">
+                {item.profiles?.full_name || item.profiles?.email || "Seller"}
+              </p>
+              <VerifiedAgentBadge status={item.profiles?.verification_status} />
+            </div>
+            {item.profiles?.verification_status === "verified" && (
+              <p className="text-xs font-medium text-blue-700">
+                Identity confirmed by CASA
+              </p>
+            )}
             <p className="text-sm text-yellow-600">
               ⭐ {rating || "No ratings yet"}
             </p>

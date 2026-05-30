@@ -37,6 +37,7 @@ export default function Dashboard() {
   const [properties, setProperties] = useState<Property[]>([])
   const [marketItems, setMarketItems] = useState<MarketItem[]>([])
   const [isAgent, setIsAgent] = useState(false)
+  const [verificationStatus, setVerificationStatus] = useState<string | null>(null)
   const [currentUserId, setCurrentUserId] = useState("")
   const [filter, setFilter] = useState("all")
 
@@ -57,11 +58,12 @@ export default function Dashboard() {
         .from("properties")
         .select("*")
         .eq("owner_id", session.user.id)
+        .order("updated_at", { ascending: false, nullsFirst: false })
 
       const [{ data: profile }, { data: items }] = await Promise.all([
         supabase
           .from("profiles")
-          .select("role,agent_status")
+          .select("role,agent_status,verification_status")
           .eq("id", session.user.id)
           .single(),
         supabase
@@ -72,6 +74,7 @@ export default function Dashboard() {
       ])
 
       setIsAgent(profile?.role === "agent" || profile?.agent_status === "approved")
+      setVerificationStatus(profile?.verification_status || "pending")
       setMarketItems(items || [])
       setProperties(data || [])
       setLoading(false)
@@ -210,13 +213,11 @@ const renewListing = async (property: Property) => {
   if (togglingId === property.id) return
 
   setTogglingId(property.id)
-  const now = new Date().toISOString()
 
   try {
-    const { error } = await supabase
-      .from("properties")
-      .update({ updated_at: now })
-      .eq("id", property.id)
+    const { error } = await supabase.rpc("renew_property_listing", {
+      property_id: property.id,
+    })
 
     if (error) {
       console.log(error)
@@ -226,7 +227,7 @@ const renewListing = async (property: Property) => {
 
     setProperties((prev) =>
       prev.map((p) =>
-        p.id === property.id ? { ...p, updated_at: now } : p
+        p.id === property.id ? { ...p, updated_at: new Date().toISOString() } : p
       )
     )
 
@@ -302,6 +303,7 @@ const renewListing = async (property: Property) => {
                   rent_period={property.rent_period}
                   updatedAt={property.updated_at}
                   inquiryCount={property.inquiry_count ?? 0}
+                  agentVerificationStatus={verificationStatus}
                   id={property.id}
                 />
 
