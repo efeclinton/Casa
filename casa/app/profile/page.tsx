@@ -15,6 +15,7 @@ type Profile = {
   phone?: string
   avatar_url?: string
   agent_status?: string
+  verification_status?: string
 }
 
 export default function ProfilePage() {
@@ -103,6 +104,33 @@ export default function ProfilePage() {
     if (profile?.agent_status === "banned") return "Your account has been banned by admin."
     if (profile?.agent_status === "suspended") return "Your account is temporarily suspended."
     return ""
+  }
+
+  const shouldShowVerification =
+    profile?.agent_status && profile.agent_status !== "none"
+
+  const getVerificationContent = () => {
+    if (profile?.verification_status === "verified") {
+      return {
+        title: "Verified Agent",
+        description: "Identity confirmed by CASA",
+        className: "border-blue-200 bg-blue-50 text-blue-800",
+      }
+    }
+
+    if (profile?.verification_status === "rejected") {
+      return {
+        title: "Verification rejected",
+        description: "Please contact CASA support or update your verification details.",
+        className: "border-red-200 bg-red-50 text-red-800",
+      }
+    }
+
+    return {
+      title: "Verification pending",
+      description: "Your verification is under review.",
+      className: "border-amber-200 bg-amber-50 text-amber-800",
+    }
   }
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -366,6 +394,43 @@ export default function ProfilePage() {
           <p className="mt-4 text-lg text-gray-700">{getStatusMessage()}</p>
         )}
       </section>
+
+      {shouldShowVerification && (
+        <section className="mb-8 p-6 bg-white rounded-lg shadow">
+          <h2 className="text-2xl font-semibold mb-4">Verification</h2>
+          {(() => {
+            const verification = getVerificationContent()
+
+            return (
+              <div className={`rounded-xl border p-4 ${verification.className}`}>
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <p className="font-semibold">{verification.title}</p>
+                    <p className="mt-1 text-sm">{verification.description}</p>
+                  </div>
+                  {profile?.verification_status === "verified" && (
+                    <span className="inline-flex w-fit items-center gap-1.5 rounded-full border border-blue-200 bg-white px-3 py-1 text-xs font-semibold text-blue-700 shadow-sm">
+                      <svg
+                        viewBox="0 0 20 20"
+                        fill="currentColor"
+                        className="h-3.5 w-3.5"
+                        aria-hidden="true"
+                      >
+                        <path
+                          fillRule="evenodd"
+                          d="M16.704 5.29a1 1 0 0 1 .006 1.414l-7.5 7.57a1 1 0 0 1-1.42.003L3.29 9.72a1 1 0 1 1 1.42-1.406l3.79 3.836 6.79-6.854a1 1 0 0 1 1.414-.006Z"
+                          clipRule="evenodd"
+                        />
+                      </svg>
+                      Verified Agent
+                    </span>
+                  )}
+                </div>
+              </div>
+            )
+          })()}
+        </section>
+      )}
 
       {role === "Agent" && (
         <section className="mb-8 p-6 bg-white rounded-lg shadow">
