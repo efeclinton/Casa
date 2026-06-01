@@ -213,6 +213,7 @@ const renewListing = async (property: Property) => {
   if (togglingId === property.id) return
 
   setTogglingId(property.id)
+  const renewedAt = new Date().toISOString()
 
   try {
     const { error } = await supabase.rpc("renew_property_listing", {
@@ -227,7 +228,7 @@ const renewListing = async (property: Property) => {
 
     setProperties((prev) =>
       prev.map((p) =>
-        p.id === property.id ? { ...p, updated_at: new Date().toISOString() } : p
+        p.id === property.id ? { ...p, updated_at: renewedAt } : p
       )
     )
 

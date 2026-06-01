@@ -1,17 +1,6 @@
 import type { Metadata } from "next";
-import { Poppins, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import Navbar from "../components/Navbar";
-
-const poppins = Poppins({
-  subsets: ["latin"],
-  weight: ["400", "600", "700"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://casa.example";
 
@@ -58,9 +47,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body
-        className={`${poppins.className} ${geistMono.variable} antialiased`}
-      >
+      <body className="antialiased">
         <div className="min-h-screen flex flex-col">
           <Navbar />
           <main className="flex-1 w-full overflow-x-hidden">
