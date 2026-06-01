@@ -33,7 +33,8 @@ export default function ProfilePage() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [uploading, setUploading] = useState(false)
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
-  const [listingsCount, setListingsCount] = useState<number>(0)
+  const [propertyListingsCount, setPropertyListingsCount] = useState<number>(0)
+  const [marketItemsCount, setMarketItemsCount] = useState<number>(0)
 
   useEffect(() => {
     const fetchData = async () => {
@@ -58,12 +59,19 @@ export default function ProfilePage() {
 
       // Fetch listings count if user is an agent
       if (data?.agent_status !== "none") {
-        const { count } = await supabase
-          .from("properties")
-          .select("*", { count: "exact", head: true })
-          .eq("owner_id", user.id)
+        const [{ count: propertiesCount }, { count: marketCount }] = await Promise.all([
+          supabase
+            .from("properties")
+            .select("*", { count: "exact", head: true })
+            .or(`owner_id.eq.${user.id},agent_id.eq.${user.id}`),
+          supabase
+            .from("market_items")
+            .select("*", { count: "exact", head: true })
+            .eq("user_id", user.id),
+        ])
 
-        setListingsCount(count || 0)
+        setPropertyListingsCount(propertiesCount || 0)
+        setMarketItemsCount(marketCount || 0)
       }
 
       setLoading(false)
@@ -436,10 +444,19 @@ export default function ProfilePage() {
         <section className="mb-8 p-6 bg-white rounded-lg shadow">
           <h2 className="text-2xl font-semibold mb-4">My Listings</h2>
           <div className="space-y-4">
-            <p className="text-lg">
-              You have <span className="font-bold text-xl">{listingsCount}</span> {listingsCount === 1 ? 'listing' : 'listings'}
-            </p>
-            {listingsCount === 0 && (
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="rounded-xl border border-gray-100 bg-gray-50 p-4">
+                <p className="text-sm text-gray-500">Properties Listed</p>
+                <p className="mt-1 text-2xl font-bold text-gray-950">{propertyListingsCount}</p>
+              </div>
+
+              <div className="rounded-xl border border-gray-100 bg-gray-50 p-4">
+                <p className="text-sm text-gray-500">Market Items Listed</p>
+                <p className="mt-1 text-2xl font-bold text-gray-950">{marketItemsCount}</p>
+              </div>
+            </div>
+
+            {propertyListingsCount === 0 && marketItemsCount === 0 && (
               <p className="text-gray-600">You have no listings yet</p>
             )}
             <button

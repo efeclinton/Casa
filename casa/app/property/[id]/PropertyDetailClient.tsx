@@ -42,6 +42,16 @@ type PropertyDetailClientProps = {
   initialProperty?: Property | null
 }
 
+const fallbackPropertyImage =
+  "https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=1200&auto=format&fit=crop&q=80"
+
+const getGalleryImages = (property?: Property | null) => {
+  const images = Array.isArray(property?.images) ? property.images.filter(Boolean) : []
+  if (images.length > 0) return images
+  if (property?.image) return [property.image]
+  return [fallbackPropertyImage]
+}
+
 const logSupabaseError = (message: string, error: unknown) => {
   if (error && typeof error === "object") {
     const supabaseError = error as {
@@ -107,13 +117,13 @@ export default function PropertyPage({ propertyId, initialProperty = null }: Pro
   }, [])
 
   const handleNextImage = useCallback(() => {
-    const imgs = Array.isArray(property?.images) ? property.images : []
+    const imgs = getGalleryImages(property)
     if (imgs.length === 0) return
     setCurrentImageIndex((prev) => (prev + 1) % imgs.length)
   }, [property])
 
   const handlePrevImage = useCallback(() => {
-    const imgs = Array.isArray(property?.images) ? property.images : []
+    const imgs = getGalleryImages(property)
     if (imgs.length === 0) return
     setCurrentImageIndex((prev) => (prev - 1 + imgs.length) % imgs.length)
   }, [property])
@@ -493,7 +503,9 @@ export default function PropertyPage({ propertyId, initialProperty = null }: Pro
     phone = "234" + phone.slice(1)
   }
 
-  const images = Array.isArray(property.images) ? property.images : []
+  const images = getGalleryImages(property)
+  const hasMultipleImages = images.length > 1
+  const collageThumbnails = images.slice(1, 5)
   const videos = Array.isArray(property.videos) ? property.videos : []
   const tours = Array.isArray(property.tour_images) ? property.tour_images : []
   const shareImage = images[0] || property.image || ""
@@ -547,29 +559,64 @@ export default function PropertyPage({ propertyId, initialProperty = null }: Pro
 
       {/* Image Gallery */}
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+      <div
+        className={`grid gap-2 sm:gap-3 lg:gap-4 ${
+          hasMultipleImages
+            ? "grid-cols-1 lg:grid-cols-4 lg:grid-rows-2"
+            : "grid-cols-1"
+        }`}
+      >
 
-        <div className="sm:col-span-2 lg:col-span-2 row-span-2">
-          <div className="w-full h-64 sm:h-80 lg:h-[420px] overflow-hidden rounded-xl">
-            <img
-              src={images[0] || property.image}
-              alt="Main property image"
-              className="w-full h-full object-cover cursor-pointer hover:opacity-90 transition"
-              onClick={() => openGallery(0)}
-            />
-          </div>
-        </div>
+        <button
+          type="button"
+          onClick={() => openGallery(0)}
+          className={`group overflow-hidden rounded-2xl bg-gray-100 text-left shadow-sm ${
+            hasMultipleImages
+              ? "h-64 sm:h-80 lg:col-span-2 lg:row-span-2 lg:h-[430px]"
+              : "h-72 sm:h-96 lg:h-[520px]"
+          }`}
+        >
+          <img
+            src={images[0]}
+            alt="Main property image"
+            className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.02]"
+            onError={(event) => {
+              event.currentTarget.src = fallbackPropertyImage
+            }}
+          />
+        </button>
 
-        {images.slice(1,5).map((img: string, index: number) => (
-          <div key={index} className="w-full h-40 sm:h-44 lg:h-[200px] overflow-hidden rounded-lg">
-            <img
-              src={img}
-              alt={`Property image ${index + 2}`}
-              className="w-full h-full object-cover cursor-pointer hover:opacity-90 transition"
-              onClick={() => openGallery(index + 1)}
-            />
+        {hasMultipleImages && (
+          <div className="grid grid-cols-2 gap-2 sm:gap-3 lg:col-span-2 lg:row-span-2 lg:grid-cols-2 lg:grid-rows-2 lg:gap-4">
+            {collageThumbnails.map((img: string, index: number) => {
+              const galleryIndex = index + 1
+              const showOverlay = images.length > 5 && index === collageThumbnails.length - 1
+
+              return (
+                <button
+                  key={`${img}-${galleryIndex}`}
+                  type="button"
+                  onClick={() => openGallery(galleryIndex)}
+                  className="group relative h-28 overflow-hidden rounded-xl bg-gray-100 text-left shadow-sm sm:h-36 lg:h-full"
+                >
+                  <img
+                    src={img}
+                    alt={`Property image ${galleryIndex + 1}`}
+                    className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.03]"
+                    onError={(event) => {
+                      event.currentTarget.src = fallbackPropertyImage
+                    }}
+                  />
+                  {showOverlay && (
+                    <span className="absolute inset-0 flex items-center justify-center bg-black/55 px-3 text-center text-sm font-semibold text-white sm:text-base">
+                      View all photos
+                    </span>
+                  )}
+                </button>
+              )
+            })}
           </div>
-        ))}
+        )}
 
       </div>
 
