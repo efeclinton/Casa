@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react"
 import { supabase } from "../../lib/supabaseClient"
 import { useRouter } from "next/navigation"
+import { ensureProfileComplete } from "../../lib/profileCompletion"
 
 export default function ListProperty() {
 
@@ -50,6 +51,9 @@ export default function ListProperty() {
       if (!data.session) {
         router.push("/login")
       } else {
+        const complete = await ensureProfileComplete(data.session.user, router, "/list-property")
+        if (!complete) return
+
         const { data: profile } = await supabase
           .from("profiles")
           .select("agent_status")
@@ -115,9 +119,15 @@ export default function ListProperty() {
       return
     }
 
+    const complete = await ensureProfileComplete(user, router, "/list-property")
+    if (!complete) {
+      setIsSubmitting(false)
+      return
+    }
+
     const { data: profile, error: profileError } = await supabase
       .from("profiles")
-      .select("agent_status")
+      .select("agent_status, full_name, email, phone")
       .eq("id", user.id)
       .single()
 
@@ -138,11 +148,9 @@ export default function ListProperty() {
       return
     }
 
-    const ownerName =
-      `${user.user_metadata?.first_name || ""} ${user.user_metadata?.last_name || ""}`.trim()
-
-    const ownerEmail = user.email || ""
-    const ownerPhone = user.user_metadata?.phone || ""
+    const ownerName = profile.full_name || ""
+    const ownerEmail = profile.email || user.email || ""
+    const ownerPhone = profile.phone || ""
 
 
     /* IMAGE UPLOAD */

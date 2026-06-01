@@ -3,28 +3,31 @@
 import { useEffect } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { supabase } from "../../../lib/supabaseClient"
+import {
+  getCompletionPath,
+  getSafeRedirectPath,
+  isProfileComplete,
+  loadCurrentProfile,
+} from "../../../lib/profileCompletion"
 
 export default function AuthCallbackPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
 
   useEffect(() => {
-    const getSafeRedirectPath = () => {
-      const redirect = searchParams.get("redirect") || "/"
-      return redirect.startsWith("/") ? redirect : "/"
-    }
-
     const handleCallback = async () => {
       const { data: { session } } = await supabase.auth.getSession()
       if (session) {
-     const redirectPath = localStorage.getItem("redirectAfterLogin")
+        const redirectPath = getSafeRedirectPath(localStorage.getItem("redirectAfterLogin") || searchParams.get("redirect") || "/")
+        localStorage.removeItem("redirectAfterLogin")
+        const profile = await loadCurrentProfile(session.user)
 
-if (redirectPath) {
-  localStorage.removeItem("redirectAfterLogin")
-  router.replace(redirectPath)
-} else {
-  router.replace(getSafeRedirectPath())
-}
+        if (!isProfileComplete(profile, session.user)) {
+          router.replace(getCompletionPath(redirectPath))
+          return
+        }
+
+        router.replace(redirectPath)
       } else {
         router.replace("/login")
       }

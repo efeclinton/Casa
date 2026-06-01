@@ -9,6 +9,7 @@ import Image from "next/image"
 import Head from "next/head"
 import Link from "next/link"
 import VerifiedAgentBadge from "../../../components/VerifiedAgentBadge"
+import { ensureProfileComplete } from "../../../lib/profileCompletion"
 
 type Property = {
   id: string
@@ -266,6 +267,12 @@ export default function PropertyPage({ propertyId, initialProperty = null }: Pro
       return
     }
 
+    const complete = await ensureProfileComplete(user, router, `/property/${id}`)
+    if (!complete) {
+      setSaving(false)
+      return
+    }
+
     const { data, error } = await supabase
       .from("saved_listings")
       .insert({ user_id: user.id, property_id: id })
@@ -297,6 +304,8 @@ export default function PropertyPage({ propertyId, initialProperty = null }: Pro
         authRedirect()
         return
       }
+      const complete = await ensureProfileComplete(user, router, `/property/${id}`)
+      if (!complete) return
       // Show modal instead of directly contacting
       setShowContactModal(true)
     }
@@ -313,6 +322,9 @@ export default function PropertyPage({ propertyId, initialProperty = null }: Pro
         authRedirect()
         return
       }
+
+      const complete = await ensureProfileComplete(user, router, `/property/${id}`)
+      if (!complete) return
 
       if (!property) return
 

@@ -63,14 +63,19 @@ export default async function Home() {
   const { data: rpcProperties, error } = await supabase
     .rpc("get_featured_properties")
 
-  let properties = (rpcProperties || []).filter((property: Property) => property.is_active === true)
+  let properties = (rpcProperties || [])
+    .filter((property: Property) => property.is_active === true)
+    .sort((a: Property, b: Property) =>
+      new Date(b.updated_at || 0).getTime() - new Date(a.updated_at || 0).getTime()
+    )
 
   if (error) {
     console.error("Error loading featured properties:", error)
 
     const { data: fallbackProperties, error: fallbackError } = await supabase
       .from("properties")
-      .select("id,image,price,title,location,rent_period,updated_at,inquiry_count,agent_id,owner_id")
+      .select("id,image,price,title,location,rent_period,is_active,updated_at,inquiry_count,agent_id,owner_id")
+      .order("is_active", { ascending: false })
       .order("updated_at", { ascending: false, nullsFirst: false })
       .limit(6)
 

@@ -7,13 +7,13 @@ import Image from "next/image"
 import Link from "next/link"
 import type { User } from "@supabase/supabase-js"
 import VerifiedAgentBadge from "../../../components/VerifiedAgentBadge"
+import { ensureProfileComplete } from "../../../lib/profileCompletion"
 
 type AgentProfile = {
   id: string
   full_name?: string
   avatar_url?: string | null
   phone?: string
-  phone_number?: string
   verification_status?: string | null
 }
 
@@ -255,6 +255,9 @@ export default function AgentProfilePage() {
       return
     }
 
+    const complete = await ensureProfileComplete(user, router, `/agent/${agentId}`)
+    if (!complete) return
+
     setShowContactModal(true)
   }
 
@@ -266,9 +269,12 @@ export default function AgentProfilePage() {
       return
     }
 
+    const complete = await ensureProfileComplete(user, router, `/agent/${agentId}`)
+    if (!complete) return
+
     if (!agent) return
 
-    let phone = agent?.phone_number ? String(agent.phone_number) : String(agent?.phone || "")
+    let phone = String(agent?.phone || "")
     if (!phone) return
 
     if (phone.startsWith("0")) {

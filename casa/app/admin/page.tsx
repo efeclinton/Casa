@@ -233,6 +233,7 @@ export default function AdminPage() {
     const { data, error } = await supabase
       .from("properties")
       .select("*")
+      .order("is_active", { ascending: false })
       .order("updated_at", { ascending: false, nullsFirst: false })
 
     if (error) {

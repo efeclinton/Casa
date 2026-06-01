@@ -1,11 +1,12 @@
 "use client"
 
 import { useEffect, useMemo, useState } from "react"
-import { useParams } from "next/navigation"
+import { useParams, useRouter } from "next/navigation"
 import { supabase } from "../../../lib/supabaseClient"
 import Head from "next/head"
 import Link from "next/link"
 import VerifiedAgentBadge from "../../../components/VerifiedAgentBadge"
+import { ensureProfileComplete } from "../../../lib/profileCompletion"
 
 type SellerProfile = {
   id?: string
@@ -33,6 +34,7 @@ type MarketItemDetailClientProps = {
 
 export default function MarketItemDetailPage({ itemId }: MarketItemDetailClientProps) {
   const params = useParams()
+  const router = useRouter()
   const id = itemId || (params.id as string)
 
   const [item, setItem] = useState<MarketItem | null>(null)
@@ -87,8 +89,18 @@ export default function MarketItemDetailPage({ itemId }: MarketItemDetailClientP
     return images.length > 0 ? images[0] : null
   }, [item])
 
-  const handleContactSeller = () => {
+  const handleContactSeller = async () => {
     if (!item) return
+
+    const { data: { user } } = await supabase.auth.getUser()
+
+    if (!user) {
+      router.push(`/login?redirect=/market/${item.id}`)
+      return
+    }
+
+    const complete = await ensureProfileComplete(user, router, `/market/${item.id}`)
+    if (!complete) return
 
     const phone = item.profiles?.phone
 

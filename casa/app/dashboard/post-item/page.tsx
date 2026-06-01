@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { supabase } from "../../../lib/supabaseClient"
+import { ensureProfileComplete } from "../../../lib/profileCompletion"
 
 export default function PostItemPage() {
   const router = useRouter()
@@ -30,6 +31,9 @@ export default function PostItemPage() {
         router.push("/login")
         return
       }
+
+      const complete = await ensureProfileComplete(user, router, `/dashboard/post-item${editId ? `?edit=${editId}` : ""}`)
+      if (!complete) return
 
       setUserId(user.id)
 
@@ -77,6 +81,19 @@ export default function PostItemPage() {
     if (!isAgent || !userId) return
 
     setSaving(true)
+
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) {
+      router.push("/login?redirect=/dashboard/post-item")
+      setSaving(false)
+      return
+    }
+
+    const complete = await ensureProfileComplete(user, router, `/dashboard/post-item${editId ? `?edit=${editId}` : ""}`)
+    if (!complete) {
+      setSaving(false)
+      return
+    }
 
     const shouldReplaceImages = images.length > 0
     const uploadedUrls = shouldReplaceImages ? [] : [...existingImages]
@@ -133,8 +150,7 @@ export default function PostItemPage() {
         return
       }
     } else {
-      const user = await supabase.auth.getUser()
-      const currentUserId = user.data.user?.id
+      const currentUserId = user.id
 
       if (!currentUserId) {
         alert("You must be logged in")

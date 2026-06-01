@@ -2,17 +2,17 @@
 
 import { useState, useEffect } from "react"
 import { supabase, getOptimizedAvatarUrl } from "../../lib/supabaseClient"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import Image from "next/image"
 import Link from "next/link"
 import type { User } from "@supabase/supabase-js"
+import { getProfileEmail, getSafeRedirectPath } from "../../lib/profileCompletion"
 
 type Profile = {
   id?: string
   full_name?: string
   email?: string
   phone?: string
-  phone_number?: string
   avatar_url?: string
   agent_status?: string
 }
@@ -20,6 +20,8 @@ type Profile = {
 export default function ProfilePage() {
 
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const redirect = getSafeRedirectPath(searchParams.get("redirect"))
   const [user, setUser] = useState<User | null>(null)
   const [profile, setProfile] = useState<Profile | null>(null)
   const [loading, setLoading] = useState(true)
@@ -51,7 +53,7 @@ export default function ProfilePage() {
 
       setProfile(data)
       setFullNameInput(data?.full_name || "")
-      setPhoneNumberInput(data?.phone_number || data?.phone || "")
+      setPhoneNumberInput(data?.phone || "")
 
       // Fetch listings count if user is an agent
       if (data?.agent_status !== "none") {
@@ -164,13 +166,13 @@ export default function ProfilePage() {
 
   const startEditingProfile = () => {
     setFullNameInput(profile?.full_name || "")
-    setPhoneNumberInput(profile?.phone_number || profile?.phone || "")
+    setPhoneNumberInput(profile?.phone || "")
     setIsEditing(true)
   }
 
   const cancelEditingProfile = () => {
     setFullNameInput(profile?.full_name || "")
-    setPhoneNumberInput(profile?.phone_number || profile?.phone || "")
+    setPhoneNumberInput(profile?.phone || "")
     setIsEditing(false)
   }
 
@@ -185,11 +187,22 @@ export default function ProfilePage() {
     }
 
     const full_name = fullNameInput.trim()
-    const phone_number = phoneNumberInput.trim()
+    const phone = phoneNumberInput.trim()
+    const email = getProfileEmail(profile, currentUser)
+
+    if (!full_name || !phone || !email) {
+      alert("Please provide your full name, phone number, and email.")
+      setSavingProfile(false)
+      return
+    }
 
     const { error } = await supabase
       .from("profiles")
-      .update({ full_name, phone_number })
+      .update({
+        full_name,
+        phone,
+        email,
+      })
       .eq("id", currentUser.id)
 
     if (error) {
@@ -201,14 +214,16 @@ export default function ProfilePage() {
     setProfile((prev) => ({
       ...prev,
       full_name,
-      phone_number
+      phone,
+      email,
     }))
     setIsEditing(false)
     setSavingProfile(false)
     alert("Profile updated successfully")
+    if (redirect !== "/") router.push(redirect)
   }
 
-  const isProfileIncomplete = !profile?.full_name || !(profile?.phone_number || profile?.phone)
+  const isProfileIncomplete = !profile?.full_name || !profile?.phone || !getProfileEmail(profile, user)
   const profileActionText = isProfileIncomplete ? "Complete Profile" : "Edit Profile"
   const userDisplayName =
     `${user?.user_metadata?.first_name || ""} ${user?.user_metadata?.last_name || ""}`.trim() || "User"
@@ -216,6 +231,13 @@ export default function ProfilePage() {
   return (
     <main className="max-w-2xl mx-auto px-4 py-6 sm:p-10">
       <h1 className="text-3xl font-bold mb-6">Profile</h1>
+
+      {isProfileIncomplete && (
+        <div className="mb-6 rounded-xl border border-amber-200 bg-amber-50 p-4 text-amber-800">
+          <p className="font-semibold">Complete your profile to continue using CASA.</p>
+          <p className="mt-1 text-sm">Full name, phone number, and email are required.</p>
+        </div>
+      )}
 
       <section className="mb-8 p-6 bg-white rounded-lg shadow">
         <h2 className="text-2xl font-semibold mb-4">Profile Info</h2>
@@ -274,7 +296,7 @@ export default function ProfilePage() {
                     placeholder="Enter full name"
                   />
                 </div>
-                <p><strong>Email:</strong> {user?.email}</p>
+                <p><strong>Email:</strong> {getProfileEmail(profile, user)}</p>
                 <div>
                   <strong>Phone Number:</strong>
                   <input
@@ -305,8 +327,8 @@ export default function ProfilePage() {
             ) : (
               <>
                 <p><strong>Full Name:</strong> {profile?.full_name || "Not provided"}</p>
-                <p><strong>Email:</strong> {user?.email}</p>
-                <p><strong>Phone Number:</strong> {(profile?.phone_number || profile?.phone) || "Not provided"}</p>
+                <p><strong>Email:</strong> {getProfileEmail(profile, user) || "Not provided"}</p>
+                <p><strong>Phone Number:</strong> {profile?.phone || "Not provided"}</p>
                 <button
                   onClick={startEditingProfile}
                   className="mt-2 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"

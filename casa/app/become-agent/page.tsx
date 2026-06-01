@@ -1,9 +1,12 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
+import { useRouter } from "next/navigation"
 import { supabase } from "../../lib/supabaseClient"
+import { ensureProfileComplete, getProfileEmail, getProfilePhone } from "../../lib/profileCompletion"
 
 export default function BecomeAgentPage() {
+  const router = useRouter()
 
   const [loading, setLoading] = useState(false)
 
@@ -20,6 +23,35 @@ export default function BecomeAgentPage() {
 
   const [govId, setGovId] = useState<File | null>(null)
   const [selfie, setSelfie] = useState<File | null>(null)
+
+  useEffect(() => {
+    const initialize = async () => {
+      const { data: { user } } = await supabase.auth.getUser()
+
+      if (!user) {
+        router.push("/login?redirect=/become-agent")
+        return
+      }
+
+      const complete = await ensureProfileComplete(user, router, "/become-agent")
+      if (!complete) return
+
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("full_name, email, phone")
+        .eq("id", user.id)
+        .single()
+
+      setForm((prev) => ({
+        ...prev,
+        full_name: profile?.full_name || prev.full_name,
+        phone: getProfilePhone(profile) || prev.phone,
+        email: getProfileEmail(profile, user) || prev.email,
+      }))
+    }
+
+    void initialize()
+  }, [router])
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setForm({ ...form, [e.target.name]: e.target.value })
@@ -56,12 +88,22 @@ export default function BecomeAgentPage() {
       return
     }
 
+    const complete = await ensureProfileComplete(user.user, router, "/become-agent")
+    if (!complete) {
+      setLoading(false)
+      return
+    }
+
     // Check if profile has avatar_url
     const { data: profile } = await supabase
       .from("profiles")
-      .select("avatar_url")
+      .select("avatar_url, full_name, email, phone")
       .eq("id", user.user.id)
       .single()
+
+    const profileFullName = profile?.full_name || form.full_name.trim()
+    const profilePhone = getProfilePhone(profile) || form.phone.trim()
+    const profileEmail = getProfileEmail(profile, user.user) || form.email.trim()
 
     if (!profile?.avatar_url) {
       alert("Please upload a profile photo before applying as an agent")
@@ -97,6 +139,9 @@ export default function BecomeAgentPage() {
       .insert({
         user_id: user.user.id,
         ...form,
+        full_name: profileFullName,
+        phone: profilePhone,
+        email: profileEmail,
         government_id_url: uploadedGovPath,
         selfie_with_id_url: uploadedSelfiePath
       })

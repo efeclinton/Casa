@@ -4,6 +4,7 @@ import { useState } from "react"
 import { supabase } from "@/lib/supabaseClient"
 import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
+import { getCompletionPath, isProfileComplete, loadCurrentProfile } from "@/lib/profileCompletion"
 
 export default function LoginPage() {
 
@@ -21,7 +22,7 @@ export default function LoginPage() {
   const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
 
-    const { error } = await supabase.auth.signInWithPassword({
+    const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password
     })
@@ -31,7 +32,18 @@ export default function LoginPage() {
       return
     }
 
-    router.push(getSafeRedirectPath())
+    const redirectPath = getSafeRedirectPath()
+    const user = data.user
+
+    if (user) {
+      const profile = await loadCurrentProfile(user)
+      if (!isProfileComplete(profile, user)) {
+        router.push(getCompletionPath(redirectPath))
+        return
+      }
+    }
+
+    router.push(redirectPath)
   }
 
   const handleGoogleLogin = async () => {

@@ -22,7 +22,11 @@ export default function SignupPage() {
 
     if (loading) return
 
-    if (!fullName || !phone || !email || !password) {
+    const nextFullName = fullName.trim()
+    const nextPhone = phone.trim()
+    const nextEmail = email.trim()
+
+    if (!nextFullName || !nextPhone || !nextEmail || !password) {
       alert("Please fill in all required fields")
       return
     }
@@ -32,8 +36,14 @@ export default function SignupPage() {
     setLoading(true)
 
     const { data, error } = await supabase.auth.signUp({
-      email,
-      password
+      email: nextEmail,
+      password,
+      options: {
+        data: {
+          full_name: nextFullName,
+          phone: nextPhone,
+        },
+      },
     })
 
     if (error) {
@@ -55,12 +65,12 @@ export default function SignupPage() {
       const { error: profileError } = await supabase
         .from('profiles')
         .upsert([{
-          id: user.id,
-          full_name: fullName,
-          phone: phone,
-          email: email,
-          agent_status: 'none'
-        }], { onConflict: 'id' })
+        id: user.id,
+        full_name: nextFullName,
+        phone: nextPhone,
+        email: nextEmail,
+        agent_status: 'none'
+      }], { onConflict: 'id' })
 
       if (profileError) {
         console.log("PROFILE ERROR:", profileError)
@@ -94,6 +104,7 @@ export default function SignupPage() {
           value={fullName}
           onChange={(e) => setFullName(e.target.value)}
           className="w-full border p-3 rounded"
+          required
         />
 
         <input
@@ -102,6 +113,7 @@ export default function SignupPage() {
           value={phone}
           onChange={(e) => setPhone(e.target.value)}
           className="w-full border p-3 rounded"
+          required
         />
 
         <input
@@ -110,6 +122,7 @@ export default function SignupPage() {
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           className="w-full border p-3 rounded"
+          required
         />
 
         <input
@@ -118,6 +131,7 @@ export default function SignupPage() {
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           className="w-full border p-3 rounded"
+          required
         />
 
         <button

@@ -58,6 +58,7 @@ export default function Dashboard() {
         .from("properties")
         .select("*")
         .eq("owner_id", session.user.id)
+        .order("is_active", { ascending: false })
         .order("updated_at", { ascending: false, nullsFirst: false })
 
       const [{ data: profile }, { data: items }] = await Promise.all([
