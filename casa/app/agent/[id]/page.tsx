@@ -25,6 +25,15 @@ type Listing = {
   image?: string
 }
 
+type MarketItem = {
+  id: string
+  title?: string
+  price?: number
+  location?: string
+  images?: string[] | null
+  is_active?: boolean | null
+}
+
 type ReviewProfile = {
   id: string
   full_name?: string
@@ -44,6 +53,16 @@ type RatingRow = {
   rating?: number
 }
 
+const fallbackListingImage = "https://via.placeholder.com/480x320?text=No+Image"
+
+const formatPrice = (price?: number) =>
+  typeof price === "number" ? `NGN ${Number(price).toLocaleString()}` : "Price not set"
+
+const getMarketItemImage = (item: MarketItem) => {
+  if (Array.isArray(item.images) && item.images.length > 0) return item.images[0]
+  return fallbackListingImage
+}
+
 export default function AgentProfilePage() {
   const params = useParams()
   const router = useRouter()
@@ -52,6 +71,7 @@ export default function AgentProfilePage() {
   const [agent, setAgent] = useState<AgentProfile | null>(null)
   const [loading, setLoading] = useState(true)
   const [listings, setListings] = useState<Listing[]>([])
+  const [marketItems, setMarketItems] = useState<MarketItem[]>([])
   const [avgRating, setAvgRating] = useState(0)
   const [totalReviews, setTotalReviews] = useState(0)
   const [reviews, setReviews] = useState<Review[]>([])
@@ -84,15 +104,21 @@ export default function AgentProfilePage() {
 
       setAgent(agentData)
 
-      const [{ data: propertiesData }, { data: ratingsData }, { data: reviewsData }] = await Promise.all([
+      const [{ data: propertiesData }, { data: marketItemsData }, { data: ratingsData }, { data: reviewsData }] = await Promise.all([
         supabase
           .from("properties")
           .select("id,title,price,location,image")
           .eq("agent_id", agentId)
           .eq("is_active", true),
         supabase
+          .from("market_items")
+          .select("id,title,price,location,images,is_active")
+          .eq("user_id", agentId)
+          .order("created_at", { ascending: false }),
+        supabase
           .from("agent_ratings")
-          .select("rating"),
+          .select("rating")
+          .eq("agent_id", agentId),
         supabase
           .from("agent_ratings")
           .select("id, rating, comment, created_at, user_id")
@@ -103,13 +129,13 @@ export default function AgentProfilePage() {
       const { data: authData } = await supabase.auth.getUser()
 
       setListings(propertiesData || [])
+      setMarketItems((marketItemsData || []).filter((item: MarketItem) => item.is_active !== false))
 
       const currentUser = authData?.user ?? null
       setUser(currentUser)
 
       const reviewList = reviewsData || []
-
-      const userIds = Array.from(new Set(reviewList.map((r: Review) => r.user_id).filter(Boolean)))
+      const userIds = Array.from(new Set(reviewList.map((review: Review) => review.user_id).filter(Boolean)))
       const profileMap: Record<string, ReviewProfile> = {}
 
       if (userIds.length > 0) {
@@ -118,21 +144,21 @@ export default function AgentProfilePage() {
           .select("id, full_name, avatar_url")
           .in("id", userIds)
 
-        ;(profilesData || []).forEach((p: ReviewProfile) => {
-          profileMap[p.id] = p
+        ;(profilesData || []).forEach((profile: ReviewProfile) => {
+          profileMap[profile.id] = profile
         })
       }
 
-      const reviewsWithUser = reviewList.map((r: Review) => ({
-        ...r,
-        profile: profileMap[r.user_id]
+      const reviewsWithUser = reviewList.map((review: Review) => ({
+        ...review,
+        profile: profileMap[review.user_id],
       }))
 
       setReviews(reviewsWithUser)
 
       const ratingValues = ratingsData || []
       if (ratingValues.length > 0) {
-        const sum = (ratingValues as RatingRow[]).reduce((acc, x) => acc + (x.rating || 0), 0)
+        const sum = (ratingValues as RatingRow[]).reduce((acc, item) => acc + (item.rating || 0), 0)
         setAvgRating(Number((sum / ratingValues.length).toFixed(1)))
         setTotalReviews(ratingValues.length)
       } else {
@@ -150,7 +176,7 @@ export default function AgentProfilePage() {
 
         setHasContacted(!!contactResult.data)
 
-        const existingReview = reviewsWithUser.find((r) => r.user_id === currentUser.id)
+        const existingReview = reviewsWithUser.find((review) => review.user_id === currentUser.id)
         if (existingReview) {
           setUserReview(existingReview)
           setRating(existingReview.rating)
@@ -161,7 +187,7 @@ export default function AgentProfilePage() {
       setLoading(false)
     }
 
-    load()
+    void load()
   }, [agentId])
 
   const submitReview = async () => {
@@ -210,7 +236,7 @@ export default function AgentProfilePage() {
         .eq("agent_id", agentId)
         .order("created_at", { ascending: false })
 
-      const reviewUserIds = Array.from(new Set((newReviews || []).map((r: Review) => r.user_id).filter(Boolean)))
+      const reviewUserIds = Array.from(new Set((newReviews || []).map((review: Review) => review.user_id).filter(Boolean)))
       const refreshedProfileMap: Record<string, ReviewProfile> = {}
 
       if (reviewUserIds.length > 0) {
@@ -219,21 +245,21 @@ export default function AgentProfilePage() {
           .select("id, full_name, avatar_url")
           .in("id", reviewUserIds)
 
-        ;(refreshedProfiles || []).forEach((p: ReviewProfile) => {
-          refreshedProfileMap[p.id] = p
+        ;(refreshedProfiles || []).forEach((profile: ReviewProfile) => {
+          refreshedProfileMap[profile.id] = profile
         })
       }
 
-      const reviewsWithUser = (newReviews || []).map((r: Review) => ({
-        ...r,
-        profile: refreshedProfileMap[r.user_id]
+      const reviewsWithUser = (newReviews || []).map((review: Review) => ({
+        ...review,
+        profile: refreshedProfileMap[review.user_id],
       }))
 
       setReviews(reviewsWithUser)
 
       const ratingValues = newReviews || []
       if (ratingValues.length > 0) {
-        const sum = (ratingValues as RatingRow[]).reduce((acc, x) => acc + (x.rating || 0), 0)
+        const sum = (ratingValues as RatingRow[]).reduce((acc, item) => acc + (item.rating || 0), 0)
         setAvgRating(Number((sum / ratingValues.length).toFixed(1)))
         setTotalReviews(ratingValues.length)
       }
@@ -274,7 +300,7 @@ export default function AgentProfilePage() {
 
     if (!agent) return
 
-    let phone = String(agent?.phone || "")
+    let phone = String(agent.phone || "")
     if (!phone) return
 
     if (phone.startsWith("0")) {
@@ -299,58 +325,87 @@ export default function AgentProfilePage() {
     window.open(whatsappLink, "_blank")
   }
 
-  if (loading) return (<main className="px-4 py-6 sm:p-10">Loading agent...</main>)
-  if (!agent) return (<main className="px-4 py-6 sm:p-10">Agent not found</main>)
+  if (loading) return <main className="px-4 py-6 sm:p-10">Loading agent...</main>
+  if (!agent) return <main className="px-4 py-6 sm:p-10">Agent not found</main>
 
   return (
-    <main className="max-w-5xl mx-auto px-4 py-6 sm:p-10 space-y-6">
-      <section className="p-6 bg-white rounded-lg shadow">
-        <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-          <div className="relative w-24 h-24">
-            <Image
-              src={getOptimizedAvatarUrl(agent.avatar_url || null, agent.full_name || "Agent")}
-              alt={`${agent.full_name || "Agent"} avatar`}
-              width={96}
-              height={96}
-              className="rounded-full object-cover"
-              placeholder="blur"
-              blurDataURL="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iOTYiIGhlaWdodD0iOTYiIHZpZXdCb3g9IjAgMCA5NiA5NiIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGNpcmNsZSBjeD0iNDgiIGN5PSI0OCIgcj0iNDgiIGZpbGw9IiNFNUU3RUIiLz4KPHN2ZyB4PSIzNiIgeT0iMzYiIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9IiM5Q0E0QUYiIHN0cm9rZS13aWR0aD0iMS41Ij4KPHBhdGggZD0iTTEyIDJDMTMuMSAyIDE0IDIuOSAxNCA0QzE0IDUuMSAxMy4xIDYgMTIgNkMxMC45IDYgMTAgNS4xIDEwIDRDMTAgMi45IDEwLjkgMiAxMiAyWk0xMiAxNEM5LjggMTQgOCA5LjggOCA3QzggNS4yIDkuMiA0IDEyIDRDMTQuOCA0IDE2IDUuMiAxNiA3QzE2IDkuOCAxNC44IDE0IDEyIDE0WiIvPgo8L3N2Zz4KPC9zdmc+"
-            />
-          </div>
-          <div>
-            <div className="flex flex-wrap items-center gap-2">
-              <h1 className="text-3xl font-bold">{agent.full_name}</h1>
-              <VerifiedAgentBadge status={agent.verification_status} />
+    <main className="max-w-6xl mx-auto px-4 py-6 sm:p-10 space-y-6">
+      <section className="overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm">
+        <div className="border-b border-gray-100 bg-gradient-to-r from-green-50 via-white to-blue-50 px-5 py-6 sm:px-8">
+          <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+              <div className="relative h-24 w-24 flex-shrink-0">
+                <Image
+                  src={getOptimizedAvatarUrl(agent.avatar_url || null, agent.full_name || "Agent")}
+                  alt={`${agent.full_name || "Agent"} avatar`}
+                  width={96}
+                  height={96}
+                  className="rounded-full object-cover"
+                  placeholder="blur"
+                  blurDataURL="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iOTYiIGhlaWdodD0iOTYiIHZpZXdCb3g9IjAgMCA5NiA5NiIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGNpcmNsZSBjeD0iNDgiIGN5PSI0OCIgcj0iNDgiIGZpbGw9IiNFNUU3RUIiLz4KPHN2ZyB4PSIzNiIgeT0iMzYiIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9IiM5Q0E0QUYiIHN0cm9rZS13aWR0aD0iMS41Ij4KPHBhdGggZD0iTTEyIDJDMTMuMSAyIDE0IDIuOSAxNCA0QzE0IDUuMSAxMy4xIDYgMTIgNkMxMC45IDYgMTAgNS4xIDEwIDRDMTAgMi45IDEwLjkgMiAxMiAyWk0xMiAxNEM5LjggMTQgOCA5LjggOCA3QzggNS4yIDkuMiA0IDEyIDRDMTQuOCA0IDE2IDUuMiAxNiA3QzE2IDkuOCAxNC44IDE0IDEyIDE0WiIvPgo8L3N2Zz4KPC9zdmc+"
+                />
+              </div>
+              <div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <h1 className="text-3xl font-bold tracking-tight text-gray-950">{agent.full_name || "Agent"}</h1>
+                  <VerifiedAgentBadge status={agent.verification_status} />
+                </div>
+                {agent.verification_status === "verified" && (
+                  <p className="mt-1 text-sm font-medium text-blue-700">
+                    Identity confirmed by CASA
+                  </p>
+                )}
+                <div className="mt-3 flex flex-wrap gap-2 text-sm text-gray-600">
+                  <span className="rounded-full bg-white px-3 py-1 font-semibold shadow-sm">
+                    {avgRating.toFixed(1)} / 5 rating
+                  </span>
+                  <span className="rounded-full bg-white px-3 py-1 font-semibold shadow-sm">
+                    {totalReviews} review{totalReviews === 1 ? "" : "s"}
+                  </span>
+                </div>
+              </div>
             </div>
-            {agent.verification_status === "verified" && (
-              <p className="text-sm font-medium text-blue-700">
-                Identity confirmed by CASA
-              </p>
-            )}
-            <p className="text-gray-500">Average Rating: {avgRating.toFixed(1)} / 5</p>
-            <p className="text-gray-500">{totalReviews} review{totalReviews === 1 ? "" : "s"}</p>
             <button
               onClick={handleContactClick}
-              className="mt-3 px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
+              className="inline-flex min-h-11 items-center justify-center rounded-xl bg-green-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-green-700"
             >
               Contact Agent
             </button>
           </div>
         </div>
+        <div className="grid gap-3 p-5 sm:grid-cols-3 sm:p-6">
+          <div className="rounded-xl border border-gray-100 bg-gray-50 p-4">
+            <p className="text-sm text-gray-500">Properties</p>
+            <p className="mt-1 text-2xl font-bold text-gray-950">{listings.length}</p>
+          </div>
+          <div className="rounded-xl border border-gray-100 bg-gray-50 p-4">
+            <p className="text-sm text-gray-500">Market Items</p>
+            <p className="mt-1 text-2xl font-bold text-gray-950">{marketItems.length}</p>
+          </div>
+          <div className="rounded-xl border border-gray-100 bg-gray-50 p-4">
+            <p className="text-sm text-gray-500">Rating</p>
+            <p className="mt-1 text-2xl font-bold text-gray-950">{avgRating.toFixed(1)}</p>
+          </div>
+        </div>
       </section>
 
-      <section className="p-6 bg-white rounded-lg shadow">
-        <h2 className="text-2xl font-semibold mb-4">Listings by this agent</h2>
+      <section className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm sm:p-6">
+        <div className="mb-4">
+          <h2 className="text-2xl font-semibold text-gray-950">Property Listings ({listings.length})</h2>
+          <p className="text-sm text-gray-500">Homes and accommodation listed by this agent.</p>
+        </div>
         {listings.length === 0 ? (
-          <p className="text-gray-500">This agent has no listings yet</p>
+          <div className="rounded-xl border border-dashed border-gray-200 bg-gray-50 p-6 text-center text-gray-500">
+            No property listings yet.
+          </div>
         ) : (
-          <div className="space-y-4">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {listings.map((item) => (
-              <Link key={item.id} href={`/property/${item.id}`} className="flex flex-col sm:flex-row gap-4 p-4 border rounded-lg hover:bg-gray-50">
-                <img src={item.image || "https://via.placeholder.com/120"} alt={item.title} className="w-24 h-24 object-cover rounded" />
-                <div>
+              <Link key={item.id} href={`/property/${item.id}`} className="overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
+                <img src={item.image || fallbackListingImage} alt={item.title || "Property listing"} className="h-44 w-full object-cover" />
+                <div className="p-4">
                   <div className="flex flex-wrap items-center gap-2">
-                    <h3 className="font-semibold">{item.title}</h3>
+                    <h3 className="line-clamp-2 font-semibold text-gray-950">{item.title || "Untitled property"}</h3>
                     <VerifiedAgentBadge status={agent.verification_status} />
                   </div>
                   {agent.verification_status === "verified" && (
@@ -358,8 +413,40 @@ export default function AgentProfilePage() {
                       Identity confirmed by CASA
                     </p>
                   )}
-                  <p className="text-sm text-gray-600">{item.location}</p>
-                  <p className="text-semibold">₦{item.price}</p>
+                  <p className="mt-2 line-clamp-2 text-sm text-gray-600">{item.location || "Location not provided"}</p>
+                  <p className="mt-3 font-semibold text-green-700">{formatPrice(item.price)}</p>
+                </div>
+              </Link>
+            ))}
+          </div>
+        )}
+      </section>
+
+      <section className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm sm:p-6">
+        <div className="mb-4">
+          <h2 className="text-2xl font-semibold text-gray-950">Marketplace Items ({marketItems.length})</h2>
+          <p className="text-sm text-gray-500">Campus market items posted by this agent.</p>
+        </div>
+        {marketItems.length === 0 ? (
+          <div className="rounded-xl border border-dashed border-gray-200 bg-gray-50 p-6 text-center text-gray-500">
+            No marketplace items listed yet.
+          </div>
+        ) : (
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {marketItems.map((item) => (
+              <Link key={item.id} href={`/market/${item.id}`} className="overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
+                <img src={getMarketItemImage(item)} alt={item.title || "Marketplace item"} className="h-44 w-full object-cover" />
+                <div className="p-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <h3 className="line-clamp-2 font-semibold text-gray-950">{item.title || "Untitled item"}</h3>
+                    {item.is_active !== undefined && (
+                      <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${item.is_active === false ? "bg-gray-100 text-gray-600" : "bg-green-50 text-green-700"}`}>
+                        {item.is_active === false ? "Inactive" : "Active"}
+                      </span>
+                    )}
+                  </div>
+                  <p className="mt-2 line-clamp-2 text-sm text-gray-600">{item.location || "Location not provided"}</p>
+                  <p className="mt-3 font-semibold text-green-700">{formatPrice(item.price)}</p>
                 </div>
               </Link>
             ))}
@@ -374,7 +461,7 @@ export default function AgentProfilePage() {
         >
           <div
             className="bg-white rounded-lg shadow-lg max-w-md w-full p-6"
-            onClick={(e) => e.stopPropagation()}
+            onClick={(event) => event.stopPropagation()}
           >
             <h2 className="text-xl font-bold text-gray-900 mb-4">
               Before you contact the agent
@@ -384,11 +471,11 @@ export default function AgentProfilePage() {
               <p>Please take a moment to stay safe:</p>
               <ul className="space-y-2 ml-4">
                 <li className="flex gap-2">
-                  <span className="text-green-600 font-bold">•</span>
+                  <span className="text-green-600 font-bold">*</span>
                   <span>Do not send money directly to any agent. Payments should only be made to the landlord or caretaker after proper verification.</span>
                 </li>
                 <li className="flex gap-2">
-                  <span className="text-green-600 font-bold">•</span>
+                  <span className="text-green-600 font-bold">*</span>
                   <span>Speak to people living in the property to confirm details before making any decision.</span>
                 </li>
               </ul>
@@ -412,32 +499,37 @@ export default function AgentProfilePage() {
         </div>
       )}
 
-      <section className="p-6 bg-white rounded-lg shadow">
-        <h2 className="text-2xl font-semibold mb-4">Reviews</h2>
-
+      <section className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm sm:p-6">
         <div className="mb-4">
+          <h2 className="text-2xl font-semibold text-gray-950">Reviews</h2>
+          <p className="text-sm text-gray-500">Ratings from users who have contacted this agent.</p>
+        </div>
+
+        <div className="mb-5">
           {!user ? (
-            <button onClick={() => router.push('/login')} className="px-4 py-2 bg-blue-500 text-white rounded">Login to leave a review</button>
+            <button onClick={() => router.push("/login")} className="rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700">
+              Login to leave a review
+            </button>
           ) : (
-            <div className="space-y-2 p-4 border rounded-lg">
-              <div className="flex items-center gap-2">
+            <div className="space-y-3 rounded-xl border border-gray-100 bg-gray-50 p-4">
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
                 <label className="font-medium">Rating</label>
-                <select value={rating} onChange={(e) => setRating(Number(e.target.value))} className="border rounded p-1">
-                  {[1,2,3,4,5].map(n => <option key={n} value={n}>{n}</option>)}
+                <select value={rating} onChange={(event) => setRating(Number(event.target.value))} className="rounded-lg border border-gray-200 bg-white p-2">
+                  {[1, 2, 3, 4, 5].map((value) => <option key={value} value={value}>{value}</option>)}
                 </select>
               </div>
 
               <textarea
                 value={comment}
-                onChange={(e) => setComment(e.target.value)}
-                className="w-full border p-2 rounded"
+                onChange={(event) => setComment(event.target.value)}
+                className="min-h-28 w-full rounded-lg border border-gray-200 bg-white p-3"
                 placeholder="Write your review"
               />
 
               <button
                 onClick={submitReview}
                 disabled={submitting}
-                className="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 disabled:opacity-50"
+                className="rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700 disabled:opacity-50"
               >
                 {userReview ? "Update Review" : "Submit Review"}
               </button>
@@ -446,11 +538,13 @@ export default function AgentProfilePage() {
         </div>
 
         {reviews.length === 0 ? (
-          <p className="text-gray-500">No reviews yet</p>
+          <div className="rounded-xl border border-dashed border-gray-200 bg-gray-50 p-6 text-center text-gray-500">
+            No reviews yet.
+          </div>
         ) : (
           <div className="space-y-3">
             {reviews.map((review) => (
-              <div key={review.id} className="border px-4 py-3 rounded-lg">
+              <div key={review.id} className="rounded-xl border border-gray-100 bg-white px-4 py-3 shadow-sm">
                 <div className="flex items-start justify-between gap-3 mb-2">
                   <div className="flex items-start gap-3 flex-1 min-w-0">
                     <img
@@ -470,7 +564,7 @@ export default function AgentProfilePage() {
 
                   <span className="font-semibold whitespace-nowrap self-start md:self-auto md:whitespace-normal">Rating: {review.rating} / 5</span>
                 </div>
-                <p>{review.comment}</p>
+                <p className="text-gray-700">{review.comment}</p>
               </div>
             ))}
           </div>
