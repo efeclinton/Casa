@@ -49,6 +49,20 @@ type Agent = {
   reviewCount?: number
 }
 
+type UserProfile = {
+  id: string
+  full_name?: string | null
+  email?: string | null
+  phone?: string | null
+  role?: string | null
+  status?: string | null
+  agent_status?: string | null
+  verification_status?: VerificationStatus | null
+  last_login?: string | null
+  last_sign_in_at?: string | null
+  login_count?: number | null
+}
+
 type FlaggedListing = {
   property_id: string
   user_id?: string
@@ -77,6 +91,13 @@ const statusClass = (status?: string | null) => {
 
 const formatCurrency = (price?: number, period?: string) =>
   `₦${Math.round((price || 0) / 1000)}k${period ? ` / ${period}` : ""}`
+
+const formatDate = (value?: string | null) => {
+  if (!value) return "Not available"
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return "Not available"
+  return date.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })
+}
 
 function CheckIcon() {
   return (
@@ -127,6 +148,10 @@ export default function AdminPage() {
   const router = useRouter()
 
   const [query, setQuery] = useState("")
+  const [allProfiles, setAllProfiles] = useState<UserProfile[]>([])
+  const [normalUsers, setNormalUsers] = useState<UserProfile[]>([])
+  const [userQuery, setUserQuery] = useState("")
+  const [userFilter, setUserFilter] = useState<"all" | "active" | "missing" | "pending" | "approved" | "rejected">("all")
   const [properties, setProperties] = useState<Property[]>([])
   const [applications, setApplications] = useState<AgentApplication[]>([])
   const [agents, setAgents] = useState<Agent[]>([])
@@ -186,6 +211,7 @@ export default function AdminPage() {
 
     alert("Agent approved")
     void loadApplications()
+    void loadUserManagement()
     void loadAllAgents()
   }
 
@@ -199,6 +225,7 @@ export default function AdminPage() {
     await supabase.from("agent_applications").update({ status: "rejected" }).eq("id", app.id)
 
     alert("Agent rejected")
+    void loadUserManagement()
     void loadApplications()
   }
 
@@ -285,13 +312,29 @@ export default function AdminPage() {
     })
   }
 
+  const loadUserManagement = async () => {
+    const { data, error } = await supabase
+      .from("profiles")
+      .select("*")
+      .order("full_name", { ascending: true, nullsFirst: false })
+
+    if (error) {
+      alert("Failed to load users: " + error.message)
+      return
+    }
+
+    const profiles = (data || []) as UserProfile[]
+    setAllProfiles(profiles)
+    setNormalUsers(profiles.filter((profile) => profile.role === "user"))
+  }
+
   const loadAllAgents = async () => {
     setLoadingAgents(true)
 
     const { data, error } = await supabase
       .from("profiles")
       .select("*")
-      .eq("role", "agent")
+      .or("role.eq.agent,agent_status.eq.approved")
 
     if (error) {
       alert("Failed to load agents: " + error.message)
@@ -357,6 +400,7 @@ export default function AdminPage() {
     }
 
     alert(`Agent ${status}`)
+    void loadUserManagement()
     void loadAllAgents()
   }
 
@@ -371,9 +415,9 @@ export default function AdminPage() {
 
     try {
       const [{ data: nameMatches }, { data: emailMatches }, { data: phoneMatches }] = await Promise.all([
-        supabase.from("profiles").select("*").eq("role", "agent").ilike("full_name", `%${term}%`),
-        supabase.from("profiles").select("*").eq("role", "agent").ilike("email", `%${term}%`),
-        supabase.from("profiles").select("*").eq("role", "agent").ilike("phone", `%${term}%`),
+        supabase.from("profiles").select("*").or("role.eq.agent,agent_status.eq.approved").ilike("full_name", `%${term}%`),
+        supabase.from("profiles").select("*").or("role.eq.agent,agent_status.eq.approved").ilike("email", `%${term}%`),
+        supabase.from("profiles").select("*").or("role.eq.agent,agent_status.eq.approved").ilike("phone", `%${term}%`),
       ])
 
       const combined = [...(nameMatches || []), ...(emailMatches || []), ...(phoneMatches || [])]
@@ -419,6 +463,7 @@ export default function AdminPage() {
     setAgents((prev) => prev.map((item) => item.id === agent.id ? { ...item, verification_status: status } : item))
     if (selectedAgent?.id === agent.id) setSelectedAgent({ ...selectedAgent, verification_status: status })
     setVerificationMap((prev) => ({ ...prev, [agent.id]: status }))
+    void loadUserManagement()
     setConfirmChange(null)
   }
 
@@ -504,6 +549,7 @@ export default function AdminPage() {
       }
 
       setCheckingAdmin(false)
+      void loadUserManagement()
       void loadApplications()
       void loadAllListings("all")
       void loadAllAgents()
@@ -524,11 +570,35 @@ export default function AdminPage() {
     })
   }, [agents, minRating, verificationFilter])
 
+  const filteredUsers = useMemo(() => {
+    const term = userQuery.trim().toLowerCase()
+
+    return normalUsers.filter((user) => {
+      const missingProfile = !user.full_name
+      const matchesQuery =
+        !term ||
+        (user.full_name || "").toLowerCase().includes(term) ||
+        (user.email || "").toLowerCase().includes(term) ||
+        (user.phone || "").toLowerCase().includes(term)
+      const matchesFilter =
+        userFilter === "all" ||
+        (userFilter === "active" && user.status === "active") ||
+        (userFilter === "missing" && missingProfile) ||
+        (userFilter === "pending" && user.agent_status === "pending") ||
+        (userFilter === "approved" && user.agent_status === "approved") ||
+        (userFilter === "rejected" && user.agent_status === "rejected")
+
+      return matchesQuery && matchesFilter
+    })
+  }, [normalUsers, userFilter, userQuery])
+
   const metrics = [
-    { label: "Agents", value: agents.length },
-    { label: "Pending applications", value: applications.length },
-    { label: "Listings", value: properties.length },
-    { label: "Flagged", value: flagged.length },
+    { label: "Total Users", value: allProfiles.length },
+    { label: "Normal Users", value: allProfiles.filter((profile) => profile.role === "user").length },
+    { label: "Agents", value: allProfiles.filter((profile) => profile.role === "agent" || profile.agent_status === "approved").length },
+    { label: "Admins", value: allProfiles.filter((profile) => profile.role === "admin").length },
+    { label: "Active Users", value: allProfiles.filter((profile) => profile.status === "active" || profile.agent_status === "approved").length },
+    { label: "Pending Verification", value: allProfiles.filter((profile) => (profile.verification_status || "pending") === "pending").length },
   ]
 
   if (checkingAdmin) {
@@ -549,7 +619,7 @@ export default function AdminPage() {
             </div>
           </div>
 
-          <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
             {metrics.map((metric) => (
               <div key={metric.label} className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
                 <p className="text-sm text-slate-500">{metric.label}</p>
@@ -598,6 +668,78 @@ export default function AdminPage() {
               </div>
             </section>
           )}
+
+          <section className="rounded-3xl bg-white p-5 shadow-sm ring-1 ring-slate-200/80 sm:p-6">
+            <SectionHeader title="Users" description="View normal CASA users, profile completeness, and account signals." />
+
+            <div className="mb-5 grid gap-3 lg:grid-cols-[1fr_auto]">
+              <input
+                type="text"
+                placeholder="Search users by name, email, or phone"
+                value={userQuery}
+                onChange={(event) => setUserQuery(event.target.value)}
+                className="min-h-11 rounded-xl border border-slate-200 bg-white px-4 text-sm outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100"
+              />
+              <select
+                value={userFilter}
+                onChange={(event) => setUserFilter(event.target.value as typeof userFilter)}
+                className="min-h-11 rounded-xl border border-slate-200 bg-white px-4 text-sm outline-none focus:border-emerald-500"
+              >
+                <option value="all">All users</option>
+                <option value="active">Active users</option>
+                <option value="missing">Missing profile info</option>
+                <option value="pending">Pending application</option>
+                <option value="approved">Approved application</option>
+                <option value="rejected">Rejected application</option>
+              </select>
+            </div>
+
+            {filteredUsers.length === 0 ? (
+              <p className="rounded-2xl bg-slate-50 p-4 text-sm text-slate-500">No users match this view.</p>
+            ) : (
+              <div className="grid gap-4">
+                {filteredUsers.map((user) => {
+                  const isMissingProfile = !user.full_name
+                  const lastLogin = user.last_login || user.last_sign_in_at
+
+                  return (
+                    <div key={user.id} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition hover:shadow-md sm:p-5">
+                      <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
+                        <div className="min-w-0">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <p className="text-lg font-semibold">{user.full_name || "No name"}</p>
+                            <Badge className={statusClass(user.status)}>{user.status || "unknown"}</Badge>
+                            <Badge className={statusClass(user.agent_status)}>{user.agent_status || "none"}</Badge>
+                            <VerificationBadge status={user.verification_status} />
+                          </div>
+                          <div className="mt-2 grid gap-1 text-sm text-slate-500 sm:grid-cols-2">
+                            <p className="truncate">{user.email || "No email on file"}</p>
+                            <p>{user.phone || "No phone on file"}</p>
+                          </div>
+                          {isMissingProfile && (
+                            <div className="mt-3 inline-flex rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm font-semibold text-amber-800">
+                              Missing profile information
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="grid gap-3 text-sm sm:grid-cols-2 xl:min-w-[320px]">
+                          <div className="rounded-xl bg-slate-50 p-3">
+                            <p className="text-slate-500">Last login</p>
+                            <p className="font-semibold">{formatDate(lastLogin)}</p>
+                          </div>
+                          <div className="rounded-xl bg-slate-50 p-3">
+                            <p className="text-slate-500">Login count</p>
+                            <p className="font-semibold">{user.login_count ?? "Not available"}</p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+          </section>
 
           <section className="rounded-3xl bg-white p-5 shadow-sm ring-1 ring-slate-200/80 sm:p-6">
             <SectionHeader title="Agents" description="Manage agent access, verification, listings, contacts, and ratings." />
