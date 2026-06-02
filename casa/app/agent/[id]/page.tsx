@@ -328,6 +328,8 @@ export default function AgentProfilePage() {
   if (loading) return <main className="px-4 py-6 sm:p-10">Loading agent...</main>
   if (!agent) return <main className="px-4 py-6 sm:p-10">Agent not found</main>
 
+  const isViewingOwnProfile = Boolean(user && user.id === agent.id)
+
   return (
     <main className="max-w-6xl mx-auto px-4 py-6 sm:p-10 space-y-6">
       <section className="overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm">
@@ -505,12 +507,13 @@ export default function AgentProfilePage() {
           <p className="text-sm text-gray-500">Ratings from users who have contacted this agent.</p>
         </div>
 
-        <div className="mb-5">
-          {!user ? (
+        {!isViewingOwnProfile && (
+          <div className="mb-5">
+            {!user ? (
             <button onClick={() => router.push("/login")} className="rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700">
               Login to leave a review
             </button>
-          ) : (
+            ) : (
             <div className="space-y-3 rounded-xl border border-gray-100 bg-gray-50 p-4">
               <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
                 <label className="font-medium">Rating</label>
@@ -534,8 +537,9 @@ export default function AgentProfilePage() {
                 {userReview ? "Update Review" : "Submit Review"}
               </button>
             </div>
-          )}
-        </div>
+            )}
+          </div>
+        )}
 
         {reviews.length === 0 ? (
           <div className="rounded-xl border border-dashed border-gray-200 bg-gray-50 p-6 text-center text-gray-500">
