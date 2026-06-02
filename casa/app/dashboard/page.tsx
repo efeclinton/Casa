@@ -5,6 +5,7 @@ import { supabase } from "../../lib/supabaseClient"
 import { useRouter } from "next/navigation"
 import PropertyCard from "../../components/PropertyCard"
 import Link from "next/link"
+import { formatUpdatedAtLabel } from "../../lib/activity"
 
 type Property = {
   id: string;
@@ -25,7 +26,9 @@ type MarketItem = {
   title: string;
   price: number;
   is_active: boolean;
+  location?: string | null;
   images?: string[] | null;
+  updated_at?: string | null;
 }
 
 export default function Dashboard() {
@@ -74,7 +77,7 @@ export default function Dashboard() {
           .order("updated_at", { ascending: false, nullsFirst: false }),
         supabase
           .from("market_items")
-          .select("id,title,price,is_active,images")
+          .select("id,title,price,is_active,images,location")
           .eq("user_id", session.user.id)
           .order("created_at", { ascending: false })
       ])
@@ -311,6 +314,7 @@ const renewListing = async (property: Property) => {
                   updatedAt={property.updated_at}
                   inquiryCount={property.inquiry_count ?? 0}
                   agentVerificationStatus={verificationStatus}
+                  isActive={property.is_active}
                   id={property.id}
                 />
 
@@ -386,27 +390,43 @@ const renewListing = async (property: Property) => {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {marketItems.map((item) => {
               const imageUrl = item.images?.[0] || "https://via.placeholder.com/400x300?text=No+Image"
+              const updatedText = formatUpdatedAtLabel(item.updated_at)
 
               return (
-                <Link key={item.id} href={`/market/${item.id}`} className="block w-full">
-                  <div className="bg-white rounded-xl shadow overflow-hidden hover:shadow-lg transition w-full">
+                <Link key={item.id} href={`/market/${item.id}`} className="group block h-full w-full">
+                  <div className="flex h-full flex-col overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-[0_14px_40px_rgba(15,23,42,0.08)] transition md:group-hover:-translate-y-1 md:group-hover:shadow-[0_20px_55px_rgba(15,23,42,0.14)]">
+                    <div className="relative aspect-[4/3] overflow-hidden rounded-t-2xl bg-slate-100">
                     <img
                       src={imageUrl}
                       alt={item.title}
-                      className="w-full h-[220px] object-cover"
+                      className="h-full w-full object-cover transition duration-300 md:group-hover:scale-[1.03]"
                       onError={(event) => {
                         event.currentTarget.src = "https://via.placeholder.com/400x300?text=No+Image"
                       }}
                     />
+                      <div className="absolute left-3 top-3">
+                        <span className={`rounded-full px-3 py-1 text-xs font-semibold shadow-sm backdrop-blur ${item.is_active ? "bg-emerald-50/95 text-emerald-700" : "bg-white/95 text-slate-600"}`}>
+                          {item.is_active ? "Available" : "Inactive"}
+                        </span>
+                      </div>
+                    </div>
 
-                    <div className="p-4 flex flex-col min-h-[140px]">
+                    <div className="flex min-h-[250px] flex-1 flex-col p-4 sm:p-5">
                       <p className="text-green-700 font-semibold text-lg">₦{Number(item.price).toLocaleString()}</p>
-                      <p className="font-semibold text-gray-900 line-clamp-2 mt-1">{item.title}</p>
-                      <p className={`text-xs font-medium mt-2 ${item.is_active ? "text-green-700" : "text-gray-500"}`}>
+                      <p className="mt-2 line-clamp-2 text-lg font-bold leading-snug text-slate-950">{item.title}</p>
+                      <p className="mt-2 line-clamp-1 text-sm font-medium text-slate-500">{item.location || "Location not provided"}</p>
+                      {updatedText && <p className="mt-2 text-xs font-medium text-slate-400">{updatedText}</p>}
+                      <p className={`sr-only mt-2 text-xs font-medium ${item.is_active ? "text-green-700" : "text-gray-500"}`}>
                         {item.is_active ? "Active" : "Inactive"}
                       </p>
 
-                      <div className="mt-auto pt-4 flex items-center gap-3 text-sm">
+                      <div className="mt-auto pt-5">
+                        <span className="inline-flex min-h-11 w-full items-center justify-center rounded-xl bg-slate-950 px-4 text-sm font-semibold text-white shadow-sm transition md:group-hover:bg-emerald-700">
+                          View Details
+                        </span>
+                      </div>
+
+                      <div className="flex items-center gap-3 pt-4 text-sm">
                         <button
                           type="button"
                           onClick={(event) => {

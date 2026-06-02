@@ -11,6 +11,7 @@ type Property = {
   title: string;
   location: string;
   rent_period: string;
+  is_active?: boolean | null;
   updated_at?: string | null;
   inquiry_count?: number | null;
   agent_id?: string | null;
@@ -146,6 +147,7 @@ export default async function PropertiesPage({
             updatedAt={property.updated_at}
             inquiryCount={property.inquiry_count ?? 0}
             agentVerificationStatus={verificationStatuses[getListingAgentId(property) || ""]}
+            isActive={property.is_active}
             id={property.id}
           />
         ))}

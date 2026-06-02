@@ -13,6 +13,7 @@ type CampusProperty = {
   title: string
   location: string
   rent_period: string
+  is_active?: boolean | null
   listing_type?: string
   school?: string
   description?: string
@@ -274,6 +275,7 @@ export default function CampusPage() {
                 updatedAt={property.updated_at}
                 inquiryCount={property.inquiry_count ?? 0}
                 agentVerificationStatus={verificationStatuses[getListingAgentId(property) || ""]}
+                isActive={property.is_active}
               />
             ))}
 

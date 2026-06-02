@@ -1,7 +1,7 @@
 import type { Metadata } from "next"
 import HeroSection from "../components/HeroSection"
+import MarketItemCard from "../components/MarketItemCard"
 import PropertyCard from "../components/PropertyCard"
-import Image from "next/image"
 import Link from "next/link"
 import { supabase } from "../lib/supabaseClient"
 import { getListingAgentId, loadVerificationStatuses } from "../lib/verification"
@@ -26,6 +26,8 @@ type MarketItem = {
   title: string
   price: number
   location?: string
+  is_active?: boolean | null
+  updated_at?: string | null
 }
 
 export const metadata: Metadata = {
@@ -54,10 +56,9 @@ export const metadata: Metadata = {
     description:
       "Discover verified student accommodation near UNN and the latest campus market items in one trusted platform.",
   },
-};
+}
 
 export default async function Home() {
-
   // Try the RPC first (keeps existing ranking behavior),
   // then fall back to direct table query if the function fails.
   const { data: rpcProperties, error } = await supabase
@@ -90,7 +91,7 @@ export default async function Home() {
 
   const { data: marketData, error: marketError } = await supabase
     .from("market_items")
-    .select("id, images, title, price, location")
+    .select("id, images, title, price, location, is_active")
     .eq("is_active", true)
     .order("created_at", { ascending: false })
     .limit(6)
@@ -103,33 +104,27 @@ export default async function Home() {
 
   return (
     <main className="w-full overflow-x-hidden">
-      <h1 className="sr-only">CASA – verified student accommodation and campus market items near UNN</h1>
-
-      
+      <h1 className="sr-only">CASA - verified student accommodation and campus market items near UNN</h1>
 
       <HeroSection />
 
-      <section className="w-full max-w-[1440px] mx-auto px-4 py-6 sm:py-8 mt-2 sm:mt-4">
-
-        <div className="flex justify-between items-center gap-3 mb-4 sm:mb-6">
-          <h2 className="text-lg sm:text-xl lg:text-2xl font-semibold">
+      <section className="mx-auto mt-2 w-full max-w-[1440px] px-4 py-6 sm:mt-4 sm:py-8">
+        <div className="mb-4 flex items-center justify-between gap-3 sm:mb-6">
+          <h2 className="text-lg font-semibold sm:text-xl lg:text-2xl">
             Featured Properties
           </h2>
           <Link href="/properties">
-            <span className="text-sm sm:text-base text-green-600 cursor-pointer hover:underline whitespace-nowrap">
-              View all →
+            <span className="cursor-pointer whitespace-nowrap text-sm text-green-600 hover:underline sm:text-base">
+              View all
             </span>
           </Link>
         </div>
 
         {properties && properties.length > 0 ? (
-
-          <div className="flex overflow-x-auto gap-4 pb-4 md:grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 md:gap-6 lg:gap-6 xl:gap-6 md:overflow-visible scroll-smooth justify-items-center">
-
+          <div className="flex justify-items-center gap-4 overflow-x-auto scroll-smooth pb-4 md:grid md:grid-cols-2 md:gap-6 md:overflow-visible lg:grid-cols-3 lg:gap-6 xl:grid-cols-4 xl:gap-6">
             {properties.map((property: Property) => (
-
-              <div key={property.id} className="min-w-[260px] max-w-[340px] w-[320px] flex-shrink-0 md:w-auto">
-                  <PropertyCard
+              <div key={property.id} className="w-[320px] min-w-[260px] max-w-[340px] flex-shrink-0 md:w-auto">
+                <PropertyCard
                   image={property.image}
                   price={property.price}
                   title={property.title}
@@ -138,64 +133,44 @@ export default async function Home() {
                   updatedAt={property.updated_at}
                   inquiryCount={property.inquiry_count ?? 0}
                   agentVerificationStatus={verificationStatuses[getListingAgentId(property) || ""]}
+                  isActive={property.is_active}
                   id={property.id}
                 />
               </div>
-
             ))}
-
           </div>
-
         ) : (
-
           <p className="text-gray-500">
             No featured listings yet.
           </p>
-
         )}
-
       </section>
 
-      <section className="w-full max-w-6xl mx-auto px-4 pb-6 sm:pb-8">
-        <div className="flex items-center justify-between mb-4 sm:mb-6 gap-3">
-          <h2 className="text-lg sm:text-xl lg:text-2xl font-semibold">Campus Market</h2>
-          <Link href="/market" className="text-green-700 font-medium hover:underline">
+      <section className="mx-auto w-full max-w-6xl px-4 pb-6 sm:pb-8">
+        <div className="mb-4 flex items-center justify-between gap-3 sm:mb-6">
+          <h2 className="text-lg font-semibold sm:text-xl lg:text-2xl">Campus Market</h2>
+          <Link href="/market" className="font-medium text-green-700 hover:underline">
             View all
           </Link>
         </div>
 
         {marketItems.length > 0 ? (
-          <div className="flex overflow-x-auto gap-4 pb-2 lg:grid lg:grid-cols-3 lg:gap-6 lg:overflow-visible scroll-smooth">
+          <div className="flex gap-4 overflow-x-auto scroll-smooth pb-2 lg:grid lg:grid-cols-3 lg:gap-6 lg:overflow-visible">
             {marketItems.map((item) => {
               const imageUrl = item.images && item.images.length > 0 ? item.images[0] : null
 
               return (
-                <Link
+                <MarketItemCard
                   key={item.id}
-                  href={`/market/${item.id}`}
-                  className="w-[200px] flex-shrink-0 lg:w-auto bg-white rounded-xl shadow-md overflow-hidden hover:shadow-lg transition"
-                >
-                  {imageUrl ? (
-                    <div className="relative w-full h-40">
-                      <Image
-                        src={imageUrl}
-                        alt={item.title}
-                        fill
-                        className="object-cover"
-                        sizes="(max-width: 768px) 100vw, (max-width: 1280px) 50vw, 33vw"
-                      />
-                    </div>
-                  ) : (
-                    <div className="w-full h-40 bg-gray-100 flex items-center justify-center text-gray-400 text-sm">
-                      No Image
-                    </div>
-                  )}
-                  <div className="p-3 sm:p-4 space-y-1 flex flex-col justify-between flex-1">
-                    <h3 className="font-semibold text-sm sm:text-base line-clamp-2">{item.title}</h3>
-                    <p className="text-green-700 font-medium text-sm sm:text-base">₦{Number(item.price).toLocaleString()}</p>
-                    <p className="text-gray-500 text-sm line-clamp-2">{item.location}</p>
-                  </div>
-                </Link>
+                  id={item.id}
+                  title={item.title}
+                  price={item.price}
+                  location={item.location}
+                  image={imageUrl}
+                  updatedAt={item.updated_at}
+                  isActive={item.is_active}
+                  className="w-[260px] flex-shrink-0 lg:w-auto"
+                />
               )
             })}
           </div>
@@ -203,7 +178,6 @@ export default async function Home() {
           <p className="text-gray-500">No market items yet.</p>
         )}
       </section>
-
     </main>
   )
 }

@@ -1,5 +1,5 @@
 import type { Metadata } from "next"
-import Link from "next/link"
+import MarketItemCard from "@/components/MarketItemCard"
 import { supabase } from "../../lib/supabaseClient"
 
 type MarketItem = {
@@ -10,6 +10,8 @@ type MarketItem = {
   location: string
   image?: string | null
   images?: string[] | null
+  is_active?: boolean | null
+  updated_at?: string | null
 }
 
 export const metadata: Metadata = {
@@ -30,7 +32,7 @@ export const metadata: Metadata = {
     description:
       "Browse verified campus market items for UNN students with secure seller profiles and transparent pricing.",
   },
-};
+}
 
 export default async function MarketPage({
   searchParams,
@@ -53,7 +55,7 @@ export default async function MarketPage({
     .eq("is_active", true)
     .order("created_at", { ascending: false })
 
-      if (q) {
+  if (q) {
     // Normalize and sanitize user input
     const normalized = q.replace(/\s+/g, " ").trim()
     const safeQ = normalized.replace(/[%_,()]/g, " ")
@@ -73,7 +75,7 @@ export default async function MarketPage({
     query = query.lte("price", Number(maxPrice))
   }
 
-    const { data, error } = await query
+  const { data, error } = await query
 
   if (error) {
     console.error("Market fetch failed")
@@ -87,19 +89,19 @@ export default async function MarketPage({
   const items: MarketItem[] = data || []
 
   return (
-    <main className="w-full max-w-6xl mx-auto px-4 py-6 sm:py-8">
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-lg sm:text-xl lg:text-2xl font-bold">Campus Market</h1>
+    <main className="mx-auto w-full max-w-6xl px-4 py-6 sm:py-8">
+      <div className="mb-6 flex items-center justify-between">
+        <h1 className="text-lg font-bold sm:text-xl lg:text-2xl">Campus Market</h1>
       </div>
 
       {/* FILTER */}
-      <form method="GET" className="bg-white p-4 rounded shadow mb-6">
+      <form method="GET" className="mb-6 rounded bg-white p-4 shadow">
         <input
           name="q"
           type="text"
           placeholder="Search item title, description or category..."
           defaultValue={q}
-          className="border p-2 rounded w-full mb-3"
+          className="mb-3 w-full rounded border p-2"
         />
 
         <div className="flex gap-2">
@@ -108,18 +110,18 @@ export default async function MarketPage({
             type="number"
             placeholder="Min price"
             defaultValue={minPrice}
-            className="border p-2 rounded w-full"
+            className="w-full rounded border p-2"
           />
           <input
             name="maxPrice"
             type="number"
             placeholder="Max price"
             defaultValue={maxPrice}
-            className="border p-2 rounded w-full"
+            className="w-full rounded border p-2"
           />
         </div>
 
-        <button type="submit" className="mt-3 w-full bg-black text-white py-2 rounded">
+        <button type="submit" className="mt-3 w-full rounded bg-black py-2 text-white">
           Apply Filters
         </button>
       </form>
@@ -127,30 +129,22 @@ export default async function MarketPage({
       {items.length === 0 ? (
         <p className="text-gray-500">No items match your search/filters.</p>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-3 lg:gap-6 xl:grid-cols-4">
           {items.map((item) => {
             const images = Array.isArray(item.images) ? item.images : []
-            const imageUrl = images.length > 0 ? images[0] : null
+            const imageUrl = images.length > 0 ? images[0] : item.image || null
 
             return (
-              <Link
+              <MarketItemCard
                 key={item.id}
-                href={`/market/${item.id}`}
-                className="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-lg transition h-full flex flex-col"
-              >
-                {imageUrl ? (
-                  <img src={imageUrl} alt={item.title} className="w-full h-40 object-cover" />
-                ) : (
-                  <div className="w-full h-40 bg-gray-100 flex items-center justify-center text-gray-400 text-sm">
-                    No Image
-                  </div>
-                )}
-                <div className="p-3 sm:p-4 space-y-1 flex flex-col justify-between flex-1">
-                  <h2 className="font-semibold text-sm sm:text-base line-clamp-2">{item.title}</h2>
-                  <p className="text-green-700 font-medium text-sm sm:text-base">₦{Number(item.price).toLocaleString()}</p>
-                  <p className="text-gray-500 text-sm line-clamp-2">{item.location}</p>
-                </div>
-              </Link>
+                id={item.id}
+                title={item.title}
+                price={item.price}
+                location={item.location}
+                image={imageUrl}
+                updatedAt={item.updated_at}
+                isActive={item.is_active}
+              />
             )
           })}
         </div>

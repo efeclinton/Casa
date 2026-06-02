@@ -6,6 +6,7 @@ import { supabase, getOptimizedAvatarUrl } from "../../../lib/supabaseClient"
 import Image from "next/image"
 import Link from "next/link"
 import type { User } from "@supabase/supabase-js"
+import MarketItemCard from "../../../components/MarketItemCard"
 import VerifiedAgentBadge from "../../../components/VerifiedAgentBadge"
 import { ensureProfileComplete } from "../../../lib/profileCompletion"
 
@@ -32,6 +33,7 @@ type MarketItem = {
   location?: string
   images?: string[] | null
   is_active?: boolean | null
+  updated_at?: string | null
 }
 
 type ReviewProfile = {
@@ -436,21 +438,16 @@ export default function AgentProfilePage() {
         ) : (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {marketItems.map((item) => (
-              <Link key={item.id} href={`/market/${item.id}`} className="overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
-                <img src={getMarketItemImage(item)} alt={item.title || "Marketplace item"} className="h-44 w-full object-cover" />
-                <div className="p-4">
-                  <div className="flex items-start justify-between gap-3">
-                    <h3 className="line-clamp-2 font-semibold text-gray-950">{item.title || "Untitled item"}</h3>
-                    {item.is_active !== undefined && (
-                      <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${item.is_active === false ? "bg-gray-100 text-gray-600" : "bg-green-50 text-green-700"}`}>
-                        {item.is_active === false ? "Inactive" : "Active"}
-                      </span>
-                    )}
-                  </div>
-                  <p className="mt-2 line-clamp-2 text-sm text-gray-600">{item.location || "Location not provided"}</p>
-                  <p className="mt-3 font-semibold text-green-700">{formatPrice(item.price)}</p>
-                </div>
-              </Link>
+              <MarketItemCard
+                key={item.id}
+                id={item.id}
+                title={item.title || "Untitled item"}
+                price={item.price || 0}
+                location={item.location}
+                image={getMarketItemImage(item)}
+                updatedAt={item.updated_at}
+                isActive={item.is_active}
+              />
             ))}
           </div>
         )}
