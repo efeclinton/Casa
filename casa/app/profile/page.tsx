@@ -18,6 +18,26 @@ type Profile = {
   verification_status?: string
 }
 
+type SavedListing = {
+  savedId: string
+  propertyId: string
+  property: {
+    title?: string
+    price?: number
+    location?: string
+    image?: string | null
+    images?: string[] | null
+  } | null
+}
+
+const fallbackImage =
+  "https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=800&auto=format&fit=crop&q=80"
+
+const formatPrice = (price?: number) =>
+  typeof price === "number" ? `₦${Number(price).toLocaleString()}` : "Price not set"
+
+const normalizeStatus = (status?: string) => status || "none"
+
 export default function ProfilePage() {
 
   const router = useRouter()
@@ -35,6 +55,7 @@ export default function ProfilePage() {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
   const [propertyListingsCount, setPropertyListingsCount] = useState<number>(0)
   const [marketItemsCount, setMarketItemsCount] = useState<number>(0)
+  const [savedListings, setSavedListings] = useState<SavedListing[]>([])
 
   useEffect(() => {
     const fetchData = async () => {
@@ -57,9 +78,13 @@ export default function ProfilePage() {
       setFullNameInput(data?.full_name || "")
       setPhoneNumberInput(data?.phone || "")
 
-      // Fetch listing counts only for users allowed to manage listings.
+      const savedPromise = supabase
+        .from("saved_listings")
+        .select("id, property_id, properties(*)")
+        .eq("user_id", user.id)
+
       if (data?.agent_status === "approved") {
-        const [{ count: propertiesCount }, { count: marketCount }] = await Promise.all([
+        const [{ count: propertiesCount }, { count: marketCount }, { data: savedData, error: savedError }] = await Promise.all([
           supabase
             .from("properties")
             .select("*", { count: "exact", head: true })
@@ -68,10 +93,20 @@ export default function ProfilePage() {
             .from("market_items")
             .select("*", { count: "exact", head: true })
             .eq("user_id", user.id),
+          savedPromise,
         ])
 
         setPropertyListingsCount(propertiesCount || 0)
         setMarketItemsCount(marketCount || 0)
+
+        if (!savedError) {
+          setSavedListings(structureSavedListings(savedData || []))
+        }
+      } else {
+        const { data: savedData, error: savedError } = await savedPromise
+        if (!savedError) {
+          setSavedListings(structureSavedListings(savedData || []))
+        }
       }
 
       setLoading(false)
@@ -82,47 +117,75 @@ export default function ProfilePage() {
 
   useEffect(() => {
     return () => {
-      if (previewUrl && previewUrl.startsWith('blob:')) {
+      if (previewUrl && previewUrl.startsWith("blob:")) {
         URL.revokeObjectURL(previewUrl)
       }
     }
   }, [previewUrl])
 
+  const structureSavedListings = (items: Array<{
+    id: string
+    property_id: string
+    properties: SavedListing["property"] | SavedListing["property"][]
+  }>) => items.map((item) => ({
+    savedId: item.id,
+    propertyId: item.property_id,
+    property: Array.isArray(item.properties)
+      ? item.properties[0] || null
+      : item.properties,
+  }))
+
   if (loading) {
     return (
-      <main className="max-w-2xl mx-auto px-4 py-6 sm:p-10">
-        <div className="text-center">Loading...</div>
+      <main className="min-h-screen bg-slate-50 px-4 py-8">
+        <div className="mx-auto max-w-5xl rounded-3xl border border-slate-200 bg-white p-8 text-center text-slate-600 shadow-sm">
+          Loading profile...
+        </div>
       </main>
     )
   }
 
-  const role = profile?.agent_status === "none" ? "User" : "Agent"
+  const agentStatus = normalizeStatus(profile?.agent_status)
+  const role = agentStatus === "none" ? "User" : "Agent"
+  const email = getProfileEmail(profile, user)
+  const profileActionText = !profile?.full_name || !profile?.phone || !email ? "Complete Profile" : "Edit Profile"
+  const isProfileIncomplete = !profile?.full_name || !profile?.phone || !email
+  const userDisplayName =
+    `${user?.user_metadata?.first_name || ""} ${user?.user_metadata?.last_name || ""}`.trim() || "User"
+  const avatarName = profile?.full_name || userDisplayName
+  const initials = avatarName
+    .split(" ")
+    .map((part) => part[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase()
 
   const getStatusBadgeClass = () => {
-    if (profile?.agent_status === "approved") return "bg-green-100 text-green-700"
-    if (profile?.agent_status === "suspended") return "bg-yellow-100 text-yellow-700"
-    if (profile?.agent_status === "banned") return "bg-red-100 text-red-700"
-    return "bg-gray-100 text-gray-700"
+    if (agentStatus === "approved") return "border-emerald-200 bg-emerald-50 text-emerald-700"
+    if (agentStatus === "suspended") return "border-amber-200 bg-amber-50 text-amber-700"
+    if (agentStatus === "banned" || agentStatus === "rejected") return "border-red-200 bg-red-50 text-red-700"
+    if (agentStatus === "pending") return "border-blue-200 bg-blue-50 text-blue-700"
+    return "border-slate-200 bg-slate-100 text-slate-700"
   }
 
   const getStatusMessage = () => {
-    if (profile?.agent_status === "pending") return "Your application is under review"
-    if (profile?.agent_status === "approved") return "Your account is active."
-    if (profile?.agent_status === "rejected") return "Your application was rejected"
-    if (profile?.agent_status === "banned") return "Your account has been banned by admin."
-    if (profile?.agent_status === "suspended") return "Your account is temporarily suspended."
+    if (agentStatus === "pending") return "Your application is under review"
+    if (agentStatus === "approved") return "Your account is active."
+    if (agentStatus === "rejected") return "Your application was rejected"
+    if (agentStatus === "banned") return "Your account has been banned by admin."
+    if (agentStatus === "suspended") return "Your account is temporarily suspended."
     return ""
   }
 
-  const shouldShowVerification =
-    profile?.agent_status && profile.agent_status !== "none"
+  const shouldShowVerification = agentStatus !== "none"
 
   const getVerificationContent = () => {
     if (profile?.verification_status === "verified") {
       return {
         title: "Verified Agent",
         description: "Identity confirmed by CASA",
-        className: "border-blue-200 bg-blue-50 text-blue-800",
+        className: "border-emerald-200 bg-emerald-50 text-emerald-800",
+        badgeClassName: "border-emerald-200 bg-white text-emerald-700",
       }
     }
 
@@ -131,6 +194,7 @@ export default function ProfilePage() {
         title: "Verification rejected",
         description: "Please contact CASA support or update your verification details.",
         className: "border-red-200 bg-red-50 text-red-800",
+        badgeClassName: "border-red-200 bg-white text-red-700",
       }
     }
 
@@ -138,8 +202,11 @@ export default function ProfilePage() {
       title: "Verification pending",
       description: "Your verification is under review.",
       className: "border-amber-200 bg-amber-50 text-amber-800",
+      badgeClassName: "border-amber-200 bg-white text-amber-700",
     }
   }
+
+  const verification = getVerificationContent()
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0] || null
@@ -159,11 +226,11 @@ export default function ProfilePage() {
 
     try {
       const timestamp = Date.now()
-      const fileName = selectedFile.name.replace(/[^a-zA-Z0-9.]/g, '_')
+      const fileName = selectedFile.name.replace(/[^a-zA-Z0-9.]/g, "_")
       const filePath = `avatars/${user.id}/${timestamp}-${fileName}`
 
       const { error: uploadError } = await supabase.storage
-        .from('avatars')
+        .from("avatars")
         .upload(filePath, selectedFile)
 
       if (uploadError) {
@@ -171,21 +238,20 @@ export default function ProfilePage() {
       }
 
       const { data } = supabase.storage
-        .from('avatars')
+        .from("avatars")
         .getPublicUrl(filePath)
 
       const publicUrl = data.publicUrl
 
       const { error: updateError } = await supabase
-        .from('profiles')
+        .from("profiles")
         .update({ avatar_url: publicUrl })
-        .eq('id', user.id)
+        .eq("id", user.id)
 
       if (updateError) {
         throw new Error(updateError.message)
       }
 
-      // Update local state
       setProfile({ ...profile, avatar_url: publicUrl })
       setSelectedFile(null)
       setPreviewUrl(null)
@@ -193,8 +259,8 @@ export default function ProfilePage() {
       alert("Profile photo updated")
 
     } catch (error: unknown) {
-      console.error('Upload error:', error)
-      alert('Failed to upload photo: ' + (error instanceof Error ? error.message : "Unknown error"))
+      console.error("Upload error:", error)
+      alert("Failed to upload photo: " + (error instanceof Error ? error.message : "Unknown error"))
     }
 
     setUploading(false)
@@ -259,215 +325,305 @@ export default function ProfilePage() {
     if (redirect !== "/") router.push(redirect)
   }
 
-  const isProfileIncomplete = !profile?.full_name || !profile?.phone || !getProfileEmail(profile, user)
-  const profileActionText = isProfileIncomplete ? "Complete Profile" : "Edit Profile"
-  const userDisplayName =
-    `${user?.user_metadata?.first_name || ""} ${user?.user_metadata?.last_name || ""}`.trim() || "User"
-
   return (
-    <main className="max-w-2xl mx-auto px-4 py-6 sm:p-10">
-      <h1 className="text-3xl font-bold mb-6">Profile</h1>
+    <main className="min-h-screen bg-slate-50 px-4 py-6 text-slate-950 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-6xl space-y-6">
+        <section className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-[0_18px_55px_rgba(15,23,42,0.08)]">
+          <div className="bg-gradient-to-r from-emerald-50 via-white to-blue-50 p-5 sm:p-7">
+            <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+                <div className="relative h-24 w-24 overflow-hidden rounded-3xl border border-white bg-slate-200 shadow-sm">
+                  {(previewUrl || profile?.avatar_url) ? (
+                    <Image
+                      src={previewUrl || getOptimizedAvatarUrl(profile?.avatar_url || null, avatarName)}
+                      alt="Profile"
+                      fill
+                      className="object-cover"
+                      sizes="96px"
+                      placeholder="blur"
+                      blurDataURL="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iOTYiIGhlaWdodD0iOTYiIHZpZXdCb3g9IjAgMCA5NiA5NiIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGNpcmNsZSBjeD0iNDgiIGN5PSI0OCIgcj0iNDgiIGZpbGw9IiNFNUU3RUIiLz4KPC9zdmc+"
+                    />
+                  ) : (
+                    <div className="flex h-full w-full items-center justify-center text-2xl font-bold text-slate-500">
+                      {initials || "U"}
+                    </div>
+                  )}
+                </div>
 
-      {isProfileIncomplete && (
-        <div className="mb-6 rounded-xl border border-amber-200 bg-amber-50 p-4 text-amber-800">
-          <p className="font-semibold">Complete your profile to continue using CASA.</p>
-          <p className="mt-1 text-sm">Full name, phone number, and email are required.</p>
-        </div>
-      )}
+                <div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
+                      {profile?.full_name || "Complete your profile"}
+                    </h1>
+                    <span className={`inline-flex rounded-full border px-3 py-1 text-xs font-semibold capitalize ${getStatusBadgeClass()}`}>
+                      {role}
+                    </span>
+                    {shouldShowVerification && (
+                      <span className={`inline-flex rounded-full border px-3 py-1 text-xs font-semibold ${verification.badgeClassName}`}>
+                        {verification.title}
+                      </span>
+                    )}
+                  </div>
+                  <p className="mt-2 text-sm text-slate-600">{email || "Email not provided"}</p>
+                  {profile?.phone && <p className="mt-1 text-sm text-slate-500">{profile.phone}</p>}
+                </div>
+              </div>
 
-      <section className="mb-8 p-6 bg-white rounded-lg shadow">
-        <h2 className="text-2xl font-semibold mb-4">Profile Info</h2>
-        <div className="flex flex-col sm:flex-row items-start gap-6 mb-4">
-          <div className="flex flex-col items-center space-y-2">
-            {(previewUrl || profile?.avatar_url) ? (
-              <div className="relative w-24 h-24">
-                <Image
-                  src={previewUrl || getOptimizedAvatarUrl(profile?.avatar_url || null, userDisplayName)}
-                  alt="Profile"
-                  width={96}
-                  height={96}
-                  className="rounded-full object-cover border-2 border-gray-300"
-                  placeholder="blur"
-                  blurDataURL="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iOTYiIGhlaWdodD0iOTYiIHZpZXdCb3g9IjAgMCA5NiA5NiIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGNpcmNsZSBjeD0iNDgiIGN5PSI0OCIgcj0iNDgiIGZpbGw9IiNFNUU3RUIiLz4KPHN2ZyB4PSIzNiIgeT0iMzYiIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9IiM5Q0E0QUYiIHN0cm9rZS13aWR0aD0iMS41Ij4KPHBhdGggZD0iTTEyIDJDMTMuMSAyIDE0IDIuOSAxNCA0QzE0IDUuMSAxMy4xIDYgMTIgNkMxMC45IDYgMTAgNS4xIDEwIDRDMTAgMi45IDEwLjkgMiAxMiAyWk0xMiAxNEM5LjggMTQgOCA5LjggOCA3QzggNS4yIDkuMiA0IDEyIDRDMTQuOCA0IDE2IDUuMiAxNiA3QzE2IDkuOCAxNC44IDE0IDEyIDE0WiIvPgo8L3N2Zz4KPC9zdmc+"
-                />
-              </div>
-            ) : (
-              <div className="w-24 h-24 rounded-full bg-gray-300 flex items-center justify-center border-2 border-gray-300">
-                <span className="text-gray-600 text-3xl">👤</span>
-              </div>
-            )}
-            <input
-              type="file"
-              accept="image/*"
-              onChange={handleFileSelect}
-              className="hidden"
-              id="photo-upload"
-            />
-            <label
-              htmlFor="photo-upload"
-              className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 cursor-pointer text-sm"
-            >
-              {profile?.avatar_url ? "Change Photo" : "Upload Photo"}
-            </label>
-            {selectedFile && (
-              <button
-                onClick={handleUpload}
-                disabled={uploading}
-                className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 disabled:opacity-50 text-sm"
-              >
-                {uploading ? "Uploading..." : "Save Photo"}
-              </button>
-            )}
-          </div>
-          <div className="flex-1 space-y-2">
-            {isEditing ? (
-              <>
-                <div>
-                  <strong>Full Name:</strong>
-                  <input
-                    type="text"
-                    value={fullNameInput}
-                    onChange={(e) => setFullNameInput(e.target.value)}
-                    className="mt-1 w-full border rounded px-3 py-2"
-                    placeholder="Enter full name"
-                  />
-                </div>
-                <p><strong>Email:</strong> {getProfileEmail(profile, user)}</p>
-                <div>
-                  <strong>Phone Number:</strong>
-                  <input
-                    type="text"
-                    value={phoneNumberInput}
-                    onChange={(e) => setPhoneNumberInput(e.target.value)}
-                    className="mt-1 w-full border rounded px-3 py-2"
-                    placeholder="Enter phone number"
-                  />
-                </div>
-                <div className="pt-2 flex flex-col sm:flex-row gap-2">
-                  <button
-                    onClick={saveProfile}
-                    disabled={savingProfile}
-                    className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50"
-                  >
-                    {savingProfile ? "Saving..." : "Save"}
-                  </button>
-                  <button
-                    onClick={cancelEditingProfile}
-                    disabled={savingProfile}
-                    className="px-4 py-2 bg-gray-200 text-gray-800 rounded hover:bg-gray-300 disabled:opacity-50"
-                  >
-                    Cancel
-                  </button>
-                </div>
-              </>
-            ) : (
-              <>
-                <p><strong>Full Name:</strong> {profile?.full_name || "Not provided"}</p>
-                <p><strong>Email:</strong> {getProfileEmail(profile, user) || "Not provided"}</p>
-                <p><strong>Phone Number:</strong> {profile?.phone || "Not provided"}</p>
+              <div className="flex flex-col gap-2 sm:items-end">
                 <button
                   onClick={startEditingProfile}
-                  className="mt-2 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+                  className="inline-flex min-h-11 items-center justify-center rounded-xl bg-slate-950 px-5 text-sm font-semibold text-white shadow-sm hover:bg-emerald-700"
                 >
                   {profileActionText}
                 </button>
-              </>
-            )}
-          </div>
-        </div>
-      </section>
-
-      <section className="mb-8 p-6 bg-white rounded-lg shadow">
-        <h2 className="text-2xl font-semibold mb-4">Account Status</h2>
-        <div className="space-y-2">
-          <p><strong>Role:</strong> {role}</p>
-          <p>
-            <strong>Agent Status:</strong>{" "}
-            <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium capitalize ${getStatusBadgeClass()}`}>
-              {profile?.agent_status}
-            </span>
-          </p>
-        </div>
-
-        {role === "User" && (
-          <Link
-            href="/become-agent"
-            className="inline-block mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-          >
-            Apply to become an agent
-          </Link>
-        )}
-
-        {getStatusMessage() && (
-          <p className="mt-4 text-lg text-gray-700">{getStatusMessage()}</p>
-        )}
-      </section>
-
-      {shouldShowVerification && (
-        <section className="mb-8 p-6 bg-white rounded-lg shadow">
-          <h2 className="text-2xl font-semibold mb-4">Verification</h2>
-          {(() => {
-            const verification = getVerificationContent()
-
-            return (
-              <div className={`rounded-xl border p-4 ${verification.className}`}>
-                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                  <div>
-                    <p className="font-semibold">{verification.title}</p>
-                    <p className="mt-1 text-sm">{verification.description}</p>
-                  </div>
-                  {profile?.verification_status === "verified" && (
-                    <span className="inline-flex w-fit items-center gap-1.5 rounded-full border border-blue-200 bg-white px-3 py-1 text-xs font-semibold text-blue-700 shadow-sm">
-                      <svg
-                        viewBox="0 0 20 20"
-                        fill="currentColor"
-                        className="h-3.5 w-3.5"
-                        aria-hidden="true"
-                      >
-                        <path
-                          fillRule="evenodd"
-                          d="M16.704 5.29a1 1 0 0 1 .006 1.414l-7.5 7.57a1 1 0 0 1-1.42.003L3.29 9.72a1 1 0 1 1 1.42-1.406l3.79 3.836 6.79-6.854a1 1 0 0 1 1.414-.006Z"
-                          clipRule="evenodd"
-                        />
-                      </svg>
-                      Verified Agent
-                    </span>
-                  )}
-                </div>
-              </div>
-            )
-          })()}
-        </section>
-      )}
-
-      {profile?.agent_status === "approved" && (
-        <section className="mb-8 p-6 bg-white rounded-lg shadow">
-          <h2 className="text-2xl font-semibold mb-4">My Listings</h2>
-          <div className="space-y-4">
-            <div className="grid gap-3 sm:grid-cols-2">
-              <div className="rounded-xl border border-gray-100 bg-gray-50 p-4">
-                <p className="text-sm text-gray-500">Properties Listed</p>
-                <p className="mt-1 text-2xl font-bold text-gray-950">{propertyListingsCount}</p>
-              </div>
-
-              <div className="rounded-xl border border-gray-100 bg-gray-50 p-4">
-                <p className="text-sm text-gray-500">Market Items Listed</p>
-                <p className="mt-1 text-2xl font-bold text-gray-950">{marketItemsCount}</p>
+                {role === "User" && (
+                  <Link
+                    href="/become-agent"
+                    className="inline-flex min-h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                  >
+                    Apply to become an agent
+                  </Link>
+                )}
               </div>
             </div>
-
-            {propertyListingsCount === 0 && marketItemsCount === 0 && (
-              <p className="text-gray-600">You have no listings yet</p>
-            )}
-            <button
-              onClick={() => router.push('/dashboard')}
-              className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-            >
-              View My Listings
-            </button>
           </div>
         </section>
-      )}
+
+        {isProfileIncomplete && (
+          <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-amber-800 shadow-sm">
+            <p className="font-semibold">Complete your profile to continue using CASA.</p>
+            <p className="mt-1 text-sm">Full name, phone number, and email are required.</p>
+          </div>
+        )}
+
+        <div className="grid gap-6 lg:grid-cols-[0.9fr_1.1fr]">
+          <aside className="space-y-6">
+            <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+              <h2 className="text-lg font-semibold">Profile Photo</h2>
+              <p className="mt-1 text-sm text-slate-500">Keep your account identity current.</p>
+              <div className="mt-5 flex flex-col gap-3">
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleFileSelect}
+                  className="hidden"
+                  id="photo-upload"
+                />
+                <label
+                  htmlFor="photo-upload"
+                  className="inline-flex min-h-11 cursor-pointer items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                >
+                  {profile?.avatar_url ? "Change Photo" : "Upload Photo"}
+                </label>
+                {selectedFile && (
+                  <button
+                    onClick={handleUpload}
+                    disabled={uploading}
+                    className="inline-flex min-h-11 items-center justify-center rounded-xl bg-emerald-600 px-4 text-sm font-semibold text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {uploading ? "Uploading..." : "Save Photo"}
+                  </button>
+                )}
+              </div>
+            </section>
+
+            <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+              <h2 className="text-lg font-semibold">Account Status</h2>
+              <div className="mt-4 space-y-3">
+                <div className="flex items-center justify-between gap-3 rounded-2xl bg-slate-50 p-4">
+                  <span className="text-sm text-slate-500">Role</span>
+                  <span className="font-semibold">{role}</span>
+                </div>
+                <div className="flex items-center justify-between gap-3 rounded-2xl bg-slate-50 p-4">
+                  <span className="text-sm text-slate-500">Agent status</span>
+                  <span className={`inline-flex rounded-full border px-3 py-1 text-xs font-semibold capitalize ${getStatusBadgeClass()}`}>
+                    {agentStatus}
+                  </span>
+                </div>
+              </div>
+              {getStatusMessage() && (
+                <p className="mt-4 rounded-2xl border border-slate-100 bg-slate-50 p-4 text-sm text-slate-600">{getStatusMessage()}</p>
+              )}
+            </section>
+
+            {shouldShowVerification && (
+              <section className={`rounded-3xl border p-5 shadow-sm sm:p-6 ${verification.className}`}>
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                  <div>
+                    <h2 className="text-lg font-semibold">{verification.title}</h2>
+                    <p className="mt-1 text-sm">{verification.description}</p>
+                  </div>
+                  <span className={`inline-flex w-fit rounded-full border px-3 py-1 text-xs font-semibold ${verification.badgeClassName}`}>
+                    {profile?.verification_status || "pending"}
+                  </span>
+                </div>
+              </section>
+            )}
+
+            {profile?.agent_status === "approved" && (
+              <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+                <h2 className="text-lg font-semibold">Listings</h2>
+                <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-1">
+                  <div className="rounded-2xl bg-slate-50 p-4">
+                    <p className="text-sm text-slate-500">Properties Listed</p>
+                    <p className="mt-1 text-2xl font-bold text-slate-950">{propertyListingsCount}</p>
+                  </div>
+
+                  <div className="rounded-2xl bg-slate-50 p-4">
+                    <p className="text-sm text-slate-500">Market Items Listed</p>
+                    <p className="mt-1 text-2xl font-bold text-slate-950">{marketItemsCount}</p>
+                  </div>
+                </div>
+
+                {propertyListingsCount === 0 && marketItemsCount === 0 && (
+                  <p className="mt-4 text-sm text-slate-500">You have no listings yet.</p>
+                )}
+                <button
+                  onClick={() => router.push("/dashboard")}
+                  className="mt-4 inline-flex min-h-11 w-full items-center justify-center rounded-xl bg-slate-950 px-4 text-sm font-semibold text-white hover:bg-emerald-700"
+                >
+                  View My Listings
+                </button>
+              </section>
+            )}
+          </aside>
+
+          <div className="space-y-6">
+            <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <h2 className="text-xl font-semibold">Profile Details</h2>
+                  <p className="mt-1 text-sm text-slate-500">Your public and contact information.</p>
+                </div>
+                {!isEditing && (
+                  <button
+                    onClick={startEditingProfile}
+                    className="inline-flex min-h-10 items-center justify-center rounded-xl border border-slate-200 px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                  >
+                    {profileActionText}
+                  </button>
+                )}
+              </div>
+
+              {isEditing ? (
+                <div className="mt-5 space-y-4">
+                  <label className="block">
+                    <span className="text-sm font-semibold text-slate-700">Full name</span>
+                    <input
+                      type="text"
+                      value={fullNameInput}
+                      onChange={(e) => setFullNameInput(e.target.value)}
+                      className="mt-2 min-h-12 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100"
+                      placeholder="Enter full name"
+                    />
+                  </label>
+                  <label className="block">
+                    <span className="text-sm font-semibold text-slate-700">Email</span>
+                    <input
+                      type="email"
+                      value={email || ""}
+                      readOnly
+                      className="mt-2 min-h-12 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 text-sm text-slate-500"
+                    />
+                  </label>
+                  <label className="block">
+                    <span className="text-sm font-semibold text-slate-700">Phone number</span>
+                    <input
+                      type="text"
+                      value={phoneNumberInput}
+                      onChange={(e) => setPhoneNumberInput(e.target.value)}
+                      className="mt-2 min-h-12 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100"
+                      placeholder="Enter phone number"
+                    />
+                  </label>
+                  <div className="flex flex-col gap-2 pt-2 sm:flex-row">
+                    <button
+                      onClick={saveProfile}
+                      disabled={savingProfile}
+                      className="inline-flex min-h-11 items-center justify-center rounded-xl bg-slate-950 px-5 text-sm font-semibold text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      {savingProfile ? "Saving..." : "Save Profile"}
+                    </button>
+                    <button
+                      onClick={cancelEditingProfile}
+                      disabled={savingProfile}
+                      className="inline-flex min-h-11 items-center justify-center rounded-xl border border-slate-200 px-5 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="mt-5 grid gap-3 sm:grid-cols-2">
+                  {[
+                    ["Full name", profile?.full_name || "Not provided"],
+                    ["Email", email || "Not provided"],
+                    ["Phone", profile?.phone || "Not provided"],
+                    ["Role", role],
+                    ["Account status", agentStatus],
+                  ].map(([label, value]) => (
+                    <div key={label} className="rounded-2xl border border-slate-100 bg-slate-50 p-4">
+                      <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">{label}</p>
+                      <p className="mt-2 break-words font-semibold text-slate-800">{value}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </section>
+
+            <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <h2 className="text-xl font-semibold">Saved Listings</h2>
+                  <p className="mt-1 text-sm text-slate-500">Properties you saved for later.</p>
+                </div>
+                <Link href="/saved-listings" className="text-sm font-semibold text-emerald-700 hover:underline">
+                  View all
+                </Link>
+              </div>
+
+              {savedListings.length === 0 ? (
+                <div className="mt-5 rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-6 text-center text-sm text-slate-500">
+                  No saved listings yet.
+                </div>
+              ) : (
+                <div className="mt-5 grid gap-4 sm:grid-cols-2">
+                  {savedListings.slice(0, 4).map((item) => {
+                    if (!item.property) return null
+                    const image = Array.isArray(item.property.images) && item.property.images.length > 0
+                      ? item.property.images[0]
+                      : item.property.image || fallbackImage
+
+                    return (
+                      <Link
+                        key={item.savedId}
+                        href={`/property/${item.propertyId}`}
+                        className="group overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm transition md:hover:-translate-y-1 md:hover:shadow-lg"
+                      >
+                        <div className="relative aspect-[4/3] overflow-hidden bg-slate-100">
+                          <Image
+                            src={image}
+                            alt={item.property.title || "Saved listing"}
+                            fill
+                            unoptimized
+                            className="object-cover transition duration-300 md:group-hover:scale-[1.03]"
+                            sizes="(max-width: 640px) 100vw, 50vw"
+                          />
+                        </div>
+                        <div className="p-4">
+                          <h3 className="line-clamp-2 font-bold text-slate-950">{item.property.title || "Untitled listing"}</h3>
+                          <p className="mt-2 text-sm font-medium text-slate-500">{item.property.location || "Location not provided"}</p>
+                          <p className="mt-3 text-lg font-bold text-slate-950">{formatPrice(item.property.price)}</p>
+                        </div>
+                      </Link>
+                    )
+                  })}
+                </div>
+              )}
+            </section>
+          </div>
+        </div>
+      </div>
     </main>
   )
 }
