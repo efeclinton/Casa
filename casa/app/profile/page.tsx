@@ -57,8 +57,8 @@ export default function ProfilePage() {
       setFullNameInput(data?.full_name || "")
       setPhoneNumberInput(data?.phone || "")
 
-      // Fetch listings count if user is an agent
-      if (data?.agent_status !== "none") {
+      // Fetch listing counts only for users allowed to manage listings.
+      if (data?.agent_status === "approved") {
         const [{ count: propertiesCount }, { count: marketCount }] = await Promise.all([
           supabase
             .from("properties")
@@ -440,7 +440,7 @@ export default function ProfilePage() {
         </section>
       )}
 
-      {role === "Agent" && (
+      {profile?.agent_status === "approved" && (
         <section className="mb-8 p-6 bg-white rounded-lg shadow">
           <h2 className="text-2xl font-semibold mb-4">My Listings</h2>
           <div className="space-y-4">

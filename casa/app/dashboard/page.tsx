@@ -52,21 +52,26 @@ export default function Dashboard() {
         return
       }
 
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("agent_status,verification_status")
+        .eq("id", session.user.id)
+        .single()
+
+      if (profile?.agent_status !== "approved") {
+        router.push("/profile")
+        return
+      }
+
       setCurrentUserId(session.user.id)
 
-      const { data } = await supabase
-        .from("properties")
-        .select("*")
-        .eq("owner_id", session.user.id)
-        .order("is_active", { ascending: false })
-        .order("updated_at", { ascending: false, nullsFirst: false })
-
-      const [{ data: profile }, { data: items }] = await Promise.all([
+      const [{ data }, { data: items }] = await Promise.all([
         supabase
-          .from("profiles")
-          .select("role,agent_status,verification_status")
-          .eq("id", session.user.id)
-          .single(),
+          .from("properties")
+          .select("*")
+          .eq("owner_id", session.user.id)
+          .order("is_active", { ascending: false })
+          .order("updated_at", { ascending: false, nullsFirst: false }),
         supabase
           .from("market_items")
           .select("id,title,price,is_active,images")
@@ -74,7 +79,7 @@ export default function Dashboard() {
           .order("created_at", { ascending: false })
       ])
 
-      setIsAgent(profile?.role === "agent" || profile?.agent_status === "approved")
+      setIsAgent(profile.agent_status === "approved")
       setVerificationStatus(profile?.verification_status || "pending")
       setMarketItems(items || [])
       setProperties(data || [])

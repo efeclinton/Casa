@@ -179,7 +179,7 @@ export default function Navbar() {
                 <span className="text-yellow-600">Application Pending</span>
               )}
 
-              {user && (
+              {user && profile?.agent_status === "approved" && (
                 <Link href="/dashboard" onClick={closeMenu}>My Listings</Link>
               )}
 
