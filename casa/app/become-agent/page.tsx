@@ -17,8 +17,7 @@ export default function BecomeAgentPage() {
     nin: "",
     business_name: "",
     years_experience: "",
-    operating_city: "",
-    additional_info: ""
+    operating_city: ""
   })
 
   const [govId, setGovId] = useState<File | null>(null)
@@ -169,8 +168,7 @@ export default function BecomeAgentPage() {
         nin: "",
         business_name: "",
         years_experience: "",
-        operating_city: "",
-        additional_info: ""
+        operating_city: ""
       })
       setGovId(null)
       setSelfie(null)
@@ -333,20 +331,6 @@ export default function BecomeAgentPage() {
                   />
                 </label>
               </div>
-            </section>
-
-            <section className="rounded-2xl border border-slate-100 bg-slate-50/70 p-4 sm:p-5">
-              <h3 className="text-lg font-semibold">Additional Information</h3>
-              <label className="mt-4 block">
-                <span className="text-sm font-semibold text-slate-700">Additional info</span>
-                <textarea
-                  name="additional_info"
-                  placeholder="Additional Info"
-                  value={form.additional_info}
-                  onChange={handleChange}
-                  className="mt-2 min-h-32 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100"
-                />
-              </label>
             </section>
 
             <button
