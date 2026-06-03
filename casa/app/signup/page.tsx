@@ -2,12 +2,15 @@
 
 import { useState } from "react"
 import { supabase } from "../../lib/supabaseClient"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
+import { getSafeRedirectPath } from "../../lib/profileCompletion"
 
 export default function SignupPage() {
 
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const redirect = getSafeRedirectPath(searchParams.get("redirect"))
 
   const [fullName, setFullName] = useState("")
   const [phone, setPhone] = useState("")
@@ -82,7 +85,7 @@ export default function SignupPage() {
 
     alert("Account created successfully")
 
-    router.push("/login")
+    router.push(`/login?redirect=${encodeURIComponent(redirect)}`)
   }
 
   return (
@@ -146,7 +149,7 @@ export default function SignupPage() {
 
       <p className="mt-4 text-sm">
         Already have an account?{" "}
-        <Link href="/login" className="text-green-600">
+        <Link href={`/login?redirect=${encodeURIComponent(redirect)}`} className="text-green-600">
           Login
         </Link>
       </p>

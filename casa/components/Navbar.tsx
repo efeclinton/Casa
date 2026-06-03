@@ -171,10 +171,6 @@ export default function Navbar() {
                 <Link href="/list-property" onClick={closeMenu}>Post Property</Link>
               )}
 
-              {user && profile && profile.agent_status === "none" && (
-                <Link href="/become-agent" onClick={closeMenu}>Become an Agent</Link>
-              )}
-
               {user && profile && profile.agent_status === "pending" && (
                 <span className="text-yellow-600">Application Pending</span>
               )}

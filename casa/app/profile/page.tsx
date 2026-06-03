@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { supabase, getOptimizedAvatarUrl } from "../../lib/supabaseClient"
+import { supabase } from "../../lib/supabaseClient"
 import { useRouter, useSearchParams } from "next/navigation"
 import Image from "next/image"
 import Link from "next/link"
@@ -16,6 +16,7 @@ type Profile = {
   avatar_url?: string
   agent_status?: string
   verification_status?: string
+  referral_code?: string | null
 }
 
 type SavedListing = {
@@ -38,6 +39,17 @@ const formatPrice = (price?: number) =>
 
 const normalizeStatus = (status?: string) => status || "none"
 
+const getReferralNameSegment = (fullName?: string) => {
+  const [firstName] = (fullName || "").trim().split(/\s+/)
+  const clean = (firstName || "AGENT").replace(/[^a-zA-Z0-9]/g, "").toUpperCase()
+  return clean || "AGENT"
+}
+
+const generateReferralCodeCandidate = (fullName?: string) => {
+  const digits = Math.floor(1000 + Math.random() * 9000)
+  return `CASA-${getReferralNameSegment(fullName)}-${digits}`
+}
+
 export default function ProfilePage() {
 
   const router = useRouter()
@@ -53,6 +65,7 @@ export default function ProfilePage() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [uploading, setUploading] = useState(false)
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
+  const [avatarFailed, setAvatarFailed] = useState(false)
   const [propertyListingsCount, setPropertyListingsCount] = useState<number>(0)
   const [marketItemsCount, setMarketItemsCount] = useState<number>(0)
   const [savedListings, setSavedListings] = useState<SavedListing[]>([])
@@ -74,7 +87,35 @@ export default function ProfilePage() {
         .eq("id", user.id)
         .single()
 
-      setProfile(data)
+      let nextProfile = data
+
+      if (data?.agent_status === "approved" && !data?.referral_code) {
+        for (let attempt = 0; attempt < 8; attempt += 1) {
+          const referralCode = generateReferralCodeCandidate(data?.full_name)
+          const { data: existing } = await supabase
+            .from("profiles")
+            .select("id")
+            .eq("referral_code", referralCode)
+            .maybeSingle()
+
+          if (existing) continue
+
+          const { data: updatedProfile, error: referralError } = await supabase
+            .from("profiles")
+            .update({ referral_code: referralCode })
+            .eq("id", user.id)
+            .select("*")
+            .single()
+
+          if (!referralError && updatedProfile) {
+            nextProfile = updatedProfile
+          }
+          break
+        }
+      }
+
+      setProfile(nextProfile)
+      setAvatarFailed(false)
       setFullNameInput(data?.full_name || "")
       setPhoneNumberInput(data?.phone || "")
 
@@ -83,7 +124,7 @@ export default function ProfilePage() {
         .select("id, property_id, properties(*)")
         .eq("user_id", user.id)
 
-      if (data?.agent_status === "approved") {
+      if (nextProfile?.agent_status === "approved") {
         const [{ count: propertiesCount }, { count: marketCount }, { data: savedData, error: savedError }] = await Promise.all([
           supabase
             .from("properties")
@@ -153,6 +194,10 @@ export default function ProfilePage() {
   const userDisplayName =
     `${user?.user_metadata?.first_name || ""} ${user?.user_metadata?.last_name || ""}`.trim() || "User"
   const avatarName = profile?.full_name || userDisplayName
+  const avatarSrc = !avatarFailed ? previewUrl || profile?.avatar_url : null
+  const referralLink = profile?.referral_code && typeof window !== "undefined"
+    ? `${window.location.origin}/agent-referral?code=${encodeURIComponent(profile.referral_code)}`
+    : ""
   const initials = avatarName
     .split(" ")
     .map((part) => part[0])
@@ -214,6 +259,7 @@ export default function ProfilePage() {
     if (file) {
       const url = URL.createObjectURL(file)
       setPreviewUrl(url)
+      setAvatarFailed(false)
     } else {
       setPreviewUrl(null)
     }
@@ -255,6 +301,7 @@ export default function ProfilePage() {
       setProfile({ ...profile, avatar_url: publicUrl })
       setSelectedFile(null)
       setPreviewUrl(null)
+      setAvatarFailed(false)
 
       alert("Profile photo updated")
 
@@ -325,6 +372,17 @@ export default function ProfilePage() {
     if (redirect !== "/") router.push(redirect)
   }
 
+  const copyText = async (value: string, label: string) => {
+    if (!value) return
+
+    try {
+      await navigator.clipboard.writeText(value)
+      alert(`${label} copied`)
+    } catch {
+      alert(`Copy failed. ${label}: ${value}`)
+    }
+  }
+
   return (
     <main className="min-h-screen bg-slate-50 px-4 py-6 text-slate-950 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-6xl space-y-6">
@@ -333,15 +391,13 @@ export default function ProfilePage() {
             <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
                 <div className="relative h-24 w-24 overflow-hidden rounded-3xl border border-white bg-slate-200 shadow-sm">
-                  {(previewUrl || profile?.avatar_url) ? (
-                    <Image
-                      src={previewUrl || getOptimizedAvatarUrl(profile?.avatar_url || null, avatarName)}
+                  {avatarSrc ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={avatarSrc}
                       alt="Profile"
-                      fill
-                      className="object-cover"
-                      sizes="96px"
-                      placeholder="blur"
-                      blurDataURL="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iOTYiIGhlaWdodD0iOTYiIHZpZXdCb3g9IjAgMCA5NiA5NiIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGNpcmNsZSBjeD0iNDgiIGN5PSI0OCIgcj0iNDgiIGZpbGw9IiNFNUU3RUIiLz4KPC9zdmc+"
+                      className="h-full w-full object-cover"
+                      onError={() => setAvatarFailed(true)}
                     />
                   ) : (
                     <div className="flex h-full w-full items-center justify-center text-2xl font-bold text-slate-500">
@@ -376,14 +432,6 @@ export default function ProfilePage() {
                 >
                   {profileActionText}
                 </button>
-                {role === "User" && (
-                  <Link
-                    href="/become-agent"
-                    className="inline-flex min-h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50"
-                  >
-                    Apply to become an agent
-                  </Link>
-                )}
               </div>
             </div>
           </div>
@@ -484,6 +532,28 @@ export default function ProfilePage() {
                 >
                   View My Listings
                 </button>
+              </section>
+            )}
+
+            {profile?.agent_status === "approved" && profile?.referral_code && (
+              <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+                <h2 className="text-lg font-semibold">Invite an Agent</h2>
+                <p className="mt-1 text-sm leading-6 text-slate-500">
+                  Share this link with trusted agents you want to bring onto CASA.
+                </p>
+
+                <div className="mt-4 space-y-3">
+                  <div className="rounded-2xl bg-slate-50 p-4">
+                    <p className="mt-2 break-all text-sm font-semibold text-slate-800">{referralLink}</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => copyText(referralLink, "Referral link")}
+                    className="inline-flex min-h-11 w-full items-center justify-center rounded-xl bg-slate-950 px-4 text-sm font-semibold text-white hover:bg-emerald-700"
+                  >
+                    Copy Referral Link
+                  </button>
+                </div>
               </section>
             )}
           </aside>

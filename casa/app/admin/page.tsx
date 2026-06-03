@@ -27,6 +27,17 @@ type AgentApplication = {
   user_id: string
   full_name?: string
   email?: string
+  phone?: string | null
+  business_name?: string | null
+  operating_city?: string | null
+  years_experience?: string | null
+  referral_code?: string | null
+  referred_by?: string | null
+  status?: string | null
+  referrer?: {
+    full_name?: string | null
+    email?: string | null
+  } | null
 }
 
 type RatingSummary = {
@@ -183,7 +194,25 @@ export default function AdminPage() {
       return
     }
 
-    setApplications(data || [])
+    const rows = data || []
+    const referrerIds = Array.from(new Set(rows.map((app) => app.referred_by).filter(Boolean) as string[]))
+
+    if (!referrerIds.length) {
+      setApplications(rows)
+      return
+    }
+
+    const { data: referrers } = await supabase
+      .from("profiles")
+      .select("id, full_name, email")
+      .in("id", referrerIds)
+
+    const referrerMap = new Map((referrers || []).map((profile) => [profile.id, profile]))
+
+    setApplications(rows.map((app) => ({
+      ...app,
+      referrer: app.referred_by ? referrerMap.get(app.referred_by) || null : null,
+    })))
   }
 
   const approveAgent = async (app: AgentApplication) => {
@@ -638,8 +667,23 @@ export default function AdminPage() {
               <div className="grid gap-4 md:grid-cols-2">
                 {applications.map((app) => (
                   <div key={app.id} className="rounded-2xl border border-slate-200 p-4 shadow-sm">
-                    <p className="font-semibold">{app.full_name || "Unnamed applicant"}</p>
-                    <p className="mt-1 text-sm text-slate-500">{app.email}</p>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <p className="font-semibold">{app.full_name || "Unnamed applicant"}</p>
+                      <Badge className={statusClass(app.status || "pending")}>{app.status || "pending"}</Badge>
+                    </div>
+                    <div className="mt-3 grid gap-2 text-sm text-slate-600 sm:grid-cols-2">
+                      <p><span className="font-semibold text-slate-900">Email:</span> {app.email || "Not provided"}</p>
+                      <p><span className="font-semibold text-slate-900">Phone:</span> {app.phone || "Not provided"}</p>
+                      <p><span className="font-semibold text-slate-900">Business:</span> {app.business_name || "Not provided"}</p>
+                      <p><span className="font-semibold text-slate-900">Operating city:</span> {app.operating_city || "Not provided"}</p>
+                      <p><span className="font-semibold text-slate-900">Experience:</span> {app.years_experience || "Not provided"}</p>
+                      <p><span className="font-semibold text-slate-900">Referral code:</span> {app.referral_code || "None"}</p>
+                    </div>
+                    <div className="mt-3 rounded-xl bg-slate-50 p-3 text-sm text-slate-600">
+                      <p className="font-semibold text-slate-900">Referred by</p>
+                      <p>{app.referrer?.full_name || "Not available"}</p>
+                      {app.referrer?.email && <p className="mt-1 text-slate-500">{app.referrer.email}</p>}
+                    </div>
                     <div className="mt-4 flex flex-wrap gap-2">
                       <button onClick={() => approveAgent(app)} className="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-emerald-700">
                         Approve
