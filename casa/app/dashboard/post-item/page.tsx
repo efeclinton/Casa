@@ -184,88 +184,150 @@ export default function PostItemPage() {
   }
 
   if (loading) {
-    return <main className="max-w-2xl mx-auto p-10">Loading...</main>
+    return (
+      <main className="min-h-screen bg-slate-50 px-4 py-10">
+        <div className="mx-auto max-w-3xl rounded-3xl border border-slate-200 bg-white p-8 text-center text-slate-600 shadow-sm">
+          Loading...
+        </div>
+      </main>
+    )
   }
 
   if (!isAgent) {
     return (
-      <main className="max-w-2xl mx-auto p-10">
-        <h1 className="text-2xl font-bold mb-2">Post Item</h1>
-        <p className="text-gray-600">Only agents can post items in Campus Market.</p>
+      <main className="min-h-screen bg-slate-50 px-4 py-10">
+        <section className="mx-auto max-w-2xl rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
+          <p className="text-sm font-semibold uppercase tracking-[0.16em] text-emerald-700">CASA Market</p>
+          <h1 className="mt-3 text-3xl font-bold tracking-tight text-slate-950">Post Item</h1>
+          <p className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">Only agents can post items in Campus Market.</p>
+        </section>
       </main>
     )
   }
 
   return (
-    <main className="max-w-2xl mx-auto p-6 md:p-10">
-      <h1 className="text-3xl font-bold mb-6">{editId ? "Edit Item" : "Post Item"}</h1>
+    <main className="min-h-screen bg-slate-50 px-4 py-6 text-slate-950 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-3xl">
+        <header className="mb-6 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
+          <p className="text-sm font-semibold uppercase tracking-[0.16em] text-emerald-700">CASA Market</p>
+          <h1 className="mt-3 text-3xl font-bold tracking-tight sm:text-4xl">{editId ? "Edit Item" : "Post Item"}</h1>
+          <p className="mt-2 max-w-2xl text-sm text-slate-500">
+            Add clear item details, pricing, images, and seller contact information for campus buyers.
+          </p>
+        </header>
 
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <input
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          placeholder="Title"
-          className="w-full border p-3 rounded"
-          required
-        />
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+            <h2 className="text-xl font-semibold">Item Information</h2>
+            <p className="mt-1 text-sm text-slate-500">Describe the item buyers will see in Campus Market.</p>
+            <div className="mt-5 space-y-4">
+              <label className="block">
+                <span className="text-sm font-semibold text-slate-700">Title</span>
+                <input
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  placeholder="Title"
+                  className="mt-2 min-h-12 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100"
+                  required
+                />
+              </label>
 
-        <input
-          type="number"
-          value={price}
-          onChange={(e) => setPrice(e.target.value)}
-          placeholder="Price"
-          className="w-full border p-3 rounded"
-          required
-        />
+              <label className="block">
+                <span className="text-sm font-semibold text-slate-700">Description</span>
+                <textarea
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  placeholder="Description"
+                  className="mt-2 min-h-32 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100"
+                  required
+                />
+              </label>
+            </div>
+          </section>
 
-        <input
-          value={location}
-          onChange={(e) => setLocation(e.target.value)}
-          placeholder="Location"
-          className="w-full border p-3 rounded"
-          required
-        />
+          <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+            <h2 className="text-xl font-semibold">Price & Location</h2>
+            <div className="mt-5 grid gap-4 sm:grid-cols-2">
+              <label className="block">
+                <span className="text-sm font-semibold text-slate-700">Price</span>
+                <input
+                  type="number"
+                  value={price}
+                  onChange={(e) => setPrice(e.target.value)}
+                  placeholder="Price"
+                  className="mt-2 min-h-12 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100"
+                  required
+                />
+              </label>
 
-        <textarea
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-          placeholder="Description"
-          className="w-full border p-3 rounded min-h-28"
-          required
-        />
+              <label className="block">
+                <span className="text-sm font-semibold text-slate-700">Location</span>
+                <input
+                  value={location}
+                  onChange={(e) => setLocation(e.target.value)}
+                  placeholder="Location"
+                  className="mt-2 min-h-12 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100"
+                  required
+                />
+              </label>
+            </div>
+          </section>
 
-        <input
-          value={whatsappNumber}
-          onChange={(e) => setWhatsappNumber(e.target.value)}
-          placeholder="WhatsApp number (e.g. 2348012345678)"
-          className="w-full border p-3 rounded"
-          required
-        />
+          <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+            <h2 className="text-xl font-semibold">Images</h2>
+            <p className="mt-1 text-sm text-slate-500">Upload item photos. Existing images remain unless you select replacements.</p>
 
-        {existingImages.length > 0 && (
-          <div className="grid grid-cols-3 gap-2">
-            {existingImages.map((img) => (
-              <img key={img} src={img} alt="Existing" className="w-full h-24 object-cover rounded" />
-            ))}
+            {existingImages.length > 0 && (
+              <div className="mt-5 grid grid-cols-3 gap-2">
+                {existingImages.map((img) => (
+                  <img key={img} src={img} alt="Existing" className="h-24 w-full rounded-xl object-cover" />
+                ))}
+              </div>
+            )}
+
+            <label className="mt-5 block rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-4">
+              <span className="text-sm font-semibold text-slate-700">Item images</span>
+              <span className="mt-1 block text-xs text-slate-500">Select one or more images from your device.</span>
+              <input
+                type="file"
+                multiple
+                accept="image/*"
+                onChange={(e) => setImages(Array.from(e.target.files || []))}
+                className="mt-3 w-full rounded-xl border border-slate-200 bg-white p-3 text-sm"
+              />
+            </label>
+          </section>
+
+          <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+            <h2 className="text-xl font-semibold">Contact/Seller Information</h2>
+            <label className="mt-5 block">
+              <span className="text-sm font-semibold text-slate-700">WhatsApp number</span>
+              <input
+                value={whatsappNumber}
+                onChange={(e) => setWhatsappNumber(e.target.value)}
+                placeholder="WhatsApp number (e.g. 2348012345678)"
+                className="mt-2 min-h-12 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100"
+                required
+              />
+            </label>
+          </section>
+
+          <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+            <h2 className="text-xl font-semibold">Additional Details</h2>
+            <p className="mt-1 text-sm text-slate-500">Review your item information before posting.</p>
+          </section>
+
+          <div className="sticky bottom-0 -mx-4 border-t border-slate-200 bg-slate-50/95 px-4 py-4 backdrop-blur sm:static sm:mx-0 sm:border-0 sm:bg-transparent sm:px-0 sm:py-0">
+            <button
+              type="submit"
+              disabled={saving}
+              className="min-h-12 w-full rounded-xl bg-slate-950 px-6 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {saving ? "Saving..." : editId ? "Update Item" : "Post Item"}
+            </button>
           </div>
-        )}
-
-        <input
-          type="file"
-          multiple
-          accept="image/*"
-          onChange={(e) => setImages(Array.from(e.target.files || []))}
-          className="w-full border p-3 rounded"
-        />
-
-        <button
-          type="submit"
-          disabled={saving}
-          className="w-full bg-black text-white py-3 rounded disabled:opacity-50"
-        >
-          {saving ? "Saving..." : editId ? "Update Item" : "Post Item"}
-        </button>
-      </form>
+        </form>
+      </div>
     </main>
   )
 }
