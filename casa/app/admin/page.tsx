@@ -34,8 +34,14 @@ type AgentApplication = {
   years_experience?: string | null
   referral_code?: string | null
   referred_by?: string | null
+  nin?: string | null
+  government_id_url?: string | null
+  selfie_with_id_url?: string | null
+  created_at?: string | null
+  updated_at?: string | null
   status?: string | null
   referrer?: {
+    id?: string | null
     full_name?: string | null
     business_name?: string | null
     email?: string | null
@@ -66,15 +72,37 @@ type Agent = {
 type UserProfile = {
   id: string
   full_name?: string | null
+  business_name?: string | null
   email?: string | null
   phone?: string | null
+  avatar_url?: string | null
   role?: string | null
   status?: string | null
   agent_status?: string | null
   verification_status?: VerificationStatus | null
+  referral_code?: string | null
+  created_at?: string | null
+  updated_at?: string | null
   last_login?: string | null
   last_sign_in_at?: string | null
   login_count?: number | null
+}
+
+type UserDetails = {
+  profile: UserProfile
+  application: AgentApplication | null
+  applicationReferrer: UserProfile | null
+  stats: {
+    properties: number
+    marketItems: number
+    savedListings: number
+    propertyInquiries: number
+    notifications: number
+    reviews: number
+    averageRating: number
+    contacts: number
+    successfulReferrals: number
+  }
 }
 
 type FlaggedListing = {
@@ -158,6 +186,26 @@ function SectionHeader({
   )
 }
 
+function DetailItem({ label, value }: { label: string; value?: ReactNode }) {
+  const displayValue = value === null || value === undefined || value === "" ? "Not available" : value
+
+  return (
+    <div className="rounded-2xl border border-slate-100 bg-slate-50 p-4">
+      <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">{label}</p>
+      <div className="mt-2 break-words text-sm font-semibold text-slate-800">{displayValue}</div>
+    </div>
+  )
+}
+
+function DetailSection({ title, children }: { title: string; children: ReactNode }) {
+  return (
+    <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+      <h3 className="text-lg font-semibold text-slate-950">{title}</h3>
+      <div className="mt-4 grid gap-3 sm:grid-cols-2">{children}</div>
+    </section>
+  )
+}
+
 export default function AdminPage() {
   const router = useRouter()
 
@@ -178,6 +226,8 @@ export default function AdminPage() {
   const [loadingAgents, setLoadingAgents] = useState(false)
   const [loading, setLoading] = useState(false)
   const [checkingAdmin, setCheckingAdmin] = useState(true)
+  const [loadingUserDetails, setLoadingUserDetails] = useState(false)
+  const [userDetails, setUserDetails] = useState<UserDetails | null>(null)
   const [categoryFilter, setCategoryFilter] = useState("all")
   const [verificationMap, setVerificationMap] = useState<Record<string, VerificationStatus>>({})
   const [confirmChange, setConfirmChange] = useState<{
@@ -496,6 +546,109 @@ export default function AdminPage() {
     setAgentListings(data || [])
   }
 
+  const openUserDetails = async (userId: string) => {
+    setLoadingUserDetails(true)
+    setUserDetails(null)
+
+    const { data: profile, error: profileError } = await supabase
+      .from("profiles")
+      .select("*")
+      .eq("id", userId)
+      .single()
+
+    if (profileError || !profile) {
+      alert("Failed to load user details")
+      setLoadingUserDetails(false)
+      return
+    }
+
+    const [
+      propertiesResult,
+      marketItemsResult,
+      savedListingsResult,
+      inquiriesResult,
+      notificationsResult,
+      contactsResult,
+      ratingSummaryResult,
+      referralsResult,
+      applicationResult,
+    ] = await Promise.all([
+      supabase
+        .from("properties")
+        .select("*", { count: "exact", head: true })
+        .or(`owner_id.eq.${userId},agent_id.eq.${userId}`),
+      supabase
+        .from("market_items")
+        .select("*", { count: "exact", head: true })
+        .eq("user_id", userId),
+      supabase
+        .from("saved_listings")
+        .select("*", { count: "exact", head: true })
+        .eq("user_id", userId),
+      supabase
+        .from("property_inquiries")
+        .select("*", { count: "exact", head: true })
+        .eq("user_id", userId),
+      supabase
+        .from("notifications")
+        .select("*", { count: "exact", head: true })
+        .eq("user_id", userId),
+      supabase
+        .from("agent_contacts")
+        .select("*", { count: "exact", head: true })
+        .eq("agent_id", userId),
+      supabase
+        .from("agent_rating_summary")
+        .select("avg_rating, review_count")
+        .eq("agent_id", userId)
+        .maybeSingle(),
+      supabase
+        .from("agent_applications")
+        .select("*", { count: "exact", head: true })
+        .eq("referred_by", userId)
+        .eq("status", "approved"),
+      supabase
+        .from("agent_applications")
+        .select("*")
+        .eq("user_id", userId)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle(),
+    ])
+
+    const application = (applicationResult.data || null) as AgentApplication | null
+    let applicationReferrer: UserProfile | null = null
+
+    if (application?.referred_by) {
+      const { data: referrer } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("id", application.referred_by)
+        .maybeSingle()
+
+      applicationReferrer = referrer as UserProfile | null
+    }
+
+    setUserDetails({
+      profile: profile as UserProfile,
+      application,
+      applicationReferrer,
+      stats: {
+        properties: propertiesResult.count || 0,
+        marketItems: marketItemsResult.count || 0,
+        savedListings: savedListingsResult.count || 0,
+        propertyInquiries: inquiriesResult.count || 0,
+        notifications: notificationsResult.count || 0,
+        reviews: ratingSummaryResult.data?.review_count || 0,
+        averageRating: Number(ratingSummaryResult.data?.avg_rating || 0),
+        contacts: contactsResult.count || 0,
+        successfulReferrals: referralsResult.count || 0,
+      },
+    })
+
+    setLoadingUserDetails(false)
+  }
+
   const updateVerificationStatus = async () => {
     if (!confirmChange) return
 
@@ -650,6 +803,7 @@ export default function AdminPage() {
     { label: "Active Users", value: allProfiles.filter((profile) => profile.status === "active" || profile.agent_status === "approved").length },
     { label: "Pending Verification", value: allProfiles.filter((profile) => (profile.verification_status || "pending") === "pending").length },
   ]
+  const adminUsers = allProfiles.filter((profile) => profile.role === "admin")
 
   if (checkingAdmin) {
     return <p className="min-h-screen bg-slate-50 p-10 text-slate-700">Checking admin access...</p>
@@ -799,6 +953,13 @@ export default function AdminPage() {
                             <p className="text-slate-500">Login count</p>
                             <p className="font-semibold">{user.login_count ?? "Not available"}</p>
                           </div>
+                          <button
+                            type="button"
+                            onClick={() => void openUserDetails(user.id)}
+                            className="min-h-11 rounded-xl bg-slate-950 px-4 text-sm font-semibold text-white hover:bg-emerald-700 sm:col-span-2"
+                          >
+                            View Details
+                          </button>
                         </div>
                       </div>
                     </div>
@@ -807,6 +968,39 @@ export default function AdminPage() {
               </div>
             )}
           </section>
+
+          {adminUsers.length > 0 && (
+            <section className="rounded-3xl bg-white p-5 shadow-sm ring-1 ring-slate-200/80 sm:p-6">
+              <SectionHeader title="Admins" description="Review admin account details and activity signals." />
+              <div className="grid gap-4 md:grid-cols-2">
+                {adminUsers.map((admin) => {
+                  const lastLogin = admin.last_login || admin.last_sign_in_at
+                  return (
+                    <div key={admin.id} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <p className="text-lg font-semibold">{admin.full_name || admin.email || "Admin user"}</p>
+                        <Badge className={statusClass(admin.status)}>{admin.status || "unknown"}</Badge>
+                        <Badge className={statusClass(admin.agent_status)}>{admin.agent_status || "none"}</Badge>
+                      </div>
+                      <div className="mt-2 grid gap-1 text-sm text-slate-500 sm:grid-cols-2">
+                        <p className="truncate">{admin.email || "No email on file"}</p>
+                        <p>{admin.phone || "No phone on file"}</p>
+                        <p>Last login: {formatDate(lastLogin)}</p>
+                        <p>Login count: {admin.login_count ?? "Not available"}</p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => void openUserDetails(admin.id)}
+                        className="mt-4 min-h-11 w-full rounded-xl bg-slate-950 px-4 text-sm font-semibold text-white hover:bg-emerald-700"
+                      >
+                        View Details
+                      </button>
+                    </div>
+                  )
+                })}
+              </div>
+            </section>
+          )}
 
           <section className="rounded-3xl bg-white p-5 shadow-sm ring-1 ring-slate-200/80 sm:p-6">
             <SectionHeader title="Agents" description="Manage agent access, verification, listings, contacts, and ratings." />
@@ -897,6 +1091,9 @@ export default function AdminPage() {
                       </div>
 
                       <div className="flex flex-col gap-3 xl:min-w-[360px] xl:items-end">
+                        <button onClick={() => void openUserDetails(agent.id)} className="w-full rounded-xl bg-slate-950 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700 xl:w-auto">
+                          View Details
+                        </button>
                         <button onClick={() => loadAgentListings(agent)} className="w-full rounded-xl border border-blue-200 bg-blue-50 px-4 py-2 text-sm font-semibold text-blue-700 hover:bg-blue-100 xl:w-auto">
                           View Listings
                         </button>
@@ -1051,6 +1248,146 @@ export default function AdminPage() {
           </section>
         </div>
       </section>
+
+      {(loadingUserDetails || userDetails) && (
+        <div className="fixed inset-0 z-50 flex justify-end bg-slate-950/50">
+          <button
+            type="button"
+            aria-label="Close user details"
+            className="hidden flex-1 md:block"
+            onClick={() => {
+              setUserDetails(null)
+              setLoadingUserDetails(false)
+            }}
+          />
+          <aside className="h-full w-full max-w-3xl overflow-y-auto bg-slate-50 p-4 shadow-2xl sm:p-6">
+            <div className="mb-4 flex items-start justify-between gap-4 rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+              <div>
+                <p className="text-sm font-semibold uppercase tracking-[0.16em] text-emerald-700">User Details</p>
+                <h2 className="mt-2 text-2xl font-bold tracking-tight text-slate-950">
+                  {userDetails
+                    ? getAgentDisplayName(userDetails.profile, userDetails.profile.full_name || userDetails.profile.email || "CASA User")
+                    : "Loading user..."}
+                </h2>
+                <p className="mt-1 text-sm text-slate-500">Read-only account overview</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setUserDetails(null)
+                  setLoadingUserDetails(false)
+                }}
+                className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 text-lg font-semibold text-slate-600 hover:bg-slate-50"
+              >
+                x
+              </button>
+            </div>
+
+            {loadingUserDetails || !userDetails ? (
+              <div className="rounded-3xl border border-slate-200 bg-white p-8 text-center text-slate-500 shadow-sm">
+                Loading complete user details...
+              </div>
+            ) : (
+              <div className="space-y-5">
+                <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+                  <div className="flex flex-col gap-5 sm:flex-row sm:items-center">
+                    <div className="h-24 w-24 overflow-hidden rounded-3xl border border-slate-200 bg-slate-100">
+                      {userDetails.profile.avatar_url ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={userDetails.profile.avatar_url}
+                          alt={userDetails.profile.full_name || userDetails.profile.email || "Profile photo"}
+                          className="h-full w-full object-cover"
+                        />
+                      ) : (
+                        <div className="flex h-full w-full items-center justify-center text-2xl font-bold text-slate-500">
+                          {(userDetails.profile.full_name || userDetails.profile.email || "U").charAt(0).toUpperCase()}
+                        </div>
+                      )}
+                    </div>
+                    <div className="min-w-0">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <h3 className="text-xl font-bold text-slate-950">
+                          {userDetails.profile.full_name || userDetails.profile.email || "Unnamed user"}
+                        </h3>
+                        <Badge className={statusClass(userDetails.profile.status)}>{userDetails.profile.status || "unknown"}</Badge>
+                        <Badge className={statusClass(userDetails.profile.agent_status)}>{userDetails.profile.agent_status || "none"}</Badge>
+                        <VerificationBadge status={userDetails.profile.verification_status} />
+                      </div>
+                      <p className="mt-2 text-sm text-slate-500">{userDetails.profile.email || "No email on file"}</p>
+                    </div>
+                  </div>
+                </section>
+
+                <DetailSection title="Profile">
+                  <DetailItem label="Full Name" value={userDetails.profile.full_name} />
+                  <DetailItem label="Business Name" value={userDetails.profile.business_name} />
+                  <DetailItem label="Email" value={userDetails.profile.email} />
+                  <DetailItem label="Phone" value={userDetails.profile.phone} />
+                  <DetailItem label="User ID" value={userDetails.profile.id} />
+                  <DetailItem label="Profile Photo" value={userDetails.profile.avatar_url} />
+                </DetailSection>
+
+                <DetailSection title="Account">
+                  <DetailItem label="Role" value={<Badge className={statusClass(userDetails.profile.role)}>{userDetails.profile.role || "unknown"}</Badge>} />
+                  <DetailItem label="Agent Status" value={<Badge className={statusClass(userDetails.profile.agent_status)}>{userDetails.profile.agent_status || "none"}</Badge>} />
+                  <DetailItem label="Verification Status" value={<VerificationBadge status={userDetails.profile.verification_status} />} />
+                  <DetailItem label="Account Status" value={<Badge className={statusClass(userDetails.profile.status)}>{userDetails.profile.status || "unknown"}</Badge>} />
+                  <DetailItem label="Created At" value={formatDate(userDetails.profile.created_at)} />
+                  <DetailItem label="Updated At" value={formatDate(userDetails.profile.updated_at)} />
+                  <DetailItem label="Last Login" value={formatDate(userDetails.profile.last_login || userDetails.profile.last_sign_in_at)} />
+                  <DetailItem label="Login Count" value={userDetails.profile.login_count ?? "Not available"} />
+                </DetailSection>
+
+                {(userDetails.profile.role === "agent" || userDetails.profile.agent_status === "approved") && (
+                  <DetailSection title="Agent Information">
+                    <DetailItem label="Total Property Listings" value={userDetails.stats.properties} />
+                    <DetailItem label="Total Marketplace Items" value={userDetails.stats.marketItems} />
+                    <DetailItem label="Total Reviews" value={userDetails.stats.reviews} />
+                    <DetailItem label="Average Rating" value={`${userDetails.stats.averageRating.toFixed(1)} / 5`} />
+                    <DetailItem label="Total Contacts Generated" value={userDetails.stats.contacts} />
+                    <DetailItem label="Referral Code" value={userDetails.profile.referral_code} />
+                    <DetailItem
+                      label="Referred By"
+                      value={userDetails.applicationReferrer
+                        ? `${getAgentDisplayName(userDetails.applicationReferrer)} (${userDetails.applicationReferrer.email || "no email"})`
+                        : "Not available"}
+                    />
+                    <DetailItem label="Number Of Successful Referrals" value={userDetails.stats.successfulReferrals} />
+                  </DetailSection>
+                )}
+
+                <DetailSection title="Activity">
+                  <DetailItem label="Properties Listed" value={userDetails.stats.properties} />
+                  <DetailItem label="Marketplace Items Listed" value={userDetails.stats.marketItems} />
+                  <DetailItem label="Saved Listings" value={userDetails.stats.savedListings} />
+                  <DetailItem label="Property Inquiries" value={userDetails.stats.propertyInquiries} />
+                  <DetailItem label="Notifications" value={userDetails.stats.notifications} />
+                </DetailSection>
+
+                {userDetails.application && (
+                  <DetailSection title="Application">
+                    <DetailItem label="Application Status" value={<Badge className={statusClass(userDetails.application.status)}>{userDetails.application.status || "unknown"}</Badge>} />
+                    <DetailItem label="Business Name" value={userDetails.application.business_name} />
+                    <DetailItem label="Years Experience" value={userDetails.application.years_experience} />
+                    <DetailItem label="Operating City" value={userDetails.application.operating_city} />
+                    <DetailItem label="Referral Code Used" value={userDetails.application.referral_code} />
+                    <DetailItem
+                      label="Referring Agent"
+                      value={userDetails.applicationReferrer
+                        ? `${getAgentDisplayName(userDetails.applicationReferrer)} (${userDetails.applicationReferrer.email || "no email"})`
+                        : "Not available"}
+                    />
+                    <DetailItem label="NIN" value={userDetails.application.nin} />
+                    <DetailItem label="Government ID URL" value={userDetails.application.government_id_url} />
+                    <DetailItem label="Selfie With ID URL" value={userDetails.application.selfie_with_id_url} />
+                  </DetailSection>
+                )}
+              </div>
+            )}
+          </aside>
+        </div>
+      )}
 
       {confirmChange && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 p-4">
