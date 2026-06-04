@@ -7,10 +7,12 @@ import Head from "next/head"
 import Link from "next/link"
 import VerifiedAgentBadge from "../../../components/VerifiedAgentBadge"
 import { ensureProfileComplete } from "../../../lib/profileCompletion"
+import { getAgentDisplayName } from "../../../lib/agentDisplay"
 
 type SellerProfile = {
   id?: string
   full_name?: string
+  business_name?: string | null
   email?: string
   phone?: string
   avatar_url?: string
@@ -45,7 +47,7 @@ export default function MarketItemDetailPage({ itemId }: MarketItemDetailClientP
     const loadItem = async () => {
       const { data } = await supabase
         .from("market_items")
-        .select("*, profiles ( id, full_name, phone, avatar_url, verification_status )")
+        .select("*, profiles ( id, full_name, business_name, phone, avatar_url, verification_status )")
         .eq("id", id)
         .single()
 
@@ -135,6 +137,7 @@ export default function MarketItemDetailPage({ itemId }: MarketItemDetailClientP
       : item.user_id
 
   const currentUrl = typeof window !== "undefined" ? window.location.href : ""
+  const sellerDisplayName = getAgentDisplayName(item.profiles, item.profiles?.email || "CASA Agent")
 
   return (
     <main className="w-full max-w-4xl mx-auto px-4 py-6 sm:py-8 space-y-6">
@@ -158,7 +161,7 @@ export default function MarketItemDetailPage({ itemId }: MarketItemDetailClientP
               },
               seller: {
                 "@type": "Person",
-                name: item.profiles?.full_name || "CASA seller",
+                name: sellerDisplayName,
               },
             }),
           }}
@@ -194,13 +197,13 @@ export default function MarketItemDetailPage({ itemId }: MarketItemDetailClientP
             />
           ) : (
             <div className="w-10 h-10 rounded-full bg-gray-300 flex items-center justify-center">
-              {item.profiles?.full_name?.charAt(0) || "U"}
+              {sellerDisplayName.charAt(0)}
             </div>
           )}
           <div>
             <div className="flex flex-wrap items-center gap-2">
               <p className="font-medium">
-                {item.profiles?.full_name || item.profiles?.email || "Seller"}
+                {sellerDisplayName}
               </p>
               <VerifiedAgentBadge status={item.profiles?.verification_status} />
             </div>

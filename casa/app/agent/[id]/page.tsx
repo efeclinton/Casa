@@ -9,10 +9,12 @@ import type { User } from "@supabase/supabase-js"
 import MarketItemCard from "../../../components/MarketItemCard"
 import VerifiedAgentBadge from "../../../components/VerifiedAgentBadge"
 import { ensureProfileComplete } from "../../../lib/profileCompletion"
+import { getAgentDisplayName } from "../../../lib/agentDisplay"
 
 type AgentProfile = {
   id: string
   full_name?: string
+  business_name?: string | null
   avatar_url?: string | null
   phone?: string
   verification_status?: string | null
@@ -309,8 +311,9 @@ export default function AgentProfilePage() {
       phone = "234" + phone.slice(1)
     }
 
+    const agentDisplayName = getAgentDisplayName(agent)
     const whatsappMessage = encodeURIComponent(
-      `Hello, I'm interested in the property listings by ${agent.full_name} on Casa.`
+      `Hello, I'm interested in the property listings by ${agentDisplayName} on Casa.`
     )
     const whatsappLink = `https://wa.me/${phone}?text=${whatsappMessage}`
 
@@ -331,6 +334,7 @@ export default function AgentProfilePage() {
   if (!agent) return <main className="px-4 py-6 sm:p-10">Agent not found</main>
 
   const isViewingOwnProfile = Boolean(user && user.id === agent.id)
+  const agentDisplayName = getAgentDisplayName(agent)
 
   return (
     <main className="max-w-6xl mx-auto px-4 py-6 sm:p-10 space-y-6">
@@ -340,8 +344,8 @@ export default function AgentProfilePage() {
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
               <div className="relative h-24 w-24 flex-shrink-0">
                 <Image
-                  src={getOptimizedAvatarUrl(agent.avatar_url || null, agent.full_name || "Agent")}
-                  alt={`${agent.full_name || "Agent"} avatar`}
+                  src={getOptimizedAvatarUrl(agent.avatar_url || null, agentDisplayName)}
+                  alt={`${agentDisplayName} avatar`}
                   width={96}
                   height={96}
                   className="rounded-full object-cover"
@@ -351,7 +355,7 @@ export default function AgentProfilePage() {
               </div>
               <div>
                 <div className="flex flex-wrap items-center gap-2">
-                  <h1 className="text-3xl font-bold tracking-tight text-gray-950">{agent.full_name || "Agent"}</h1>
+                  <h1 className="text-3xl font-bold tracking-tight text-gray-950">{agentDisplayName}</h1>
                   <VerifiedAgentBadge status={agent.verification_status} />
                 </div>
                 {agent.verification_status === "verified" && (

@@ -5,6 +5,7 @@ import type { ReactNode } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { supabase } from "../../lib/supabaseClient"
+import { getAgentDisplayName } from "../../lib/agentDisplay"
 
 type VerificationStatus = "pending" | "verified" | "rejected"
 
@@ -36,6 +37,7 @@ type AgentApplication = {
   status?: string | null
   referrer?: {
     full_name?: string | null
+    business_name?: string | null
     email?: string | null
   } | null
 }
@@ -49,6 +51,7 @@ type RatingSummary = {
 type Agent = {
   id: string
   full_name?: string | null
+  business_name?: string | null
   email?: string | null
   phone?: string | null
   status?: string | null
@@ -204,7 +207,7 @@ export default function AdminPage() {
 
     const { data: referrers } = await supabase
       .from("profiles")
-      .select("id, full_name, email")
+      .select("id, full_name, business_name, email")
       .in("id", referrerIds)
 
     const referrerMap = new Map((referrers || []).map((profile) => [profile.id, profile]))
@@ -221,14 +224,31 @@ export default function AdminPage() {
       return
     }
 
-    const { data: profileData, error: profileError } = await supabase
+    const profileUpdate = {
+      role: "agent",
+      agent_status: "approved",
+      business_name: app.business_name || null,
+    }
+
+    let { data: profileData, error: profileError } = await supabase
       .from("profiles")
-      .update({
-        role: "agent",
-        agent_status: "approved",
-      })
+      .update(profileUpdate)
       .eq("id", app.user_id)
       .select()
+
+    if (profileError && profileError.message?.toLowerCase().includes("business_name")) {
+      const fallbackUpdate = await supabase
+        .from("profiles")
+        .update({
+          role: "agent",
+          agent_status: "approved",
+        })
+        .eq("id", app.user_id)
+        .select()
+
+      profileData = fallbackUpdate.data
+      profileError = fallbackUpdate.error
+    }
 
     if (profileError || !profileData?.length) {
       alert("Failed to approve agent profile")
@@ -443,13 +463,14 @@ export default function AdminPage() {
     const term = agentQuery.toLowerCase()
 
     try {
-      const [{ data: nameMatches }, { data: emailMatches }, { data: phoneMatches }] = await Promise.all([
+      const [{ data: nameMatches }, { data: businessMatches }, { data: emailMatches }, { data: phoneMatches }] = await Promise.all([
         supabase.from("profiles").select("*").or("role.eq.agent,agent_status.eq.approved").ilike("full_name", `%${term}%`),
+        supabase.from("profiles").select("*").or("role.eq.agent,agent_status.eq.approved").ilike("business_name", `%${term}%`),
         supabase.from("profiles").select("*").or("role.eq.agent,agent_status.eq.approved").ilike("email", `%${term}%`),
         supabase.from("profiles").select("*").or("role.eq.agent,agent_status.eq.approved").ilike("phone", `%${term}%`),
       ])
 
-      const combined = [...(nameMatches || []), ...(emailMatches || []), ...(phoneMatches || [])]
+      const combined = [...(nameMatches || []), ...(businessMatches || []), ...(emailMatches || []), ...(phoneMatches || [])]
       const unique = Array.from(new Map(combined.map((item) => [item.id, item])).values())
       setAgents(await hydrateAgents(unique))
     } catch (err: unknown) {
@@ -668,20 +689,22 @@ export default function AdminPage() {
                 {applications.map((app) => (
                   <div key={app.id} className="rounded-2xl border border-slate-200 p-4 shadow-sm">
                     <div className="flex flex-wrap items-center gap-2">
-                      <p className="font-semibold">{app.full_name || "Unnamed applicant"}</p>
+                      <p className="font-semibold">{app.business_name || app.full_name || "Unnamed applicant"}</p>
                       <Badge className={statusClass(app.status || "pending")}>{app.status || "pending"}</Badge>
                     </div>
                     <div className="mt-3 grid gap-2 text-sm text-slate-600 sm:grid-cols-2">
+                      <p><span className="font-semibold text-slate-900">Full name:</span> {app.full_name || "Not provided"}</p>
+                      <p><span className="font-semibold text-slate-900">Business name:</span> {app.business_name || "Not provided"}</p>
                       <p><span className="font-semibold text-slate-900">Email:</span> {app.email || "Not provided"}</p>
                       <p><span className="font-semibold text-slate-900">Phone:</span> {app.phone || "Not provided"}</p>
-                      <p><span className="font-semibold text-slate-900">Business:</span> {app.business_name || "Not provided"}</p>
                       <p><span className="font-semibold text-slate-900">Operating city:</span> {app.operating_city || "Not provided"}</p>
                       <p><span className="font-semibold text-slate-900">Experience:</span> {app.years_experience || "Not provided"}</p>
                       <p><span className="font-semibold text-slate-900">Referral code:</span> {app.referral_code || "None"}</p>
                     </div>
                     <div className="mt-3 rounded-xl bg-slate-50 p-3 text-sm text-slate-600">
                       <p className="font-semibold text-slate-900">Referred by</p>
-                      <p>{app.referrer?.full_name || "Not available"}</p>
+                      <p>{getAgentDisplayName(app.referrer, "Not available")}</p>
+                      {app.referrer?.full_name && <p className="mt-1 text-slate-500">Account holder: {app.referrer.full_name}</p>}
                       {app.referrer?.email && <p className="mt-1 text-slate-500">{app.referrer.email}</p>}
                     </div>
                     <div className="mt-4 flex flex-wrap gap-2">
@@ -791,7 +814,7 @@ export default function AdminPage() {
             <div className="mb-5 grid gap-3 lg:grid-cols-[1fr_auto_auto_auto]">
               <input
                 type="text"
-                placeholder="Search agents by name, email, or phone"
+                placeholder="Search agents by business name, name, email, or phone"
                 value={agentQuery}
                 onChange={(event) => setAgentQuery(event.target.value)}
                 className="min-h-11 rounded-xl border border-slate-200 bg-white px-4 text-sm outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100"
@@ -830,18 +853,24 @@ export default function AdminPage() {
             <div className="grid gap-4">
               {filteredAgents.map((agent) => {
                 const isMissingProfile = !agent.full_name
+                const publicAgentName = getAgentDisplayName(agent, "No public name")
                 return (
                   <div key={agent.id} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition hover:shadow-md sm:p-5">
                     <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
                       <div className="min-w-0">
                         <div className="flex flex-wrap items-center gap-2">
                           <Link href={`/agent/${agent.id}`} className="text-lg font-semibold hover:text-emerald-700">
-                            {agent.full_name || "No name"}
+                            {publicAgentName}
                           </Link>
                           <Badge className={statusClass(agent.status || agent.agent_status)}>{agent.status || agent.agent_status || "unknown"}</Badge>
                           <VerificationBadge status={agent.verification_status} />
                         </div>
-                        <p className="mt-1 text-sm text-slate-500">{agent.email || "No email on file"}</p>
+                        <div className="mt-2 grid gap-1 text-sm text-slate-500 sm:grid-cols-2">
+                          <p><span className="font-semibold text-slate-700">Full name:</span> {agent.full_name || "Not provided"}</p>
+                          <p><span className="font-semibold text-slate-700">Business:</span> {agent.business_name || "Not provided"}</p>
+                          <p>{agent.email || "No email on file"}</p>
+                          <p>{agent.phone || "No phone on file"}</p>
+                        </div>
                         {isMissingProfile && (
                           <div className="mt-3 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm font-semibold text-amber-800">
                             Missing profile information
@@ -903,7 +932,7 @@ export default function AdminPage() {
 
           {selectedAgent && (
             <section className="rounded-3xl bg-white p-5 shadow-sm ring-1 ring-slate-200/80 sm:p-6">
-              <SectionHeader title={`Listings by ${selectedAgent.full_name || selectedAgent.email || "selected agent"}`} />
+              <SectionHeader title={`Listings by ${getAgentDisplayName(selectedAgent, selectedAgent.email || "selected agent")}`} />
               {agentListings.length === 0 ? (
                 <p className="rounded-2xl bg-slate-50 p-4 text-sm text-slate-500">No listings found.</p>
               ) : (
@@ -1028,7 +1057,7 @@ export default function AdminPage() {
           <div className="w-full max-w-md rounded-3xl bg-white p-6 shadow-2xl">
             <h2 className="text-xl font-semibold">Confirm verification change</h2>
             <p className="mt-2 text-sm text-slate-500">
-              Change {confirmChange.agent.full_name || confirmChange.agent.email || "this agent"} to{" "}
+              Change {getAgentDisplayName(confirmChange.agent, confirmChange.agent.email || "this agent")} to{" "}
               <span className="font-semibold text-slate-900">{confirmChange.status}</span>?
             </p>
             <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">

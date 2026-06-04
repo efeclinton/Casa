@@ -6,10 +6,12 @@ import { useSearchParams } from "next/navigation"
 import type { User } from "@supabase/supabase-js"
 import { supabase } from "../../lib/supabaseClient"
 import { getProfileEmail, getProfilePhone } from "../../lib/profileCompletion"
+import { getAgentDisplayName } from "../../lib/agentDisplay"
 
 type ReferrerProfile = {
   id: string
   full_name?: string | null
+  business_name?: string | null
   email?: string | null
   referral_code?: string | null
 }
@@ -58,7 +60,7 @@ export default function AgentReferralPage() {
 
       const { data: referrerData, error: referrerError } = await supabase
         .from("profiles")
-        .select("id, full_name, email, referral_code")
+        .select("id, full_name, business_name, email, referral_code")
         .eq("referral_code", code)
         .maybeSingle()
 
@@ -181,7 +183,7 @@ export default function AgentReferralPage() {
     )
   }
 
-  const referrerName = referrer?.full_name || "a verified CASA agent"
+  const referrerName = getAgentDisplayName(referrer, "a verified CASA agent")
 
   return (
     <main className="min-h-screen bg-slate-50 px-4 py-6 text-slate-950 sm:px-6 lg:px-8">
@@ -238,6 +240,9 @@ export default function AgentReferralPage() {
                 <label className="block">
                   <span className="text-sm font-semibold text-slate-700">Business name</span>
                   <input name="business_name" value={form.business_name} onChange={handleChange} className="mt-2 min-h-12 w-full rounded-xl border border-slate-200 px-4 text-sm outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100" required />
+                  <span className="mt-2 block text-xs text-slate-500">
+                    This is the name users will see on CASA.
+                  </span>
                 </label>
                 <label className="block">
                   <span className="text-sm font-semibold text-slate-700">Years experience</span>

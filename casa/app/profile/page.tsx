@@ -7,10 +7,12 @@ import Image from "next/image"
 import Link from "next/link"
 import type { User } from "@supabase/supabase-js"
 import { getProfileEmail, getSafeRedirectPath } from "../../lib/profileCompletion"
+import { getAgentDisplayName } from "../../lib/agentDisplay"
 
 type Profile = {
   id?: string
   full_name?: string
+  business_name?: string | null
   email?: string
   phone?: string
   avatar_url?: string
@@ -60,6 +62,7 @@ export default function ProfilePage() {
   const [loading, setLoading] = useState(true)
   const [isEditing, setIsEditing] = useState(false)
   const [fullNameInput, setFullNameInput] = useState("")
+  const [businessNameInput, setBusinessNameInput] = useState("")
   const [phoneNumberInput, setPhoneNumberInput] = useState("")
   const [savingProfile, setSavingProfile] = useState(false)
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
@@ -117,6 +120,7 @@ export default function ProfilePage() {
       setProfile(nextProfile)
       setAvatarFailed(false)
       setFullNameInput(data?.full_name || "")
+      setBusinessNameInput(data?.business_name || "")
       setPhoneNumberInput(data?.phone || "")
 
       const savedPromise = supabase
@@ -188,12 +192,16 @@ export default function ProfilePage() {
 
   const agentStatus = normalizeStatus(profile?.agent_status)
   const role = agentStatus === "none" ? "User" : "Agent"
+  const isApprovedAgent = agentStatus === "approved"
   const email = getProfileEmail(profile, user)
   const profileActionText = !profile?.full_name || !profile?.phone || !email ? "Complete Profile" : "Edit Profile"
   const isProfileIncomplete = !profile?.full_name || !profile?.phone || !email
   const userDisplayName =
     `${user?.user_metadata?.first_name || ""} ${user?.user_metadata?.last_name || ""}`.trim() || "User"
-  const avatarName = profile?.full_name || userDisplayName
+  const publicDisplayName = isApprovedAgent
+    ? getAgentDisplayName(profile)
+    : profile?.full_name || userDisplayName
+  const avatarName = publicDisplayName
   const avatarSrc = !avatarFailed ? previewUrl || profile?.avatar_url : null
   const referralLink = profile?.referral_code && typeof window !== "undefined"
     ? `${window.location.origin}/agent-referral?code=${encodeURIComponent(profile.referral_code)}`
@@ -315,12 +323,14 @@ export default function ProfilePage() {
 
   const startEditingProfile = () => {
     setFullNameInput(profile?.full_name || "")
+    setBusinessNameInput(profile?.business_name || "")
     setPhoneNumberInput(profile?.phone || "")
     setIsEditing(true)
   }
 
   const cancelEditingProfile = () => {
     setFullNameInput(profile?.full_name || "")
+    setBusinessNameInput(profile?.business_name || "")
     setPhoneNumberInput(profile?.phone || "")
     setIsEditing(false)
   }
@@ -336,6 +346,7 @@ export default function ProfilePage() {
     }
 
     const full_name = fullNameInput.trim()
+    const business_name = businessNameInput.trim()
     const phone = phoneNumberInput.trim()
     const email = getProfileEmail(profile, currentUser)
 
@@ -345,14 +356,40 @@ export default function ProfilePage() {
       return
     }
 
-    const { error } = await supabase
+    const updates: {
+      full_name: string
+      phone: string
+      email: string
+      business_name?: string | null
+    } = {
+      full_name,
+      phone,
+      email,
+    }
+
+    if (isApprovedAgent) {
+      updates.business_name = business_name || null
+    }
+
+    let businessNameSaved = isApprovedAgent
+    let { error } = await supabase
       .from("profiles")
-      .update({
-        full_name,
-        phone,
-        email,
-      })
+      .update(updates)
       .eq("id", currentUser.id)
+
+    if (error && isApprovedAgent && error.message?.toLowerCase().includes("business_name")) {
+      const fallbackUpdate = await supabase
+        .from("profiles")
+        .update({
+          full_name,
+          phone,
+          email,
+        })
+        .eq("id", currentUser.id)
+
+      error = fallbackUpdate.error
+      businessNameSaved = false
+    }
 
     if (error) {
       alert("Failed to update profile: " + error.message)
@@ -363,6 +400,7 @@ export default function ProfilePage() {
     setProfile((prev) => ({
       ...prev,
       full_name,
+      ...(businessNameSaved ? { business_name: business_name || null } : {}),
       phone,
       email,
     }))
@@ -409,7 +447,7 @@ export default function ProfilePage() {
                 <div>
                   <div className="flex flex-wrap items-center gap-2">
                     <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
-                      {profile?.full_name || "Complete your profile"}
+                      {publicDisplayName || "Complete your profile"}
                     </h1>
                     <span className={`inline-flex rounded-full border px-3 py-1 text-xs font-semibold capitalize ${getStatusBadgeClass()}`}>
                       {role}
@@ -421,6 +459,9 @@ export default function ProfilePage() {
                     )}
                   </div>
                   <p className="mt-2 text-sm text-slate-600">{email || "Email not provided"}</p>
+                  {isApprovedAgent && profile?.full_name && (
+                    <p className="mt-1 text-sm text-slate-500">Account holder: {profile.full_name}</p>
+                  )}
                   {profile?.phone && <p className="mt-1 text-sm text-slate-500">{profile.phone}</p>}
                 </div>
               </div>
@@ -508,7 +549,7 @@ export default function ProfilePage() {
               </section>
             )}
 
-            {profile?.agent_status === "approved" && (
+            {isApprovedAgent && (
               <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
                 <h2 className="text-lg font-semibold">Listings</h2>
                 <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-1">
@@ -535,7 +576,7 @@ export default function ProfilePage() {
               </section>
             )}
 
-            {profile?.agent_status === "approved" && profile?.referral_code && (
+            {isApprovedAgent && profile?.referral_code && (
               <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
                 <h2 className="text-lg font-semibold">Invite an Agent</h2>
                 <p className="mt-1 text-sm leading-6 text-slate-500">
@@ -587,6 +628,21 @@ export default function ProfilePage() {
                       placeholder="Enter full name"
                     />
                   </label>
+                  {isApprovedAgent && (
+                    <label className="block">
+                      <span className="text-sm font-semibold text-slate-700">Public business name</span>
+                      <input
+                        type="text"
+                        value={businessNameInput}
+                        onChange={(e) => setBusinessNameInput(e.target.value)}
+                        className="mt-2 min-h-12 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100"
+                        placeholder="Enter public business name"
+                      />
+                      <span className="mt-2 block text-xs text-slate-500">
+                        This is the name users will see on CASA.
+                      </span>
+                    </label>
+                  )}
                   <label className="block">
                     <span className="text-sm font-semibold text-slate-700">Email</span>
                     <input
@@ -626,7 +682,12 @@ export default function ProfilePage() {
               ) : (
                 <div className="mt-5 grid gap-3 sm:grid-cols-2">
                   {[
-                    ["Full name", profile?.full_name || "Not provided"],
+                    ...(isApprovedAgent
+                      ? [
+                          ["Account holder", profile?.full_name || "Not provided"],
+                          ["Public business name", profile?.business_name || "Not provided"],
+                        ]
+                      : [["Full name", profile?.full_name || "Not provided"]]),
                     ["Email", email || "Not provided"],
                     ["Phone", profile?.phone || "Not provided"],
                     ["Role", role],

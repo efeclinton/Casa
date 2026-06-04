@@ -10,6 +10,7 @@ import Head from "next/head"
 import Link from "next/link"
 import VerifiedAgentBadge from "../../../components/VerifiedAgentBadge"
 import { ensureProfileComplete } from "../../../lib/profileCompletion"
+import { getAgentDisplayName } from "../../../lib/agentDisplay"
 
 type Property = {
   id: string
@@ -33,6 +34,7 @@ type Property = {
 type AgentProfile = {
   id: string
   full_name: string
+  business_name?: string | null
   avatar_url?: string | null
   verification_status?: string | null
 }
@@ -184,7 +186,7 @@ export default function PropertyPage({ propertyId, initialProperty = null }: Pro
         const [{ data: agentData }, { data: ratingData }] = await Promise.all([
           supabase
             .from("profiles")
-            .select("id, full_name, avatar_url, verification_status")
+            .select("id, full_name, business_name, avatar_url, verification_status")
             .eq("id", agentId)
             .single(),
           supabase
@@ -523,6 +525,7 @@ export default function PropertyPage({ propertyId, initialProperty = null }: Pro
   const inquiryCountText = inquiryCountLabel
     ? `${inquiryCountLabel} people have inquired about this accommodation`
     : null
+  const agentDisplayName = getAgentDisplayName(agentProfile)
 
   return (
     <main className="w-full max-w-6xl mx-auto px-4 py-6 sm:py-8">
@@ -625,8 +628,8 @@ export default function PropertyPage({ propertyId, initialProperty = null }: Pro
           <Link href={`/agent/${agentProfile.id}`} className="flex items-center gap-3 sm:gap-4 cursor-pointer hover:bg-gray-50 p-3 sm:p-4 rounded">
             <div className="relative w-16 h-16">
               <Image
-                src={getAgentAvatarSrc(agentProfile.avatar_url || null, agentProfile.full_name)}
-                alt={`${agentProfile.full_name} avatar`}
+                src={getAgentAvatarSrc(agentProfile.avatar_url || null, agentDisplayName)}
+                alt={`${agentDisplayName} avatar`}
                 width={64}
                 height={64}
                 className="rounded-full object-cover"
@@ -636,7 +639,7 @@ export default function PropertyPage({ propertyId, initialProperty = null }: Pro
             </div>
             <div>
               <div className="flex flex-wrap items-center gap-2">
-                <h3 className="text-base sm:text-lg lg:text-xl font-bold">{agentProfile.full_name}</h3>
+                <h3 className="text-base sm:text-lg lg:text-xl font-bold">{agentDisplayName}</h3>
                 <VerifiedAgentBadge status={agentProfile.verification_status} />
               </div>
               {agentProfile.verification_status === "verified" && (
