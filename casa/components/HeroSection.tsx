@@ -22,7 +22,7 @@ export default function HeroSection() {
         <div className="px-4 pt-10 pb-12 sm:pb-16">
 
         <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-white">
-          Find Your Next Property
+          Find Your Next Lodge
         </h1>
 
         <p className="text-sm sm:text-base text-white/90 mt-2">
