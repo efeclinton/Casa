@@ -5,6 +5,7 @@ import PropertyCard from "../components/PropertyCard"
 import Link from "next/link"
 import { supabase } from "../lib/supabaseClient"
 import { getListingAgentId, loadVerificationStatuses } from "../lib/verification"
+import FeaturedPropertiesCarousel from "../components/FeaturedPropertiesCarousel"
 
 type Property = {
   id: string
@@ -121,7 +122,7 @@ export default async function Home() {
         </div>
 
         {properties && properties.length > 0 ? (
-          <div className="flex justify-items-center gap-4 overflow-x-auto scroll-smooth pb-4 md:grid md:grid-cols-2 md:gap-6 md:overflow-visible lg:grid-cols-3 lg:gap-6 xl:grid-cols-4 xl:gap-6">
+          <FeaturedPropertiesCarousel>
             {properties.map((property: Property) => (
               <div key={property.id} className="w-[320px] min-w-[260px] max-w-[340px] flex-shrink-0 md:w-auto">
                 <PropertyCard
@@ -138,7 +139,7 @@ export default async function Home() {
                 />
               </div>
             ))}
-          </div>
+          </FeaturedPropertiesCarousel>
         ) : (
           <p className="text-gray-500">
             No featured listings yet.

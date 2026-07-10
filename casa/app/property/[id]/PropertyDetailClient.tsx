@@ -2,16 +2,16 @@
 
 import { useCallback, useEffect, useState } from "react"
 import { useParams, useRouter } from "next/navigation"
-import { supabase, getOptimizedAvatarUrl } from "../../../lib/supabaseClient"
+import { supabase } from "../../../lib/supabaseClient"
 import { formatUpdatedAtFullDate } from "../../../lib/activity"
 import VirtualTour from "../../../components/VirtualTour"
-import Image from "next/image"
 import Head from "next/head"
 import Link from "next/link"
 import VerifiedAgentBadge from "../../../components/VerifiedAgentBadge"
 import { ensureProfileComplete } from "../../../lib/profileCompletion"
 import { getAgentDisplayName } from "../../../lib/agentDisplay"
 import { DetailPageSkeleton } from "../../../components/LoadingSkeletons"
+import Avatar from "../../../components/Avatar"
 
 type Property = {
   id: string
@@ -302,10 +302,6 @@ export default function PropertyPage({ propertyId, initialProperty = null }: Pro
     setIsSaved(true)
     setSavedId(data?.id || null)
     setSaving(false)
-  }
-
-  const getAgentAvatarSrc = (avatarUrl: string | null, name: string) => {
-    return getOptimizedAvatarUrl(avatarUrl, name)
   }
 
   const handleContact = () => {
@@ -624,14 +620,12 @@ export default function PropertyPage({ propertyId, initialProperty = null }: Pro
         <div className="mt-6 mb-4 p-4 sm:p-6 bg-white rounded-lg shadow">
           <Link href={`/agent/${agentProfile.id}`} className="flex items-center gap-3 sm:gap-4 cursor-pointer hover:bg-gray-50 p-3 sm:p-4 rounded">
             <div className="relative w-16 h-16">
-              <Image
-                src={getAgentAvatarSrc(agentProfile.avatar_url || null, agentDisplayName)}
+              <Avatar
+                avatarUrl={agentProfile.avatar_url}
+                businessName={agentProfile.business_name}
+                fullName={agentProfile.full_name}
                 alt={`${agentDisplayName} avatar`}
-                width={64}
-                height={64}
-                className="rounded-full object-cover"
-                placeholder="blur"
-                blurDataURL="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjQiIGhlaWdodD0iNjQiIHZpZXdCb3g9IjAgMCA2NCA2NCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGNpcmNsZSBjeD0iMzIiIGN5PSIzMiIgcj0iMzIiIGZpbGw9IiNFNUU3RUIiLz4KPHN2ZyB4PSIyNCIgeT0iMjQiIHdpZHRoPSIxNiIgaGVpZ2h0PSIxNiIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9IiM5Q0E0QUYiIHN0cm9rZS13aWR0aD0iMS41Ij4KPHBhdGggZD0iTTEyIDJDMTMuMSAyIDE0IDIuOSAxNCA0QzE0IDUuMSAxMy4xIDYgMTIgNkMxMC45IDYgMTAgNS4xIDEwIDRDMTAgMi45IDEwLjkgMiAxMiAyWk0xMiAxNEM5LjggMTQgOCA5LjggOCA3QzggNS4yIDkuMiA0IDEyIDRDMTQuOCA0IDE2IDUuMiAxNiA3QzE2IDkuOCAxNC44IDE0IDEyIDE0WiIvPgo8L3N2Zz4KPC9zdmc+"
+                size={64}
               />
             </div>
             <div>

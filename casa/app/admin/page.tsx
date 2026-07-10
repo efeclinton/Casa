@@ -7,6 +7,7 @@ import Link from "next/link"
 import { supabase } from "../../lib/supabaseClient"
 import { getAgentDisplayName } from "../../lib/agentDisplay"
 import { ListRowsSkeleton, UserDetailsSkeleton } from "../../components/LoadingSkeletons"
+import Avatar from "../../components/Avatar"
 
 type VerificationStatus = "pending" | "verified" | "rejected"
 
@@ -1290,19 +1291,15 @@ export default function AdminPage() {
               <div className="space-y-5">
                 <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
                   <div className="flex flex-col gap-5 sm:flex-row sm:items-center">
-                    <div className="h-24 w-24 overflow-hidden rounded-3xl border border-slate-200 bg-slate-100">
-                      {userDetails.profile.avatar_url ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img
-                          src={userDetails.profile.avatar_url}
-                          alt={userDetails.profile.full_name || userDetails.profile.email || "Profile photo"}
-                          className="h-full w-full object-cover"
-                        />
-                      ) : (
-                        <div className="flex h-full w-full items-center justify-center text-2xl font-bold text-slate-500">
-                          {(userDetails.profile.full_name || userDetails.profile.email || "U").charAt(0).toUpperCase()}
-                        </div>
-                      )}
+                    <div className="h-24 w-24">
+                      <Avatar
+                        avatarUrl={userDetails.profile.avatar_url}
+                        businessName={userDetails.profile.business_name}
+                        fullName={userDetails.profile.full_name}
+                        email={userDetails.profile.email}
+                        alt={userDetails.profile.full_name || userDetails.profile.email || "Profile photo"}
+                        size={96}
+                      />
                     </div>
                     <div className="min-w-0">
                       <div className="flex flex-wrap items-center gap-2">

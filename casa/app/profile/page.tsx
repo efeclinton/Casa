@@ -9,6 +9,7 @@ import type { User } from "@supabase/supabase-js"
 import { getProfileEmail, getSafeRedirectPath } from "../../lib/profileCompletion"
 import { getAgentDisplayName } from "../../lib/agentDisplay"
 import { ProfilePageSkeleton } from "../../components/LoadingSkeletons"
+import Avatar from "../../components/Avatar"
 
 type Profile = {
   id?: string
@@ -69,7 +70,6 @@ export default function ProfilePage() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [uploading, setUploading] = useState(false)
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
-  const [avatarFailed, setAvatarFailed] = useState(false)
   const [propertyListingsCount, setPropertyListingsCount] = useState<number>(0)
   const [marketItemsCount, setMarketItemsCount] = useState<number>(0)
   const [savedListings, setSavedListings] = useState<SavedListing[]>([])
@@ -119,7 +119,6 @@ export default function ProfilePage() {
       }
 
       setProfile(nextProfile)
-      setAvatarFailed(false)
       setFullNameInput(data?.full_name || "")
       setBusinessNameInput(data?.business_name || "")
       setPhoneNumberInput(data?.phone || "")
@@ -196,17 +195,9 @@ export default function ProfilePage() {
   const publicDisplayName = isApprovedAgent
     ? getAgentDisplayName(profile)
     : profile?.full_name || userDisplayName
-  const avatarName = publicDisplayName
-  const avatarSrc = !avatarFailed ? previewUrl || profile?.avatar_url : null
   const referralLink = profile?.referral_code && typeof window !== "undefined"
     ? `${window.location.origin}/agent-referral?code=${encodeURIComponent(profile.referral_code)}`
     : ""
-  const initials = avatarName
-    .split(" ")
-    .map((part) => part[0])
-    .join("")
-    .slice(0, 2)
-    .toUpperCase()
 
   const getStatusBadgeClass = () => {
     if (agentStatus === "approved") return "border-emerald-200 bg-emerald-50 text-emerald-700"
@@ -262,7 +253,6 @@ export default function ProfilePage() {
     if (file) {
       const url = URL.createObjectURL(file)
       setPreviewUrl(url)
-      setAvatarFailed(false)
     } else {
       setPreviewUrl(null)
     }
@@ -304,7 +294,6 @@ export default function ProfilePage() {
       setProfile({ ...profile, avatar_url: publicUrl })
       setSelectedFile(null)
       setPreviewUrl(null)
-      setAvatarFailed(false)
 
       alert("Profile photo updated")
 
@@ -423,20 +412,16 @@ export default function ProfilePage() {
           <div className="bg-gradient-to-r from-emerald-50 via-white to-blue-50 p-5 sm:p-7">
             <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
-                <div className="relative h-24 w-24 overflow-hidden rounded-3xl border border-white bg-slate-200 shadow-sm">
-                  {avatarSrc ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={avatarSrc}
-                      alt="Profile"
-                      className="h-full w-full object-cover"
-                      onError={() => setAvatarFailed(true)}
-                    />
-                  ) : (
-                    <div className="flex h-full w-full items-center justify-center text-2xl font-bold text-slate-500">
-                      {initials || "U"}
-                    </div>
-                  )}
+                <div className="relative h-24 w-24">
+                  <Avatar
+                    avatarUrl={previewUrl || profile?.avatar_url}
+                    businessName={profile?.business_name}
+                    fullName={profile?.full_name || userDisplayName}
+                    email={email}
+                    alt={`${publicDisplayName} avatar`}
+                    size={96}
+                    className="border-white shadow-sm"
+                  />
                 </div>
 
                 <div>

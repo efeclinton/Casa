@@ -9,6 +9,7 @@ import VerifiedAgentBadge from "../../../components/VerifiedAgentBadge"
 import { ensureProfileComplete } from "../../../lib/profileCompletion"
 import { getAgentDisplayName } from "../../../lib/agentDisplay"
 import { DetailPageSkeleton } from "../../../components/LoadingSkeletons"
+import Avatar from "../../../components/Avatar"
 
 type SellerProfile = {
   id?: string
@@ -190,17 +191,14 @@ export default function MarketItemDetailPage({ itemId }: MarketItemDetailClientP
         <p className="text-sm sm:text-base text-gray-800 leading-relaxed">{item.description}</p>
 
         <div className="flex items-center gap-3 mt-4 flex-wrap">
-          {item.profiles?.avatar_url ? (
-            <img
-              src={item.profiles.avatar_url}
-              alt="Seller"
-              className="w-10 h-10 rounded-full object-cover"
-            />
-          ) : (
-            <div className="w-10 h-10 rounded-full bg-gray-300 flex items-center justify-center">
-              {sellerDisplayName.charAt(0)}
-            </div>
-          )}
+          <Avatar
+            avatarUrl={item.profiles?.avatar_url}
+            businessName={item.profiles?.business_name}
+            fullName={item.profiles?.full_name}
+            email={item.profiles?.email}
+            alt={`${sellerDisplayName} avatar`}
+            size={40}
+          />
           <div>
             <div className="flex flex-wrap items-center gap-2">
               <p className="font-medium">

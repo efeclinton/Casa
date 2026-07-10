@@ -2,8 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { useParams, useRouter } from "next/navigation"
-import { supabase, getOptimizedAvatarUrl } from "../../../lib/supabaseClient"
-import Image from "next/image"
+import { supabase } from "../../../lib/supabaseClient"
 import Link from "next/link"
 import type { User } from "@supabase/supabase-js"
 import MarketItemCard from "../../../components/MarketItemCard"
@@ -11,6 +10,7 @@ import VerifiedAgentBadge from "../../../components/VerifiedAgentBadge"
 import { ensureProfileComplete } from "../../../lib/profileCompletion"
 import { getAgentDisplayName } from "../../../lib/agentDisplay"
 import { ProfilePageSkeleton } from "../../../components/LoadingSkeletons"
+import Avatar from "../../../components/Avatar"
 
 type AgentProfile = {
   id: string
@@ -344,14 +344,12 @@ export default function AgentProfilePage() {
           <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
               <div className="relative h-24 w-24 flex-shrink-0">
-                <Image
-                  src={getOptimizedAvatarUrl(agent.avatar_url || null, agentDisplayName)}
+                <Avatar
+                  avatarUrl={agent.avatar_url}
+                  businessName={agent.business_name}
+                  fullName={agent.full_name}
                   alt={`${agentDisplayName} avatar`}
-                  width={96}
-                  height={96}
-                  className="rounded-full object-cover"
-                  placeholder="blur"
-                  blurDataURL="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iOTYiIGhlaWdodD0iOTYiIHZpZXdCb3g9IjAgMCA5NiA5NiIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGNpcmNsZSBjeD0iNDgiIGN5PSI0OCIgcj0iNDgiIGZpbGw9IiNFNUU3RUIiLz4KPHN2ZyB4PSIzNiIgeT0iMzYiIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9IiM5Q0E0QUYiIHN0cm9rZS13aWR0aD0iMS41Ij4KPHBhdGggZD0iTTEyIDJDMTMuMSAyIDE0IDIuOSAxNCA0QzE0IDUuMSAxMy4xIDYgMTIgNkMxMC45IDYgMTAgNS4xIDEwIDRDMTAgMi45IDEwLjkgMiAxMiAyWk0xMiAxNEM5LjggMTQgOCA5LjggOCA3QzggNS4yIDkuMiA0IDEyIDRDMTQuOCA0IDE2IDUuMiAxNiA3QzE2IDkuOCAxNC44IDE0IDEyIDE0WiIvPgo8L3N2Zz4KPC9zdmc+"
+                  size={96}
                 />
               </div>
               <div>
@@ -553,13 +551,11 @@ export default function AgentProfilePage() {
               <div key={review.id} className="rounded-xl border border-gray-100 bg-white px-4 py-3 shadow-sm">
                 <div className="flex items-start justify-between gap-3 mb-2">
                   <div className="flex items-start gap-3 flex-1 min-w-0">
-                    <img
-                      src={getOptimizedAvatarUrl(
-                        review.profile?.avatar_url || null,
-                        review.profile?.full_name || "Anonymous"
-                      )}
+                    <Avatar
+                      avatarUrl={review.profile?.avatar_url}
+                      fullName={review.profile?.full_name || "Anonymous"}
                       alt={review.profile?.full_name || "Anonymous"}
-                      className="w-10 h-10 rounded-full"
+                      size={40}
                     />
 
                     <div className="flex flex-col gap-1 md:gap-0 min-w-0">
