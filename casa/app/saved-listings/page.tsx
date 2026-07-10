@@ -4,6 +4,7 @@ import { useEffect, useState } from "react"
 import Link from "next/link"
 import { supabase } from "../../lib/supabaseClient"
 import { PropertyGridSkeleton } from "../../components/LoadingSkeletons"
+import PropertyThumbnail from "../../components/PropertyThumbnail"
 
 type SavedListing = {
   savedId: string
@@ -12,6 +13,7 @@ type SavedListing = {
     title?: string
     price?: number
     location?: string
+    image?: string | null
     images?: string[]
   } | null
 }
@@ -96,27 +98,19 @@ export default function SavedListingsPage() {
             {saved.map(item => {
               if (!item.property) return null
               const property = item.property
-              const image = Array.isArray(property.images) && property.images.length > 0
-                ? property.images[0]
-                : null
-
               return (
                 <div
                   key={item.savedId}
                   className="relative rounded-xl shadow-md overflow-hidden bg-white transition-transform duration-200 hover:scale-[1.02] hover:shadow-lg"
                 >
                   <Link href={`/property/${item.propertyId}`} className="block">
-                    {image ? (
-                      <img
-                        src={image}
-                        alt={property.title}
-                        className="w-full h-48 object-cover"
+                    <div className="h-48 w-full overflow-hidden bg-slate-100">
+                      <PropertyThumbnail
+                        image={property.image}
+                        images={property.images}
+                        alt={property.title || "Property listing"}
                       />
-                    ) : (
-                      <div className="w-full h-48 bg-gray-200 flex items-center justify-center text-gray-400 text-sm">
-                        No Image
-                      </div>
-                    )}
+                    </div>
                     <div className="p-4">
                       <h2 className="text-lg font-semibold text-gray-900 line-clamp-1">{property.title}</h2>
                       <p className="text-green-700 font-medium mt-1">₦{Number(property.price).toLocaleString()}</p>

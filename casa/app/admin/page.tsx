@@ -8,6 +8,7 @@ import { supabase } from "../../lib/supabaseClient"
 import { getAgentDisplayName } from "../../lib/agentDisplay"
 import { ListRowsSkeleton, UserDetailsSkeleton } from "../../components/LoadingSkeletons"
 import Avatar from "../../components/Avatar"
+import PropertyThumbnail from "../../components/PropertyThumbnail"
 
 type VerificationStatus = "pending" | "verified" | "rejected"
 
@@ -19,6 +20,7 @@ type Property = {
   rent_period?: string
   listing_type?: string
   image?: string | null
+  images?: string[] | null
   is_active?: boolean | null
   is_duplicate?: boolean | null
   agent_id?: string | null
@@ -116,9 +118,6 @@ type FlaggedListing = {
     location?: string
   }
 }
-
-const fallbackImage =
-  "https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=800&auto=format&fit=crop&q=80"
 
 const verificationStyles: Record<VerificationStatus, string> = {
   verified: "border-emerald-200 bg-emerald-50 text-emerald-700",
@@ -1139,7 +1138,9 @@ export default function AdminPage() {
                   {agentListings.map((property) => (
                     <div key={property.id} className="flex flex-col gap-4 rounded-2xl border border-slate-200 p-4 sm:flex-row sm:items-center sm:justify-between">
                       <div className="flex gap-4">
-                        <img src={property.image || fallbackImage} alt={property.title || "Listing"} className="h-20 w-24 rounded-xl object-cover" />
+                        <div className="h-20 w-24 flex-none overflow-hidden rounded-xl bg-slate-100">
+                          <PropertyThumbnail image={property.image} images={property.images} alt={property.title || "Listing"} />
+                        </div>
                         <div>
                           <p className="font-semibold">{property.title || "Untitled listing"}</p>
                           <p className="text-sm text-slate-500">{property.location || "No location"}</p>
@@ -1210,7 +1211,9 @@ export default function AdminPage() {
                   <Link href={`/property/${property.id}`} key={property.id} className="block">
                     <div className="flex flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition hover:shadow-md sm:flex-row sm:items-center sm:justify-between">
                       <div className="flex gap-4">
-                        <img src={property.image || fallbackImage} alt={property.title || "Listing"} className="h-24 w-28 rounded-xl object-cover sm:h-20" />
+                        <div className="h-24 w-28 flex-none overflow-hidden rounded-xl bg-slate-100 sm:h-20">
+                          <PropertyThumbnail image={property.image} images={property.images} alt={property.title || "Listing"} />
+                        </div>
                         <div className="min-w-0">
                           <div className="flex flex-wrap items-center gap-2">
                             <p className="font-semibold">{property.title || "Untitled listing"}</p>

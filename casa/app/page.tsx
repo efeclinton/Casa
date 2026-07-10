@@ -10,6 +10,7 @@ import FeaturedPropertiesCarousel from "../components/FeaturedPropertiesCarousel
 type Property = {
   id: string
   image?: string
+  images?: string[] | null
   price: number
   title: string
   location: string
@@ -127,6 +128,7 @@ export default async function Home() {
               <div key={property.id} className="w-[320px] min-w-[260px] max-w-[340px] flex-shrink-0 md:w-auto">
                 <PropertyCard
                   image={property.image}
+                  images={property.images}
                   price={property.price}
                   title={property.title}
                   location={property.location}
@@ -170,7 +172,7 @@ export default async function Home() {
                   image={imageUrl}
                   updatedAt={item.updated_at}
                   isActive={item.is_active}
-                  className="w-[260px] flex-shrink-0 lg:w-auto"
+                  className="w-[320px] min-w-[260px] max-w-[340px] flex-shrink-0 lg:w-auto"
                 />
               )
             })}

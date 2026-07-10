@@ -308,6 +308,7 @@ const renewListing = async (property: Property) => {
 
                 <PropertyCard
                   image={property.image}
+                  images={property.images}
                   price={property.price}
                   title={property.title}
                   location={property.location}

@@ -3,9 +3,11 @@
 import Link from "next/link"
 import { formatUpdatedAtLabel } from "@/lib/activity"
 import VerifiedAgentBadge from "./VerifiedAgentBadge"
+import PropertyThumbnail from "./PropertyThumbnail"
 
 interface PropertyCardProps {
   image?: string
+  images?: string[] | null
   price: number
   title: string
   location: string
@@ -19,6 +21,7 @@ interface PropertyCardProps {
 
 export default function PropertyCard({
   image,
+  images,
   price,
   title,
   location,
@@ -29,9 +32,6 @@ export default function PropertyCard({
   isActive,
 }: PropertyCardProps) {
   const formattedPrice = `₦${Number(price || 0).toLocaleString()}${rent_period ? `/${rent_period}` : ""}`
-
-  const fallbackImage =
-    "https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=1200&auto=format&fit=crop&q=80"
 
   const updatedText = formatUpdatedAtLabel(updatedAt)
   const categoryLabel = rent_period?.toLowerCase().includes("year") ? "Campus" : "Listing"
@@ -45,13 +45,11 @@ export default function PropertyCard({
     >
       <div className="h-full overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-[0_14px_40px_rgba(15,23,42,0.08)] transition md:group-hover:-translate-y-1 md:group-hover:shadow-[0_20px_55px_rgba(15,23,42,0.14)]">
         <div className="relative aspect-[4/3] overflow-hidden rounded-t-2xl bg-slate-100">
-          <img
-            src={image || fallbackImage}
+          <PropertyThumbnail
+            image={image}
+            images={images}
             alt={title}
-            className="h-full w-full object-cover transition duration-300 md:group-hover:scale-[1.03]"
-            onError={(e) => {
-              ;(e.currentTarget as HTMLImageElement).src = fallbackImage
-            }}
+            imageClassName="h-full w-full object-cover transition duration-300 md:group-hover:scale-[1.03]"
           />
           {isVerified && (
             <div className="absolute left-3 top-3">

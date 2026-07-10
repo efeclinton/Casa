@@ -11,6 +11,7 @@ import { ensureProfileComplete } from "../../../lib/profileCompletion"
 import { getAgentDisplayName } from "../../../lib/agentDisplay"
 import { ProfilePageSkeleton } from "../../../components/LoadingSkeletons"
 import Avatar from "../../../components/Avatar"
+import PropertyThumbnail from "../../../components/PropertyThumbnail"
 
 type AgentProfile = {
   id: string
@@ -27,6 +28,7 @@ type Listing = {
   price?: number
   location?: string
   image?: string
+  images?: string[] | null
 }
 
 type MarketItem = {
@@ -58,14 +60,14 @@ type RatingRow = {
   rating?: number
 }
 
-const fallbackListingImage = "https://via.placeholder.com/480x320?text=No+Image"
+const fallbackMarketImage = "https://via.placeholder.com/480x320?text=No+Image"
 
 const formatPrice = (price?: number) =>
   typeof price === "number" ? `NGN ${Number(price).toLocaleString()}` : "Price not set"
 
 const getMarketItemImage = (item: MarketItem) => {
   if (Array.isArray(item.images) && item.images.length > 0) return item.images[0]
-  return fallbackListingImage
+  return fallbackMarketImage
 }
 
 export default function AgentProfilePage() {
@@ -409,7 +411,13 @@ export default function AgentProfilePage() {
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {listings.map((item) => (
               <Link key={item.id} href={`/property/${item.id}`} className="overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
-                <img src={item.image || fallbackListingImage} alt={item.title || "Property listing"} className="h-44 w-full object-cover" />
+                <div className="h-44 w-full overflow-hidden bg-slate-100">
+                  <PropertyThumbnail
+                    image={item.image}
+                    images={item.images}
+                    alt={item.title || "Property listing"}
+                  />
+                </div>
                 <div className="p-4">
                   <div className="flex flex-wrap items-center gap-2">
                     <h3 className="line-clamp-2 font-semibold text-gray-950">{item.title || "Untitled property"}</h3>

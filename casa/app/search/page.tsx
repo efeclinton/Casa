@@ -5,6 +5,7 @@ import { getListingAgentId, loadVerificationStatuses } from "../../lib/verificat
 type Property = {
   id: string;
   image: string;
+  images?: string[] | null;
   price: number;
   title: string;
   location: string;
@@ -80,6 +81,7 @@ export default async function SearchPage({
               <PropertyCard
                 key={property.id}
                 image={property.image}
+                images={property.images}
                 price={property.price}
                 title={property.title}
                 location={property.location}

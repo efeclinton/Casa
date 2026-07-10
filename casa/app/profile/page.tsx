@@ -3,13 +3,13 @@
 import { useState, useEffect } from "react"
 import { supabase } from "../../lib/supabaseClient"
 import { useRouter, useSearchParams } from "next/navigation"
-import Image from "next/image"
 import Link from "next/link"
 import type { User } from "@supabase/supabase-js"
 import { getProfileEmail, getSafeRedirectPath } from "../../lib/profileCompletion"
 import { getAgentDisplayName } from "../../lib/agentDisplay"
 import { ProfilePageSkeleton } from "../../components/LoadingSkeletons"
 import Avatar from "../../components/Avatar"
+import PropertyThumbnail from "../../components/PropertyThumbnail"
 
 type Profile = {
   id?: string
@@ -34,9 +34,6 @@ type SavedListing = {
     images?: string[] | null
   } | null
 }
-
-const fallbackImage =
-  "https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=800&auto=format&fit=crop&q=80"
 
 const formatPrice = (price?: number) =>
   typeof price === "number" ? `₦${Number(price).toLocaleString()}` : "Price not set"
@@ -701,10 +698,6 @@ export default function ProfilePage() {
                 <div className="mt-5 grid gap-4 sm:grid-cols-2">
                   {savedListings.slice(0, 4).map((item) => {
                     if (!item.property) return null
-                    const image = Array.isArray(item.property.images) && item.property.images.length > 0
-                      ? item.property.images[0]
-                      : item.property.image || fallbackImage
-
                     return (
                       <Link
                         key={item.savedId}
@@ -712,13 +705,11 @@ export default function ProfilePage() {
                         className="group overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm transition md:hover:-translate-y-1 md:hover:shadow-lg"
                       >
                         <div className="relative aspect-[4/3] overflow-hidden bg-slate-100">
-                          <Image
-                            src={image}
+                          <PropertyThumbnail
+                            image={item.property.image}
+                            images={item.property.images}
                             alt={item.property.title || "Saved listing"}
-                            fill
-                            unoptimized
-                            className="object-cover transition duration-300 md:group-hover:scale-[1.03]"
-                            sizes="(max-width: 640px) 100vw, 50vw"
+                            imageClassName="h-full w-full object-cover transition duration-300 md:group-hover:scale-[1.03]"
                           />
                         </div>
                         <div className="p-4">

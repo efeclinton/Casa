@@ -9,6 +9,7 @@ import { getListingAgentId, loadVerificationStatuses } from "../../lib/verificat
 type CampusProperty = {
   id: string
   image?: string
+  images?: string[]
   price: number
   title: string
   location: string
@@ -268,6 +269,7 @@ export default function CampusPage() {
                 key={property.id}
                 id={property.id}
                 image={property.image}
+                images={property.images}
                 price={property.price}
                 title={property.title}
                 location={property.location}
