@@ -10,7 +10,7 @@ export default function ListProperty() {
   const router = useRouter()
 
   const [loading, setLoading] = useState(true)
-  const [agentStatus, setAgentStatus] = useState<string | null>(null)
+  const [loadedAgentStatus, setLoadedAgentStatus] = useState<string | null>(null)
 
   const [title, setTitle] = useState("")
   const [price, setPrice] = useState("")
@@ -60,7 +60,7 @@ export default function ListProperty() {
           .eq("id", data.session.user.id)
           .single()
 
-        setAgentStatus(profile?.agent_status || null)
+        setLoadedAgentStatus(profile?.agent_status || null)
         setLoading(false)
       }
 
@@ -137,13 +137,10 @@ export default function ListProperty() {
       return
     }
 
-    try {
-      if (profile?.agent_status !== "approved") {
-        throw new Error("Not allowed to create listing")
-      }
-    } catch (error: unknown) {
-      alert("You cannot create listings because your account is currently restricted.")
-      console.log(error)
+    const agentStatus = profile?.agent_status || null
+
+    if (agentStatus !== "approved") {
+      alert("Only approved agents can create listings.")
       setIsSubmitting(false)
       return
     }
@@ -253,6 +250,7 @@ export default function ListProperty() {
           tour_images: tourLinks.filter(link => link !== ""),
 
           owner_id: user.id,
+          agent_id: user.id,
           owner_name: ownerName,
           owner_email: ownerEmail,
           owner_phone: ownerPhone,
@@ -298,7 +296,7 @@ export default function ListProperty() {
     )
   }
 
-  if (agentStatus !== "approved") {
+  if (loadedAgentStatus !== "approved") {
     return (
       <main className="min-h-screen bg-slate-50 px-4 py-10">
         <section className="mx-auto max-w-2xl rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
