@@ -142,9 +142,11 @@ export default function Navbar() {
           <div className="fixed right-0 top-0 h-full w-[85vw] max-w-xs bg-white z-50 shadow-lg p-5 sm:p-6 transition-transform duration-300 translate-x-0 overflow-y-auto">
             <button
               onClick={closeMenu}
+              aria-label="Close menu"
+              title="Close menu"
               className="text-base sm:text-lg mb-4 h-10 px-2 rounded-md border border-gray-200"
             >
-              ✕ Close
+              ✕
             </button>
 
             <div className="flex flex-col gap-4">
