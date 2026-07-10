@@ -8,6 +8,7 @@ import Link from "next/link"
 import VerifiedAgentBadge from "../../../components/VerifiedAgentBadge"
 import { ensureProfileComplete } from "../../../lib/profileCompletion"
 import { getAgentDisplayName } from "../../../lib/agentDisplay"
+import { DetailPageSkeleton } from "../../../components/LoadingSkeletons"
 
 type SellerProfile = {
   id?: string
@@ -124,7 +125,7 @@ export default function MarketItemDetailPage({ itemId }: MarketItemDetailClientP
   }
 
   if (loading) {
-    return <main className="w-full max-w-4xl mx-auto px-4 py-6 sm:py-8">Loading item...</main>
+    return <DetailPageSkeleton compact />
   }
 
   if (!item) {

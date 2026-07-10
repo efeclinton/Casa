@@ -4,6 +4,7 @@ import { useState, useEffect } from "react"
 import { supabase } from "../../lib/supabaseClient"
 import { useRouter } from "next/navigation"
 import { ensureProfileComplete } from "../../lib/profileCompletion"
+import { FormPageSkeleton } from "../../components/LoadingSkeletons"
 
 export default function ListProperty() {
 
@@ -287,13 +288,7 @@ export default function ListProperty() {
 
 
   if (loading) {
-    return (
-      <main className="min-h-screen bg-slate-50 px-4 py-10">
-        <div className="mx-auto max-w-3xl rounded-3xl border border-slate-200 bg-white p-8 text-center text-slate-600 shadow-sm">
-          Checking login...
-        </div>
-      </main>
-    )
+    return <FormPageSkeleton maxWidth="max-w-4xl" />
   }
 
   if (loadedAgentStatus !== "approved") {

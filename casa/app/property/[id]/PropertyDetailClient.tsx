@@ -11,6 +11,7 @@ import Link from "next/link"
 import VerifiedAgentBadge from "../../../components/VerifiedAgentBadge"
 import { ensureProfileComplete } from "../../../lib/profileCompletion"
 import { getAgentDisplayName } from "../../../lib/agentDisplay"
+import { DetailPageSkeleton } from "../../../components/LoadingSkeletons"
 
 type Property = {
   id: string
@@ -469,11 +470,7 @@ export default function PropertyPage({ propertyId, initialProperty = null }: Pro
 
 
   if (loading) {
-    return (
-      <main className="w-full max-w-6xl mx-auto px-4 py-6 sm:py-8">
-        <p>Loading property...</p>
-      </main>
-    )
+    return <DetailPageSkeleton />
   }
 
   if (!property) {

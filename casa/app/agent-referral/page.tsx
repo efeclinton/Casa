@@ -7,6 +7,7 @@ import type { User } from "@supabase/supabase-js"
 import { supabase } from "../../lib/supabaseClient"
 import { getProfileEmail, getProfilePhone } from "../../lib/profileCompletion"
 import { getAgentDisplayName } from "../../lib/agentDisplay"
+import { FormPageSkeleton } from "../../components/LoadingSkeletons"
 
 type ReferrerProfile = {
   id: string
@@ -160,13 +161,7 @@ export default function AgentReferralPage() {
   }
 
   if (loading) {
-    return (
-      <main className="min-h-screen bg-slate-50 px-4 py-10">
-        <div className="mx-auto max-w-3xl rounded-3xl border border-slate-200 bg-white p-8 text-center text-slate-600 shadow-sm">
-          Checking referral...
-        </div>
-      </main>
-    )
+    return <FormPageSkeleton />
   }
 
   if (errorMessage) {

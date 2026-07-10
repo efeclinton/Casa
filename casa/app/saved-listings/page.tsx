@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react"
 import Link from "next/link"
 import { supabase } from "../../lib/supabaseClient"
+import { PropertyGridSkeleton } from "../../components/LoadingSkeletons"
 
 type SavedListing = {
   savedId: string
@@ -71,7 +72,14 @@ export default function SavedListingsPage() {
   }
 
   if (loading) {
-    return <p className="p-10">Loading saved listings...</p>
+    return (
+      <main>
+        <section className="mx-auto max-w-6xl p-4 sm:p-10" aria-label="Loading saved listings" role="status">
+          <div className="mb-6 h-9 w-56 animate-pulse rounded-lg bg-slate-200" />
+          <PropertyGridSkeleton />
+        </section>
+      </main>
+    )
   }
 
   return (

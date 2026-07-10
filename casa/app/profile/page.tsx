@@ -8,6 +8,7 @@ import Link from "next/link"
 import type { User } from "@supabase/supabase-js"
 import { getProfileEmail, getSafeRedirectPath } from "../../lib/profileCompletion"
 import { getAgentDisplayName } from "../../lib/agentDisplay"
+import { ProfilePageSkeleton } from "../../components/LoadingSkeletons"
 
 type Profile = {
   id?: string
@@ -181,13 +182,7 @@ export default function ProfilePage() {
   }))
 
   if (loading) {
-    return (
-      <main className="min-h-screen bg-slate-50 px-4 py-8">
-        <div className="mx-auto max-w-5xl rounded-3xl border border-slate-200 bg-white p-8 text-center text-slate-600 shadow-sm">
-          Loading profile...
-        </div>
-      </main>
-    )
+    return <ProfilePageSkeleton />
   }
 
   const agentStatus = normalizeStatus(profile?.agent_status)

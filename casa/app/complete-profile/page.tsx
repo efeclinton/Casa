@@ -10,6 +10,7 @@ import {
   loadCurrentProfile,
 } from "../../lib/profileCompletion"
 import type { User } from "@supabase/supabase-js"
+import { FormPageSkeleton } from "../../components/LoadingSkeletons"
 
 export default function CompleteProfilePage() {
   const router = useRouter()
@@ -79,7 +80,7 @@ export default function CompleteProfilePage() {
   }
 
   if (loading) {
-    return <main className="max-w-md mx-auto px-4 py-10">Loading profile...</main>
+    return <FormPageSkeleton maxWidth="max-w-md" />
   }
 
   return (

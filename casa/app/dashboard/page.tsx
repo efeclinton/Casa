@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation"
 import PropertyCard from "../../components/PropertyCard"
 import Link from "next/link"
 import { formatUpdatedAtLabel } from "../../lib/activity"
+import { DashboardSkeleton } from "../../components/LoadingSkeletons"
 
 type Property = {
   id: string;
@@ -248,7 +249,7 @@ const renewListing = async (property: Property) => {
 }
 
   if (loading) {
-    return <p className="w-full max-w-6xl mx-auto px-4 py-6 sm:py-8">Loading...</p>
+    return <DashboardSkeleton />
   }
 
   const listings = properties

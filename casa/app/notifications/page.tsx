@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { supabase } from "../../lib/supabaseClient"
+import { NotificationListSkeleton } from "../../components/LoadingSkeletons"
 
 type Notification = {
   id: string
@@ -93,13 +94,7 @@ export default function NotificationsPage() {
   }
 
   if (loading) {
-    return (
-      <main className="max-w-4xl mx-auto px-4 py-6 sm:p-10">
-        <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
-          <p className="text-gray-500">Loading notifications...</p>
-        </div>
-      </main>
-    )
+    return <NotificationListSkeleton />
   }
 
   return (

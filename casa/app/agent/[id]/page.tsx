@@ -10,6 +10,7 @@ import MarketItemCard from "../../../components/MarketItemCard"
 import VerifiedAgentBadge from "../../../components/VerifiedAgentBadge"
 import { ensureProfileComplete } from "../../../lib/profileCompletion"
 import { getAgentDisplayName } from "../../../lib/agentDisplay"
+import { ProfilePageSkeleton } from "../../../components/LoadingSkeletons"
 
 type AgentProfile = {
   id: string
@@ -330,7 +331,7 @@ export default function AgentProfilePage() {
     window.open(whatsappLink, "_blank")
   }
 
-  if (loading) return <main className="px-4 py-6 sm:p-10">Loading agent...</main>
+  if (loading) return <ProfilePageSkeleton />
   if (!agent) return <main className="px-4 py-6 sm:p-10">Agent not found</main>
 
   const isViewingOwnProfile = Boolean(user && user.id === agent.id)

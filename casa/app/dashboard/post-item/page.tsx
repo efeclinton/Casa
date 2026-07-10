@@ -4,6 +4,7 @@ import { useEffect, useState } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { supabase } from "../../../lib/supabaseClient"
 import { ensureProfileComplete } from "../../../lib/profileCompletion"
+import { FormPageSkeleton } from "../../../components/LoadingSkeletons"
 
 export default function PostItemPage() {
   const router = useRouter()
@@ -184,13 +185,7 @@ export default function PostItemPage() {
   }
 
   if (loading) {
-    return (
-      <main className="min-h-screen bg-slate-50 px-4 py-10">
-        <div className="mx-auto max-w-3xl rounded-3xl border border-slate-200 bg-white p-8 text-center text-slate-600 shadow-sm">
-          Loading...
-        </div>
-      </main>
-    )
+    return <FormPageSkeleton />
   }
 
   if (!isAgent) {

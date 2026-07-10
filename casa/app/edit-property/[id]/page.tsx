@@ -4,6 +4,7 @@ import { useEffect, useState } from "react"
 import { useParams, useRouter } from "next/navigation"
 import { supabase } from "../../../lib/supabaseClient"
 import Image from "next/image"
+import { FormPageSkeleton } from "../../../components/LoadingSkeletons"
 
 export default function EditProperty() {
 
@@ -215,7 +216,7 @@ export default function EditProperty() {
   }
 
   if (loading) {
-    return <p className="p-10">Loading...</p>
+    return <FormPageSkeleton maxWidth="max-w-xl" />
   }
 
   return (

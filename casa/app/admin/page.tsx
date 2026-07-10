@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { supabase } from "../../lib/supabaseClient"
 import { getAgentDisplayName } from "../../lib/agentDisplay"
+import { ListRowsSkeleton, UserDetailsSkeleton } from "../../components/LoadingSkeletons"
 
 type VerificationStatus = "pending" | "verified" | "rejected"
 
@@ -1042,7 +1043,7 @@ export default function AdminPage() {
               </div>
             </div>
 
-            {loadingAgents && <p className="text-sm text-slate-500">Loading agents...</p>}
+            {loadingAgents && <ListRowsSkeleton />}
 
             <div className="grid gap-4">
               {filteredAgents.map((agent) => {
@@ -1198,7 +1199,7 @@ export default function AdminPage() {
               </button>
             </div>
 
-            {loading && <p className="text-sm text-slate-500">Loading listings...</p>}
+            {loading && <ListRowsSkeleton />}
 
             <div className="grid gap-4">
               {properties.map((property) => {
@@ -1267,7 +1268,7 @@ export default function AdminPage() {
                 <h2 className="mt-2 text-2xl font-bold tracking-tight text-slate-950">
                   {userDetails
                     ? getAgentDisplayName(userDetails.profile, userDetails.profile.full_name || userDetails.profile.email || "CASA User")
-                    : "Loading user..."}
+                    : <span className="block h-7 w-48 animate-pulse rounded-lg bg-slate-200" aria-label="Loading user" />}
                 </h2>
                 <p className="mt-1 text-sm text-slate-500">Read-only account overview</p>
               </div>
@@ -1284,9 +1285,7 @@ export default function AdminPage() {
             </div>
 
             {loadingUserDetails || !userDetails ? (
-              <div className="rounded-3xl border border-slate-200 bg-white p-8 text-center text-slate-500 shadow-sm">
-                Loading complete user details...
-              </div>
+              <UserDetailsSkeleton />
             ) : (
               <div className="space-y-5">
                 <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
