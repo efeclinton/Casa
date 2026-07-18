@@ -37,9 +37,12 @@ export async function generateMetadata({ params }: PropertyPageParams): Promise<
     ? `${priceText} in ${locationText}. ${property.description}`
     : `Verified accommodation for ${priceText} in ${locationText}.`
 
-  const imageUrl = Array.isArray(property.images) && property.images.length > 0
-    ? property.images[0]
-    : property.image || "/favicon-v2.png"
+  const galleryImages = Array.isArray(property.images)
+    ? property.images.filter((image: unknown): image is string => typeof image === "string" && image.trim().length > 0)
+    : []
+  const imageUrl = typeof property.image === "string" && property.image.trim().length > 0
+    ? property.image
+    : galleryImages[0] || "/placeholders/property-placeholder.svg"
 
   const resolvedImage = (() => {
     try {

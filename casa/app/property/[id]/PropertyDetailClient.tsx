@@ -12,6 +12,7 @@ import { ensureProfileComplete } from "../../../lib/profileCompletion"
 import { getAgentDisplayName } from "../../../lib/agentDisplay"
 import { DetailPageSkeleton } from "../../../components/LoadingSkeletons"
 import Avatar from "../../../components/Avatar"
+import PropertyThumbnail from "../../../components/PropertyThumbnail"
 
 type Property = {
   id: string
@@ -45,14 +46,11 @@ type PropertyDetailClientProps = {
   initialProperty?: Property | null
 }
 
-const fallbackPropertyImage =
-  "https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=1200&auto=format&fit=crop&q=80"
-
 const getGalleryImages = (property?: Property | null) => {
-  const images = Array.isArray(property?.images) ? property.images.filter(Boolean) : []
-  if (images.length > 0) return images
-  if (property?.image) return [property.image]
-  return [fallbackPropertyImage]
+  const candidates = [property?.image, ...(Array.isArray(property?.images) ? property.images : [])]
+    .filter((url): url is string => typeof url === "string" && url.trim().length > 0)
+
+  return candidates.filter((url, index) => candidates.indexOf(url) === index)
 }
 
 const logSupabaseError = (message: string, error: unknown) => {
@@ -565,20 +563,19 @@ export default function PropertyPage({ propertyId, initialProperty = null }: Pro
 
         <button
           type="button"
-          onClick={() => openGallery(0)}
+          onClick={() => images.length > 0 && openGallery(0)}
+          disabled={images.length === 0}
           className={`group overflow-hidden rounded-2xl bg-gray-100 text-left shadow-sm ${
             hasMultipleImages
               ? "h-64 sm:h-80 lg:col-span-2 lg:row-span-2 lg:h-[430px]"
               : "h-72 sm:h-96 lg:h-[520px]"
           }`}
         >
-          <img
-            src={images[0]}
+          <PropertyThumbnail
+            image={images[0]}
+            images={images.slice(1)}
             alt="Main property image"
-            className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.02]"
-            onError={(event) => {
-              event.currentTarget.src = fallbackPropertyImage
-            }}
+            imageClassName="h-full w-full object-cover transition duration-300 group-hover:scale-[1.02]"
           />
         </button>
 
@@ -595,13 +592,10 @@ export default function PropertyPage({ propertyId, initialProperty = null }: Pro
                   onClick={() => openGallery(galleryIndex)}
                   className="group relative h-28 overflow-hidden rounded-xl bg-gray-100 text-left shadow-sm sm:h-36 lg:h-full"
                 >
-                  <img
-                    src={img}
+                  <PropertyThumbnail
+                    image={img}
                     alt={`Property image ${galleryIndex + 1}`}
-                    className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.03]"
-                    onError={(event) => {
-                      event.currentTarget.src = fallbackPropertyImage
-                    }}
+                    imageClassName="h-full w-full object-cover transition duration-300 group-hover:scale-[1.03]"
                   />
                   {showOverlay && (
                     <span className="absolute inset-0 flex items-center justify-center bg-black/55 px-3 text-center text-sm font-semibold text-white sm:text-base">
@@ -833,14 +827,16 @@ export default function PropertyPage({ propertyId, initialProperty = null }: Pro
 
           {/* Main Image Container */}
           <div
-            className="relative w-full h-full flex items-center justify-center"
+            className="relative flex h-full w-full items-center justify-center"
             onClick={(e) => e.stopPropagation()}
           >
-            <img
-              src={images[currentImageIndex] || property.image}
-              alt={`Gallery image ${currentImageIndex + 1}`}
-              className="max-w-full max-h-full object-contain"
-            />
+            <div className="h-[70vh] w-[90vw] max-w-5xl overflow-hidden rounded-xl">
+              <PropertyThumbnail
+                image={images[currentImageIndex]}
+                alt={`Gallery image ${currentImageIndex + 1}`}
+                imageClassName="h-full w-full object-contain"
+              />
+            </div>
 
             {/* Previous Button */}
             <button
