@@ -77,7 +77,8 @@ export default async function Home() {
 
     const { data: fallbackProperties, error: fallbackError } = await supabase
       .from("properties")
-      .select("id,image,price,title,location,rent_period,is_active,updated_at,inquiry_count,agent_id,owner_id")
+      .select("id,image,images,price,title,location,rent_period,is_active,updated_at,inquiry_count,agent_id,owner_id")
+      .eq("is_active", true)
       .order("is_active", { ascending: false })
       .order("updated_at", { ascending: false, nullsFirst: false })
       .limit(6)
@@ -85,7 +86,7 @@ export default async function Home() {
     if (fallbackError) {
       console.error("Fallback featured properties query failed:", fallbackError)
     } else {
-      properties = fallbackProperties
+      properties = (fallbackProperties || []).filter((property: Property) => property.is_active === true)
     }
   }
 
@@ -93,7 +94,7 @@ export default async function Home() {
 
   const { data: marketData, error: marketError } = await supabase
     .from("market_items")
-    .select("id, images, title, price, location, is_active")
+    .select("id, images, title, price, location, is_active, updated_at")
     .eq("is_active", true)
     .order("created_at", { ascending: false })
     .limit(6)

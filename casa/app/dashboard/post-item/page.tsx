@@ -14,6 +14,7 @@ export default function PostItemPage() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [isAgent, setIsAgent] = useState(false)
+  const [accessMessage, setAccessMessage] = useState("Only approved agents can post marketplace items.")
   const [userId, setUserId] = useState("")
 
   const [title, setTitle] = useState("")
@@ -38,13 +39,21 @@ export default function PostItemPage() {
 
       setUserId(user.id)
 
-      const { data: profile } = await supabase
+      const { data: profile, error: profileError } = await supabase
         .from("profiles")
-        .select("role,agent_status")
+        .select("agent_status")
         .eq("id", user.id)
         .single()
 
-      const canPost = profile?.role === "agent" || profile?.agent_status === "approved"
+      if (profileError) {
+        console.error("Unable to verify marketplace posting access:", profileError)
+        setAccessMessage("Unable to verify your agent status. Please refresh and try again.")
+        setIsAgent(false)
+        setLoading(false)
+        return
+      }
+
+      const canPost = profile?.agent_status === "approved"
       setIsAgent(!!canPost)
 
       if (!canPost) {
@@ -96,6 +105,27 @@ export default function PostItemPage() {
       return
     }
 
+    const { data: latestProfile, error: agentStatusError } = await supabase
+      .from("profiles")
+      .select("agent_status")
+      .eq("id", user.id)
+      .single()
+
+    if (agentStatusError) {
+      console.error("Unable to revalidate marketplace posting access:", agentStatusError)
+      alert("Unable to verify your agent status. Please try again.")
+      setSaving(false)
+      return
+    }
+
+    if (latestProfile?.agent_status !== "approved") {
+      setIsAgent(false)
+      setAccessMessage("Only approved agents can post marketplace items.")
+      alert("Only approved agents can post marketplace items.")
+      setSaving(false)
+      return
+    }
+
     const shouldReplaceImages = images.length > 0
     const uploadedUrls = shouldReplaceImages ? [] : [...existingImages]
 
@@ -133,7 +163,8 @@ export default function PostItemPage() {
         price: Number(price),
         location,
         whatsapp_number: whatsappNumber,
-        images: Array.isArray(uploadedUrls) ? uploadedUrls : []
+        images: Array.isArray(uploadedUrls) ? uploadedUrls : [],
+        updated_at: new Date().toISOString()
       }
 
       console.log("UPDATE PAYLOAD:", updatePayload)
@@ -167,7 +198,8 @@ export default function PostItemPage() {
         whatsapp_number: whatsappNumber,
         images: uploadedUrls,
         user_id: currentUserId,
-        is_active: true
+        is_active: true,
+        updated_at: new Date().toISOString()
       })
 
       if (error) {
@@ -194,7 +226,7 @@ export default function PostItemPage() {
         <section className="mx-auto max-w-2xl rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
           <p className="text-sm font-semibold uppercase tracking-[0.16em] text-emerald-700">CASA Market</p>
           <h1 className="mt-3 text-3xl font-bold tracking-tight text-slate-950">Post Item</h1>
-          <p className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">Only agents can post items in Campus Market.</p>
+          <p className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">{accessMessage}</p>
         </section>
       </main>
     )

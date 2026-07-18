@@ -119,7 +119,7 @@ export default function AgentProfilePage() {
           .eq("is_active", true),
         supabase
           .from("market_items")
-          .select("id,title,price,location,images,is_active")
+          .select("id,title,price,location,images,is_active,updated_at")
           .eq("user_id", agentId)
           .order("created_at", { ascending: false }),
         supabase
