@@ -127,7 +127,7 @@ export default function PostItemPage() {
     }
 
     const shouldReplaceImages = images.length > 0
-    const uploadedUrls = shouldReplaceImages ? [] : [...existingImages]
+    const newUploadedUrls: string[] = []
 
     for (const [index, file] of images.entries()) {
       const cleanName = file.name.replace(/\s+/g, "-").replace(/[^\w.-]/g, "")
@@ -142,19 +142,44 @@ export default function PostItemPage() {
 
       if (error) {
         console.error(`Image upload failed for ${file.name}:`, error)
-        continue
+        alert(`Failed to upload ${file.name}. No item changes were saved.`)
+        setSaving(false)
+        return
       }
 
       const { data: publicUrlData } = supabase.storage
         .from("market-images")
         .getPublicUrl(fileName)
 
-      if (publicUrlData?.publicUrl) {
-        uploadedUrls.push(publicUrlData.publicUrl)
-      } else {
-        console.error(`Public URL generation failed for ${file.name}`)
+      const publicUrl = publicUrlData?.publicUrl?.trim()
+      let hasValidPublicUrl = false
+
+      if (publicUrl) {
+        try {
+          const parsedPublicUrl = new URL(publicUrl)
+          hasValidPublicUrl = parsedPublicUrl.protocol === "https:" || parsedPublicUrl.protocol === "http:"
+        } catch {
+          hasValidPublicUrl = false
+        }
       }
+
+      if (!publicUrl || !hasValidPublicUrl) {
+        console.error(`Public URL generation failed for ${file.name}`)
+        alert(`Unable to prepare ${file.name} after upload. No item changes were saved.`)
+        setSaving(false)
+        return
+      }
+
+      newUploadedUrls.push(publicUrl)
     }
+
+    if (shouldReplaceImages && newUploadedUrls.length !== images.length) {
+      alert("Not all selected images were uploaded. No item changes were saved.")
+      setSaving(false)
+      return
+    }
+
+    const uploadedUrls = shouldReplaceImages ? newUploadedUrls : [...existingImages]
 
     if (editId) {
       const updatePayload = {
@@ -166,8 +191,6 @@ export default function PostItemPage() {
         images: Array.isArray(uploadedUrls) ? uploadedUrls : [],
         updated_at: new Date().toISOString()
       }
-
-      console.log("UPDATE PAYLOAD:", updatePayload)
 
       const { error } = await supabase
         .from("market_items")

@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation"
 import { supabase } from "../../../lib/supabaseClient"
 import Image from "next/image"
 import { FormPageSkeleton } from "../../../components/LoadingSkeletons"
+import { validatePropertyForm } from "../../../lib/propertyFormValidation"
 
 export default function EditProperty() {
 
@@ -20,7 +21,7 @@ export default function EditProperty() {
   const [location, setLocation] = useState("")
   const [phone, setPhone] = useState("")
   const [rentPeriod, setRentPeriod] = useState("")
-  const [listingType, setListingType] = useState("rent")
+  const [listingType, setListingType] = useState("campus")
   const [school, setSchool] = useState("")
   const [description, setDescription] = useState("")
 
@@ -64,8 +65,8 @@ export default function EditProperty() {
       setPrice(String(data.price))
       setLocation(data.location)
       setPhone(data.phone)
-      setRentPeriod(data.rent_period)
-      setListingType(data.listing_type || "rent")
+      setRentPeriod(data.rent_period || "")
+      setListingType("campus")
       setSchool(data.school || "")
       setDescription(data.description || "")
 
@@ -88,39 +89,31 @@ export default function EditProperty() {
     setExistingVideos(prev => prev.filter(v => v !== video))
   }
 
-  const validateTourLinks = () => {
-
-    const allowedDomains = [
-      "momento360.com",
-      "panoraven.com",
-      "kuula.co"
-    ]
-
-    for (const link of tourLinks) {
-
-      if (!link) continue
-
-      const valid = allowedDomains.some(domain =>
-        link.toLowerCase().includes(domain)
-      )
-
-      if (!valid) {
-        alert("Tour links must come from Panoraven, Momento360, or Kuula.")
-        return false
-      }
-
-    }
-
-    return true
-  }
-
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
 
     e.preventDefault()
 
     if (saving) return
 
-    if (!validateTourLinks()) return
+    const validation = validatePropertyForm({
+      title,
+      price,
+      location,
+      phone,
+      rentPeriod,
+      listingType: "campus",
+      school,
+      description,
+      tourLinks,
+    })
+
+    if (!validation.valid) {
+      setSaving(false)
+      setMessage(validation.message)
+      return
+    }
+
+    const formValues = validation.values
 
     setSaving(true)
     setMessage("")
@@ -182,15 +175,15 @@ export default function EditProperty() {
         .from("properties")
         .update({
           updated_at: new Date().toISOString(),
-          title,
-          price: Number(price),
-          location,
-          phone,
-          rent_period: rentPeriod,
-          listing_type: listingType,
-          school,
-          description,
-          tour_images: tourLinks.filter(link => link !== ""),
+          title: formValues.title,
+          price: formValues.price,
+          location: formValues.location,
+          phone: formValues.phone,
+          rent_period: formValues.rentPeriod,
+          listing_type: "campus",
+          school: formValues.school,
+          description: formValues.description,
+          tour_images: formValues.tourLinks,
           image: imageUrls.length > 0 ? imageUrls[0] : null,
           images: imageUrls,
           videos: videoUrls
@@ -245,33 +238,45 @@ export default function EditProperty() {
             value={title}
             onChange={(e)=>setTitle(e.target.value)}
             className="w-full border p-3 rounded"
+            minLength={3}
+            required
           />
 
-          <select
-            value={listingType}
-            onChange={(e)=>setListingType(e.target.value)}
-            className="w-full border p-3 rounded"
-          >
-            <option value="rent">For Rent</option>
-            <option value="sale">For Sale</option>
-            <option value="campus">Campus Stay</option>
-          </select>
-
-          {listingType === "campus" && (
+          {false && (
+          <label className="block">
+            <span className="mb-1 block font-medium">Listing type</span>
             <select
-              value={school}
-              onChange={(e)=>setSchool(e.target.value)}
+              value={listingType}
+              onChange={(e) => {
+                const nextListingType = e.target.value
+                setListingType(nextListingType)
+                if (nextListingType !== "campus") setSchool("")
+                if (nextListingType === "sale") setRentPeriod("")
+              }}
               className="w-full border p-3 rounded"
+              required
             >
-              <option value="">Select School</option>
-
-              {schools.map((s,index)=>(
-                <option key={index} value={s}>
-                  {s}
-                </option>
-              ))}
+              <option value="rent">For Rent</option>
+              <option value="sale">For Sale</option>
+              <option value="campus">Campus Stay</option>
             </select>
+          </label>
           )}
+
+          <select
+            value={school}
+            onChange={(e)=>setSchool(e.target.value)}
+            className="w-full border p-3 rounded"
+            required
+          >
+            <option value="">Select School</option>
+
+            {schools.map((s,index)=>(
+              <option key={index} value={s}>
+                {s}
+              </option>
+            ))}
+          </select>
 
           {/* Existing Images */}
 
@@ -471,6 +476,9 @@ export default function EditProperty() {
             value={price}
             onChange={(e)=>setPrice(e.target.value)}
             className="w-full border p-3 rounded"
+            min="0.01"
+            step="any"
+            required
           />
 
           <input
@@ -479,12 +487,14 @@ export default function EditProperty() {
             value={location}
             onChange={(e)=>setLocation(e.target.value)}
             className="w-full border p-3 rounded"
+            required
           />
 
           <select
             value={rentPeriod}
             onChange={(e)=>setRentPeriod(e.target.value)}
             className="w-full border p-3 rounded"
+            required
           >
             <option value="">Select Rent Period</option>
             <option value="year">Per Year</option>
@@ -497,6 +507,8 @@ export default function EditProperty() {
             value={phone}
             onChange={(e)=>setPhone(e.target.value)}
             className="w-full border p-3 rounded"
+            inputMode="tel"
+            required
           />
 
           <textarea
@@ -504,6 +516,7 @@ export default function EditProperty() {
             value={description}
             onChange={(e)=>setDescription(e.target.value)}
             className="w-full border p-3 rounded h-32"
+            required
           />
 
           <button

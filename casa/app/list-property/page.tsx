@@ -5,6 +5,7 @@ import { supabase } from "../../lib/supabaseClient"
 import { useRouter } from "next/navigation"
 import { ensureProfileComplete } from "../../lib/profileCompletion"
 import { FormPageSkeleton } from "../../components/LoadingSkeletons"
+import { validatePropertyForm } from "../../lib/propertyFormValidation"
 
 export default function ListProperty() {
 
@@ -71,43 +72,31 @@ export default function ListProperty() {
 
   }, [router])
 
-
-  /* TOUR LINK VALIDATION */
-
-  const validateTourLinks = () => {
-
-    const allowedDomains = [
-      "momento360.com",
-      "panoraven.com",
-      "kuula.co"
-    ]
-
-    for (const link of tourLinks) {
-
-      if (!link) continue
-
-      const valid = allowedDomains.some(domain =>
-        link.toLowerCase().includes(domain)
-      )
-
-      if (!valid) {
-        alert("Tour links must come from Panoraven, Momento360, or Kuula.")
-        return false
-      }
-
-    }
-
-    return true
-  }
-
-
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
 
     e.preventDefault()
 
     if (isSubmitting) return
 
-    if (!validateTourLinks()) return
+    const validation = validatePropertyForm({
+      title,
+      price,
+      location,
+      phone,
+      rentPeriod,
+      listingType: "campus",
+      school,
+      description,
+      tourLinks,
+    })
+
+    if (!validation.valid) {
+      setIsSubmitting(false)
+      alert(validation.message)
+      return
+    }
+
+    const formValues = validation.values
 
     setIsSubmitting(true)
 
@@ -211,8 +200,8 @@ export default function ListProperty() {
 
     /* INSERT PROPERTY */
 
-    const newTitle = title.trim()
-    const newLocation = location.trim()
+    const newTitle = formValues.title
+    const newLocation = formValues.location
 
     const { data: existing } = await supabase
       .from("properties")
@@ -235,20 +224,20 @@ export default function ListProperty() {
       .insert([
         {
           updated_at: new Date().toISOString(),
-          title,
-          price: Number(price),
-          location,
-          rent_period: rentPeriod,
-          listing_type: listingType,
-          school,
-          phone,
-          description,
+          title: formValues.title,
+          price: formValues.price,
+          location: formValues.location,
+          rent_period: formValues.rentPeriod,
+          listing_type: "campus",
+          school: formValues.school,
+          phone: formValues.phone,
+          description: formValues.description,
 
           image: imageUrls[0],
           images: imageUrls,
           videos: videoUrls,
 
-          tour_images: tourLinks.filter(link => link !== ""),
+          tour_images: formValues.tourLinks,
 
           owner_id: user.id,
           agent_id: user.id,
@@ -274,7 +263,7 @@ export default function ListProperty() {
       setLocation("")
       setPhone("")
       setRentPeriod("")
-      setListingType("rent")
+      setListingType("campus")
       setSchool("")
       setDescription("")
       setImages([])
@@ -336,40 +325,50 @@ export default function ListProperty() {
                   value={title}
                   onChange={(e)=>setTitle(e.target.value)}
                   className="mt-2 min-h-12 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100"
+                  minLength={3}
+                  required
                 />
               </label>
 
               {false && (
-              <select
-                value={listingType}
-                onChange={(e)=>setListingType(e.target.value)}
-                className="min-h-12 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100"
-              >
-                <option value="rent">For Rent</option>
-                <option value="sale">For Sale</option>
-                <option value="campus">Campus Stay</option>
-              </select>
+              <label className="block">
+                <span className="text-sm font-semibold text-slate-700">Listing type</span>
+                <select
+                  value={listingType}
+                  onChange={(e) => {
+                    const nextListingType = e.target.value
+                    setListingType(nextListingType)
+                    if (nextListingType !== "campus") setSchool("")
+                    if (nextListingType === "sale") setRentPeriod("")
+                  }}
+                  className="mt-2 min-h-12 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100"
+                  required
+                >
+                  <option value="rent">For Rent</option>
+                  <option value="sale">For Sale</option>
+                  <option value="campus">Campus Stay</option>
+                </select>
+              </label>
               )}
 
-              {listingType === "campus" && (
-                <label className="block">
-                  <span className="text-sm font-semibold text-slate-700">School</span>
-                  <select
-                    value={school}
-                    onChange={(e)=>setSchool(e.target.value)}
-                    className="mt-2 min-h-12 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100"
-                  >
-                    <option value="">Select School</option>
+              <label className="block">
+                <span className="text-sm font-semibold text-slate-700">School</span>
+                <select
+                  value={school}
+                  onChange={(e)=>setSchool(e.target.value)}
+                  className="mt-2 min-h-12 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100"
+                  required
+                >
+                  <option value="">Select School</option>
 
-                    {schools.map((s,index)=>(
-                      <option key={index} value={s}>
-                        {s}
-                      </option>
-                    ))}
+                  {schools.map((s,index)=>(
+                    <option key={index} value={s}>
+                      {s}
+                    </option>
+                  ))}
 
-                  </select>
-                </label>
-              )}
+                </select>
+              </label>
             </div>
           </section>
 
@@ -384,6 +383,9 @@ export default function ListProperty() {
                   value={price}
                   onChange={(e)=>setPrice(e.target.value)}
                   className="mt-2 min-h-12 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100"
+                  min="0.01"
+                  step="any"
+                  required
                 />
               </label>
 
@@ -393,6 +395,7 @@ export default function ListProperty() {
                   value={rentPeriod}
                   onChange={(e)=>setRentPeriod(e.target.value)}
                   className="mt-2 min-h-12 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100"
+                  required
                 >
                   <option value="">Select Rent Period</option>
                   <option value="year">Per Year</option>
@@ -412,6 +415,7 @@ export default function ListProperty() {
                 value={location}
                 onChange={(e)=>setLocation(e.target.value)}
                 className="mt-2 min-h-12 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100"
+                required
               />
             </label>
           </section>
@@ -524,6 +528,8 @@ export default function ListProperty() {
                 value={phone}
                 onChange={(e)=>setPhone(e.target.value)}
                 className="mt-2 min-h-12 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100"
+                inputMode="tel"
+                required
               />
             </label>
           </section>
@@ -537,6 +543,7 @@ export default function ListProperty() {
                 value={description}
                 onChange={(e)=>setDescription(e.target.value)}
                 className="mt-2 h-36 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100"
+                required
               />
             </label>
           </section>
