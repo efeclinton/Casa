@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation"
 import { ensureProfileComplete } from "../../lib/profileCompletion"
 import { FormPageSkeleton } from "../../components/LoadingSkeletons"
 import { validatePropertyForm } from "../../lib/propertyFormValidation"
+import { cleanupUploadedPaths } from "../../lib/storageCleanup"
 
 export default function ListProperty() {
 
@@ -139,10 +140,37 @@ export default function ListProperty() {
     const ownerEmail = profile.email || user.email || ""
     const ownerPhone = profile.phone || ""
 
+    const newTitle = formValues.title
+    const newLocation = formValues.location
+
+    const { data: existing, error: duplicateError } = await supabase
+      .from("properties")
+      .select("id, title")
+      .ilike("title", newTitle)
+      .eq("location", newLocation)
+
+    if (duplicateError) {
+      console.error("Duplicate property check failed:", duplicateError)
+      alert(`Unable to check for duplicate listings: ${duplicateError.message || "Please try again."}`)
+      setIsSubmitting(false)
+      return
+    }
+
+    const isDuplicate = (existing?.length || 0) > 0
+
+    if (isDuplicate) {
+      const proceed = confirm("This listing may already exist. Do you want to continue?")
+      if (!proceed) {
+        setIsSubmitting(false)
+        return
+      }
+    }
 
     /* IMAGE UPLOAD */
 
     const imageUrls: string[] = []
+    const newlyUploadedImagePaths: string[] = []
+    const newlyUploadedVideoPaths: string[] = []
 
     for (const file of images) {
 
@@ -157,10 +185,17 @@ export default function ListProperty() {
         .upload(fileName, file)
 
       if (error) {
-        alert("Image upload failed")
+        console.error("Property image upload failed:", error)
+        await Promise.all([
+          cleanupUploadedPaths("property-images", newlyUploadedImagePaths, "property creation image"),
+          cleanupUploadedPaths("property-videos", newlyUploadedVideoPaths, "property creation video"),
+        ])
+        alert(`Image upload failed: ${error.message || "Please try again."}`)
         setIsSubmitting(false)
         return
       }
+
+      newlyUploadedImagePaths.push(fileName)
 
       const url =
         `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/property-images/${fileName}`
@@ -186,10 +221,17 @@ export default function ListProperty() {
         .upload(fileName, file)
 
       if (error) {
-        alert("Video upload failed")
+        console.error("Property video upload failed:", error)
+        await Promise.all([
+          cleanupUploadedPaths("property-images", newlyUploadedImagePaths, "property creation image"),
+          cleanupUploadedPaths("property-videos", newlyUploadedVideoPaths, "property creation video"),
+        ])
+        alert(`Video upload failed: ${error.message || "Please try again."}`)
         setIsSubmitting(false)
         return
       }
+
+      newlyUploadedVideoPaths.push(fileName)
 
       const url =
         `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/property-videos/${fileName}`
@@ -199,25 +241,6 @@ export default function ListProperty() {
 
 
     /* INSERT PROPERTY */
-
-    const newTitle = formValues.title
-    const newLocation = formValues.location
-
-    const { data: existing } = await supabase
-      .from("properties")
-      .select("id, title")
-      .ilike("title", newTitle)
-      .eq("location", newLocation)
-
-    const isDuplicate = (existing?.length || 0) > 0
-
-    if (isDuplicate) {
-      const proceed = confirm("This listing may already exist. Do you want to continue?")
-      if (!proceed) {
-        setIsSubmitting(false)
-        return
-      }
-    }
 
     const { error } = await supabase
       .from("properties")
@@ -249,9 +272,12 @@ export default function ListProperty() {
       ])
 
     if (error) {
-
-      alert("Error submitting property")
-      console.log(error)
+      console.error("Property insert failed:", error)
+      await Promise.all([
+        cleanupUploadedPaths("property-images", newlyUploadedImagePaths, "property creation image"),
+        cleanupUploadedPaths("property-videos", newlyUploadedVideoPaths, "property creation video"),
+      ])
+      alert(`Error submitting property: ${error.message || "Please try again."}`)
       setIsSubmitting(false)
 
     } else {

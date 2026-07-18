@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation"
 import { supabase } from "../../../lib/supabaseClient"
 import { ensureProfileComplete } from "../../../lib/profileCompletion"
 import { FormPageSkeleton } from "../../../components/LoadingSkeletons"
+import { cleanupUploadedPaths } from "../../../lib/storageCleanup"
 
 export default function PostItemPage() {
   const router = useRouter()
@@ -128,6 +129,7 @@ export default function PostItemPage() {
 
     const shouldReplaceImages = images.length > 0
     const newUploadedUrls: string[] = []
+    const newlyUploadedMarketImagePaths: string[] = []
 
     for (const [index, file] of images.entries()) {
       const cleanName = file.name.replace(/\s+/g, "-").replace(/[^\w.-]/g, "")
@@ -142,10 +144,13 @@ export default function PostItemPage() {
 
       if (error) {
         console.error(`Image upload failed for ${file.name}:`, error)
+        await cleanupUploadedPaths("market-images", newlyUploadedMarketImagePaths, "market item image")
         alert(`Failed to upload ${file.name}. No item changes were saved.`)
         setSaving(false)
         return
       }
+
+      newlyUploadedMarketImagePaths.push(fileName)
 
       const { data: publicUrlData } = supabase.storage
         .from("market-images")
@@ -165,6 +170,7 @@ export default function PostItemPage() {
 
       if (!publicUrl || !hasValidPublicUrl) {
         console.error(`Public URL generation failed for ${file.name}`)
+        await cleanupUploadedPaths("market-images", newlyUploadedMarketImagePaths, "market item image")
         alert(`Unable to prepare ${file.name} after upload. No item changes were saved.`)
         setSaving(false)
         return
@@ -174,6 +180,7 @@ export default function PostItemPage() {
     }
 
     if (shouldReplaceImages && newUploadedUrls.length !== images.length) {
+      await cleanupUploadedPaths("market-images", newlyUploadedMarketImagePaths, "market item image")
       alert("Not all selected images were uploaded. No item changes were saved.")
       setSaving(false)
       return
@@ -200,6 +207,7 @@ export default function PostItemPage() {
 
       if (error) {
         console.error("UPDATE ERROR:", error)
+        await cleanupUploadedPaths("market-images", newlyUploadedMarketImagePaths, "market item image")
         alert(error.message || "Failed to update item")
         setSaving(false)
         return
@@ -208,6 +216,7 @@ export default function PostItemPage() {
       const currentUserId = user.id
 
       if (!currentUserId) {
+        await cleanupUploadedPaths("market-images", newlyUploadedMarketImagePaths, "market item image")
         alert("You must be logged in")
         setSaving(false)
         return
@@ -227,6 +236,7 @@ export default function PostItemPage() {
 
       if (error) {
         console.error(error)
+        await cleanupUploadedPaths("market-images", newlyUploadedMarketImagePaths, "market item image")
         alert(error.message)
         setSaving(false)
         return

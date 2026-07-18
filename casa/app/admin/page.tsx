@@ -229,6 +229,11 @@ export default function AdminPage() {
   const [checkingAdmin, setCheckingAdmin] = useState(true)
   const [loadingUserDetails, setLoadingUserDetails] = useState(false)
   const [userDetails, setUserDetails] = useState<UserDetails | null>(null)
+  const [reviewingApplication, setReviewingApplication] = useState<{
+    id: string
+    decision: "approved" | "rejected"
+  } | null>(null)
+  const [deletingListingId, setDeletingListingId] = useState<string | null>(null)
   const [categoryFilter, setCategoryFilter] = useState("all")
   const [verificationMap, setVerificationMap] = useState<Record<string, VerificationStatus>>({})
   const [confirmChange, setConfirmChange] = useState<{
@@ -269,65 +274,76 @@ export default function AdminPage() {
     })))
   }
 
-  const approveAgent = async (app: AgentApplication) => {
+  const reviewAgentApplication = async (
+    app: AgentApplication,
+    decision: "approved" | "rejected"
+  ) => {
     if (!app?.id || !app?.user_id) {
       alert("Invalid application data")
       return
     }
 
-    const profileUpdate = {
-      role: "agent",
-      agent_status: "approved",
-      business_name: app.business_name || null,
-    }
+    if (reviewingApplication) return
 
-    let { data: profileData, error: profileError } = await supabase
-      .from("profiles")
-      .update(profileUpdate)
-      .eq("id", app.user_id)
-      .select()
+    setReviewingApplication({ id: app.id, decision })
 
-    if (profileError && profileError.message?.toLowerCase().includes("business_name")) {
-      const fallbackUpdate = await supabase
-        .from("profiles")
-        .update({
-          role: "agent",
-          agent_status: "approved",
+    try {
+      const { data, error } = await supabase.rpc(
+        "review_agent_application",
+        {
+          p_application_id: app.id,
+          p_decision: decision,
+        }
+      )
+
+      if (error) {
+        console.error("Agent application review RPC failed:", {
+          applicationId: app.id,
+          userId: app.user_id,
+          decision,
+          data,
+          error,
         })
-        .eq("id", app.user_id)
-        .select()
+        alert(`Failed to ${decision === "approved" ? "approve" : "reject"} agent: ${error.message || "Please try again."}`)
+        return
+      }
 
-      profileData = fallbackUpdate.data
-      profileError = fallbackUpdate.error
+      alert(decision === "approved" ? "Agent approved" : "Agent rejected")
+
+      const refreshResults = await Promise.allSettled([
+        loadApplications(),
+        loadUserManagement(),
+        loadAllAgents(),
+        userDetails?.profile.id === app.user_id ? openUserDetails(app.user_id) : Promise.resolve(),
+      ])
+
+      refreshResults.forEach((result, index) => {
+        if (result.status === "rejected") {
+          console.error("Admin data refresh failed after agent application review:", {
+            applicationId: app.id,
+            decision,
+            refreshIndex: index,
+            error: result.reason,
+          })
+        }
+      })
+    } catch (unexpectedError) {
+      console.error("Unexpected agent application review failure:", {
+        applicationId: app.id,
+        userId: app.user_id,
+        decision,
+        error: unexpectedError,
+      })
+      const message = unexpectedError instanceof Error ? unexpectedError.message : "Please try again."
+      alert(`Failed to ${decision === "approved" ? "approve" : "reject"} agent: ${message}`)
+    } finally {
+      setReviewingApplication(null)
     }
-
-    if (profileError || !profileData?.length) {
-      alert("Failed to approve agent profile")
-      return
-    }
-
-    await supabase.from("agent_applications").update({ status: "approved" }).eq("id", app.id)
-    await supabase.from("properties").update({ agent_id: app.user_id }).eq("owner_id", app.user_id)
-
-    alert("Agent approved")
-    void loadApplications()
-    void loadUserManagement()
-    void loadAllAgents()
   }
 
-  const rejectAgent = async (app: AgentApplication) => {
-    if (!app?.id || !app?.user_id) {
-      alert("Invalid application data")
-      return
-    }
+  const approveAgent = async (app: AgentApplication) => reviewAgentApplication(app, "approved")
 
-    await supabase.from("profiles").update({ agent_status: "rejected" }).eq("id", app.user_id)
-    await supabase.from("agent_applications").update({ status: "rejected" }).eq("id", app.id)
-
-    alert("Agent rejected")
-    void loadUserManagement()
-    void loadApplications()
-  }
+  const rejectAgent = async (app: AgentApplication) => reviewAgentApplication(app, "rejected")
 
   const applyCategoryFilter = (data: Property[], type: string) => {
     if (type === "all") return data
@@ -726,10 +742,46 @@ export default function AdminPage() {
   }
 
   const deleteListing = async (property: Property) => {
+    if (deletingListingId) return
     if (!confirm("Delete this listing?")) return
 
-    await supabase.from("properties").delete().eq("id", property.id)
-    setProperties((prev) => prev.filter((item) => item.id !== property.id))
+    setDeletingListingId(property.id)
+
+    try {
+      const { data, error } = await supabase
+        .from("properties")
+        .delete()
+        .eq("id", property.id)
+        .select("id")
+
+      if (error) {
+        console.error("Failed to delete listing:", {
+          propertyId: property.id,
+          error,
+        })
+        alert(`Failed to delete listing: ${error.message || "Please try again."}`)
+        return
+      }
+
+      if (!data?.some((deletedProperty) => deletedProperty.id === property.id)) {
+        alert("The listing could not be deleted. It may no longer exist or you may not have permission.")
+        return
+      }
+
+      setProperties((prev) => prev.filter((item) => item.id !== property.id))
+      setAgentListings((prev) => prev.filter((item) => item.id !== property.id))
+      setFlagged((prev) => prev.filter((flag) => flag.property_id !== property.id))
+      alert("Listing deleted successfully")
+    } catch (unexpectedError) {
+      console.error("Unexpected listing deletion failure:", {
+        propertyId: property.id,
+        error: unexpectedError,
+      })
+      const message = unexpectedError instanceof Error ? unexpectedError.message : "Please try again."
+      alert(`Failed to delete listing: ${message}`)
+    } finally {
+      setDeletingListingId(null)
+    }
   }
 
   useEffect(() => {
@@ -863,11 +915,19 @@ export default function AdminPage() {
                       {app.referrer?.email && <p className="mt-1 text-slate-500">{app.referrer.email}</p>}
                     </div>
                     <div className="mt-4 flex flex-wrap gap-2">
-                      <button onClick={() => approveAgent(app)} className="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-emerald-700">
-                        Approve
+                      <button
+                        onClick={() => approveAgent(app)}
+                        disabled={reviewingApplication !== null}
+                        className="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        {reviewingApplication?.id === app.id && reviewingApplication.decision === "approved" ? "Approving..." : "Approve"}
                       </button>
-                      <button onClick={() => rejectAgent(app)} className="rounded-xl bg-red-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-red-700">
-                        Reject
+                      <button
+                        onClick={() => rejectAgent(app)}
+                        disabled={reviewingApplication !== null}
+                        className="rounded-xl bg-red-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        {reviewingApplication?.id === app.id && reviewingApplication.decision === "rejected" ? "Rejecting..." : "Reject"}
                       </button>
                     </div>
                   </div>
@@ -1152,8 +1212,12 @@ export default function AdminPage() {
                         <a href={`/property/${property.id}`} target="_blank" className="text-sm font-semibold text-blue-700">
                           View
                         </a>
-                        <button onClick={() => deleteListing(property)} className="text-sm font-semibold text-red-600">
-                          Delete
+                        <button
+                          onClick={() => deleteListing(property)}
+                          disabled={deletingListingId !== null}
+                          className="text-sm font-semibold text-red-600 disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                          {deletingListingId === property.id ? "Deleting..." : "Delete"}
                         </button>
                       </div>
                     </div>
@@ -1240,9 +1304,10 @@ export default function AdminPage() {
                             event.stopPropagation()
                             void deleteListing(property)
                           }}
-                          className="text-sm font-semibold text-red-600"
+                          disabled={deletingListingId !== null}
+                          className="text-sm font-semibold text-red-600 disabled:cursor-not-allowed disabled:opacity-60"
                         >
-                          Delete
+                          {deletingListingId === property.id ? "Deleting..." : "Delete"}
                         </button>
                       </div>
                     </div>

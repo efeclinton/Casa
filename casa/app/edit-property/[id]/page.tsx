@@ -6,6 +6,7 @@ import { supabase } from "../../../lib/supabaseClient"
 import Image from "next/image"
 import { FormPageSkeleton } from "../../../components/LoadingSkeletons"
 import { validatePropertyForm } from "../../../lib/propertyFormValidation"
+import { cleanupUploadedPaths } from "../../../lib/storageCleanup"
 
 export default function EditProperty() {
 
@@ -118,6 +119,9 @@ export default function EditProperty() {
     setSaving(true)
     setMessage("")
 
+    const newlyUploadedImagePaths: string[] = []
+    const newlyUploadedVideoPaths: string[] = []
+
     try {
 
       const imageUrls = [...existingImages]
@@ -139,6 +143,8 @@ export default function EditProperty() {
             .upload(fileName, file)
 
           if (error) throw error
+
+          newlyUploadedImagePaths.push(fileName)
 
           const url =
             `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/property-images/${fileName}`
@@ -163,6 +169,8 @@ export default function EditProperty() {
     .upload(fileName, file)
 
           if (error) throw error
+
+          newlyUploadedVideoPaths.push(fileName)
 
           const url =
             `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/property-videos/${fileName}`
@@ -200,8 +208,15 @@ export default function EditProperty() {
 
     } catch (err) {
 
-      console.error(err)
-      setMessage("Something went wrong. Please try again.")
+      console.error("Property edit failed:", err)
+      await Promise.all([
+        cleanupUploadedPaths("property-images", newlyUploadedImagePaths, "property edit image"),
+        cleanupUploadedPaths("property-videos", newlyUploadedVideoPaths, "property edit video"),
+      ])
+      const errorMessage = typeof err === "object" && err !== null && "message" in err && typeof err.message === "string"
+        ? err.message
+        : "Please try again."
+      setMessage(`Failed to update property: ${errorMessage}`)
 
     }
 
