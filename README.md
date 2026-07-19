@@ -280,7 +280,7 @@ Recommended judge journey:
 
 Advanced agent and administrator functions require appropriately approved accounts.
 
-**[JUDGING CREDENTIALS TO BE ADDED ON DEVPOST]**
+Protected agent and administrator features require dedicated demo accounts. Testing credentials are provided privately through the Devpost submission and are not published in this repository.
 
 ## Live Demo
 
@@ -306,9 +306,9 @@ CASA is mobile-first, but it can also be tested on desktop.
 
 ![CASA Campus Market](submission-assets/screenshots/campus-market-redacted.png)
 
-### Agent Dashboard
+### Agent Property Listing Form
 
-![CASA agent dashboard](submission-assets/screenshots/list-property-redacted.png)
+![CASA agent property listing form](submission-assets/screenshots/list-property-redacted.png)
 
 ### Admin Dashboard
 
@@ -321,7 +321,7 @@ CASA is mobile-first, but it can also be tested on desktop.
 - Agent moderation and verification are partly manual administrative processes.
 - A national rollout has not yet happened.
 - Broader rental and property-sale markets remain future expansion areas.
-- A live URL, public demo video, screenshots, and judging credentials still need to be attached to the submission documentation.
+- Dedicated judging credentials and the public demo video are still being prepared for the Devpost submission.
 
 ## Roadmap
 
@@ -343,11 +343,12 @@ Real environment values are kept in ignored local files; the committed `.env.exa
 
 ## Hackathon Evidence
 
-- [x] Public GitHub repository: `efeclinton/Casa`
+- [x] Public GitHub repository
 - [x] Dated Build Week commits
 - [ ] Codex feedback Session ID supplied privately through Devpost
 - [ ] Public demo video
-- [ ] Live deployment URL added to the submission
+- [x] Live deployment URL
+- [x] Redacted product screenshots
 - [x] Documentation separating pre-existing work from Build Week work
 
 ## License
