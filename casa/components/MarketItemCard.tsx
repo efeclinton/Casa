@@ -3,6 +3,7 @@
 import Link from "next/link"
 import type { ReactNode } from "react"
 import { formatUpdatedAtLabel } from "@/lib/activity"
+import MarketItemImage from "@/components/MarketItemImage"
 
 type MarketItemCardProps = {
   id: string
@@ -15,8 +16,6 @@ type MarketItemCardProps = {
   className?: string
   children?: ReactNode
 }
-
-const fallbackImage = "https://via.placeholder.com/400x300?text=No+Image"
 
 export default function MarketItemCard({
   id,
@@ -36,13 +35,10 @@ export default function MarketItemCard({
     <Link href={`/market/${id}`} className={`group block h-full ${className}`}>
       <div className="flex h-full flex-col overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-[0_14px_40px_rgba(15,23,42,0.08)] transition md:group-hover:-translate-y-1 md:group-hover:shadow-[0_20px_55px_rgba(15,23,42,0.14)]">
         <div className="relative aspect-[4/3] overflow-hidden rounded-t-2xl bg-slate-100">
-          <img
-            src={image || fallbackImage}
-            alt={title}
+          <MarketItemImage
+            image={image}
+            alt={title || "Marketplace item"}
             className="h-full w-full object-cover transition duration-300 md:group-hover:scale-[1.03]"
-            onError={(event) => {
-              event.currentTarget.src = fallbackImage
-            }}
           />
           <div className="absolute left-3 top-3">
             <span className={`rounded-full px-3 py-1 text-xs font-semibold shadow-sm backdrop-blur ${

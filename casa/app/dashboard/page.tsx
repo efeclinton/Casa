@@ -7,6 +7,7 @@ import PropertyCard from "../../components/PropertyCard"
 import Link from "next/link"
 import { formatUpdatedAtLabel } from "../../lib/activity"
 import { DashboardSkeleton } from "../../components/LoadingSkeletons"
+import MarketItemImage from "../../components/MarketItemImage"
 
 type Property = {
   id: string;
@@ -391,21 +392,18 @@ const renewListing = async (property: Property) => {
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {marketItems.map((item) => {
-              const imageUrl = item.images?.[0] || "https://via.placeholder.com/400x300?text=No+Image"
+              const imageUrl = item.images?.[0]
               const updatedText = formatUpdatedAtLabel(item.updated_at)
 
               return (
                 <Link key={item.id} href={`/market/${item.id}`} className="group block h-full w-full">
                   <div className="flex h-full flex-col overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-[0_14px_40px_rgba(15,23,42,0.08)] transition md:group-hover:-translate-y-1 md:group-hover:shadow-[0_20px_55px_rgba(15,23,42,0.14)]">
                     <div className="relative aspect-[4/3] overflow-hidden rounded-t-2xl bg-slate-100">
-                    <img
-                      src={imageUrl}
-                      alt={item.title}
-                      className="h-full w-full object-cover transition duration-300 md:group-hover:scale-[1.03]"
-                      onError={(event) => {
-                        event.currentTarget.src = "https://via.placeholder.com/400x300?text=No+Image"
-                      }}
-                    />
+                      <MarketItemImage
+                        image={imageUrl}
+                        alt={item.title || "Marketplace item"}
+                        className="h-full w-full object-cover transition duration-300 md:group-hover:scale-[1.03]"
+                      />
                       <div className="absolute left-3 top-3">
                         <span className={`rounded-full px-3 py-1 text-xs font-semibold shadow-sm backdrop-blur ${item.is_active ? "bg-emerald-50/95 text-emerald-700" : "bg-white/95 text-slate-600"}`}>
                           {item.is_active ? "Available" : "Inactive"}

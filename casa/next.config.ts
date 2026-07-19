@@ -1,4 +1,7 @@
 import type { NextConfig } from "next";
+import { supabaseUrl } from "./lib/env";
+
+const supabaseImagePattern = new URL("/**", supabaseUrl);
 
 const nextConfig: NextConfig = {
   images: {
@@ -7,10 +10,7 @@ const nextConfig: NextConfig = {
         protocol: "https",
         hostname: "images.unsplash.com",
       },
-      {
-        protocol: "https",
-        hostname: "jogvgjsfvkcstblebezr.supabase.co",
-      },
+      supabaseImagePattern,
     ],
   },
 };

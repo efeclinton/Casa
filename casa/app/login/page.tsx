@@ -36,9 +36,14 @@ export default function LoginPage() {
     const user = data.user
 
     if (user) {
-      const profile = await loadCurrentProfile(user)
-      if (!isProfileComplete(profile, user)) {
-        router.push(getCompletionPath(redirectPath))
+      try {
+        const profile = await loadCurrentProfile(user)
+        if (!isProfileComplete(profile, user)) {
+          router.push(getCompletionPath(redirectPath))
+          return
+        }
+      } catch {
+        alert("Unable to load your profile. Please try again.")
         return
       }
     }

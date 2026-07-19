@@ -60,14 +60,12 @@ type RatingRow = {
   rating?: number
 }
 
-const fallbackMarketImage = "https://via.placeholder.com/480x320?text=No+Image"
-
 const formatPrice = (price?: number) =>
   typeof price === "number" ? `NGN ${Number(price).toLocaleString()}` : "Price not set"
 
 const getMarketItemImage = (item: MarketItem) => {
-  if (Array.isArray(item.images) && item.images.length > 0) return item.images[0]
-  return fallbackMarketImage
+  if (!Array.isArray(item.images)) return null
+  return item.images.find((image) => typeof image === "string" && image.trim()) || null
 }
 
 export default function AgentProfilePage() {

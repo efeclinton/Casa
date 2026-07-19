@@ -13,6 +13,28 @@ export type CompletionProfile = {
   phone?: string | null
 }
 
+export class ProfileCompletionError extends Error {
+  constructor(message: string) {
+    super(message)
+    this.name = "ProfileCompletionError"
+  }
+}
+
+type SupabaseErrorDetails = {
+  code?: string
+  message?: string
+}
+
+const logProfileError = (operation: string, error: SupabaseErrorDetails | null) => {
+  console.error(operation, {
+    code: error?.code,
+    message: error?.message,
+  })
+}
+
+const profileFailure = (message = "Unable to load your profile. Please try again.") =>
+  new ProfileCompletionError(message)
+
 export const getSafeRedirectPath = (redirect?: string | null) => {
   if (!redirect || !redirect.startsWith("/") || redirect.startsWith("//")) return "/"
   return redirect
@@ -35,14 +57,22 @@ export const isProfileComplete = (profile?: CompletionProfile | null, user?: Use
 export const getCompletionPath = (redirect?: string | null) =>
   `/complete-profile?redirect=${encodeURIComponent(getSafeRedirectPath(redirect || getCurrentPath()))}`
 
+export const getProfileErrorPath = (redirect?: string | null) =>
+  `${getCompletionPath(redirect)}&profileError=1`
+
 export const loadCurrentProfile = async (user: User) => {
   const { data, error } = await supabase
     .from("profiles")
     .select("id, full_name, email, phone")
     .eq("id", user.id)
-    .single()
+    .maybeSingle()
 
-  if (!error && data) {
+  if (error) {
+    logProfileError("Failed to load current profile", error)
+    throw profileFailure()
+  }
+
+  if (data) {
     const metadataName =
       user.user_metadata?.full_name ||
       user.user_metadata?.name ||
@@ -55,14 +85,19 @@ export const loadCurrentProfile = async (user: User) => {
     if (!data.phone && metadataPhone) patch.phone = metadataPhone
 
     if (Object.keys(patch).length > 0) {
-      const { data: updatedProfile } = await supabase
+      const { data: updatedProfile, error: updateError } = await supabase
         .from("profiles")
         .update(patch)
         .eq("id", user.id)
         .select("id, full_name, email, phone")
         .single()
 
-      return (updatedProfile || { ...data, ...patch }) as CompletionProfile
+      if (updateError || !updatedProfile) {
+        logProfileError("Failed to update current profile", updateError)
+        throw profileFailure("Unable to update your profile. Please try again.")
+      }
+
+      return updatedProfile as CompletionProfile
     }
 
     return data as CompletionProfile
@@ -81,13 +116,18 @@ export const loadCurrentProfile = async (user: User) => {
     agent_status: "none",
   }
 
-  const { data: createdProfile } = await supabase
+  const { data: createdProfile, error: createError } = await supabase
     .from("profiles")
     .upsert(fallbackProfile, { onConflict: "id" })
     .select("id, full_name, email, phone")
     .single()
 
-  return (createdProfile || fallbackProfile) as CompletionProfile
+  if (createError || !createdProfile) {
+    logProfileError("Failed to create missing profile", createError)
+    throw profileFailure("Unable to create your profile. Please try again.")
+  }
+
+  return createdProfile as CompletionProfile
 }
 
 export const ensureProfileComplete = async (
@@ -95,10 +135,20 @@ export const ensureProfileComplete = async (
   router: RouterLike,
   redirect?: string | null
 ) => {
-  const profile = await loadCurrentProfile(user)
+  try {
+    const profile = await loadCurrentProfile(user)
 
-  if (isProfileComplete(profile, user)) return true
+    if (isProfileComplete(profile, user)) return true
 
-  router.push(getCompletionPath(redirect || getCurrentPath()))
-  return false
+    router.push(getCompletionPath(redirect || getCurrentPath()))
+    return false
+  } catch (error) {
+    if (!(error instanceof ProfileCompletionError)) {
+      logProfileError("Unexpected profile completion failure", {
+        message: error instanceof Error ? error.message : "Unknown error",
+      })
+    }
+    router.push(getProfileErrorPath(redirect || getCurrentPath()))
+    return false
+  }
 }
