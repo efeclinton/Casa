@@ -5,7 +5,7 @@ import Link from "next/link"
 import { useSearchParams } from "next/navigation"
 import type { User } from "@supabase/supabase-js"
 import { supabase } from "../../lib/supabaseClient"
-import { getProfileEmail, getProfilePhone } from "../../lib/profileCompletion"
+import { getProfilePhone } from "../../lib/profileCompletion"
 import { getAgentDisplayName } from "../../lib/agentDisplay"
 import { FormPageSkeleton } from "../../components/LoadingSkeletons"
 
@@ -15,6 +15,7 @@ type ReferrerProfile = {
   business_name?: string | null
   email?: string | null
   referral_code?: string | null
+  agent_status?: string | null
 }
 
 type CurrentProfile = {
@@ -41,6 +42,7 @@ export default function AgentReferralPage() {
   const [referrer, setReferrer] = useState<ReferrerProfile | null>(null)
   const [pendingApplication, setPendingApplication] = useState<PendingApplication | null>(null)
   const [errorMessage, setErrorMessage] = useState("")
+  const [submissionError, setSubmissionError] = useState("")
   const [form, setForm] = useState({
     full_name: "",
     phone: "",
@@ -54,19 +56,26 @@ export default function AgentReferralPage() {
   useEffect(() => {
     const loadReferral = async () => {
       if (!code) {
-        setErrorMessage("Invalid referral link.")
+        setErrorMessage("This referral link is invalid or is no longer active.")
         setLoading(false)
         return
       }
 
       const { data: referrerData, error: referrerError } = await supabase
         .from("profiles")
-        .select("id, full_name, business_name, email, referral_code")
+        .select("id, full_name, business_name, email, referral_code, agent_status")
         .eq("referral_code", code)
         .maybeSingle()
 
-      if (referrerError || !referrerData) {
-        setErrorMessage("This referral link is invalid or expired.")
+      if (referrerError) {
+        console.error("Referral code lookup failed:", {
+          code: referrerError.code,
+          message: referrerError.message,
+        })
+      }
+
+      if (referrerError || !referrerData || referrerData.agent_status !== "approved") {
+        setErrorMessage("This referral link is invalid or is no longer active.")
         setLoading(false)
         return
       }
@@ -119,7 +128,6 @@ export default function AgentReferralPage() {
     const businessName = form.business_name.trim()
     const yearsExperience = form.years_experience.trim()
     const operatingCity = form.operating_city.trim()
-    const email = getProfileEmail(profile, user) || user.email || ""
 
     if (!fullName || !phone || !businessName || !yearsExperience || !operatingCity) {
       alert("Please fill in all required fields.")
@@ -127,37 +135,50 @@ export default function AgentReferralPage() {
     }
 
     setSubmitting(true)
+    setSubmissionError("")
 
-    const { error } = await supabase
-      .from("agent_applications")
-      .insert({
-        user_id: user.id,
-        full_name: fullName,
-        phone,
-        email,
-        business_name: businessName,
-        years_experience: yearsExperience,
-        operating_city: operatingCity,
-        status: "pending",
-        referred_by: referrer.id,
-        referral_code: code,
-        referral_source: "agent_referral",
-      })
+    try {
+      const { data, error } = await supabase.rpc(
+        "submit_agent_referral_application",
+        {
+          p_referral_code: code,
+          p_full_name: fullName,
+          p_phone: phone,
+          p_business_name: businessName,
+          p_years_experience: yearsExperience,
+          p_operating_city: operatingCity,
+        }
+      )
 
-    if (error) {
-      alert(error.message || "Failed to submit application")
+      if (error) {
+        console.error("Referral application RPC failed:", {
+          code: error.code,
+          message: error.message,
+        })
+        setSubmissionError(error.message || "Failed to submit application. Please try again.")
+        return
+      }
+
+      const returnedApplication = Array.isArray(data) ? data[0] : data
+      const returnedApplicationId = typeof returnedApplication === "string"
+        ? returnedApplication
+        : returnedApplication && typeof returnedApplication === "object" && "application_id" in returnedApplication && typeof returnedApplication.application_id === "string"
+          ? returnedApplication.application_id
+          : "submitted"
+
+      setPendingApplication({ id: returnedApplicationId, status: "pending" })
+      setProfile((currentProfile) => ({
+        ...(currentProfile || { id: user.id }),
+        agent_status: "pending",
+      }))
+      alert("Application submitted successfully")
+    } catch (unexpectedError) {
+      const message = unexpectedError instanceof Error ? unexpectedError.message : "Failed to submit application. Please try again."
+      console.error("Unexpected referral application failure:", { message })
+      setSubmissionError(message)
+    } finally {
       setSubmitting(false)
-      return
     }
-
-    await supabase
-      .from("profiles")
-      .update({ agent_status: "pending" })
-      .eq("id", user.id)
-
-    setPendingApplication({ id: "submitted", status: "pending" })
-    setSubmitting(false)
-    alert("Application submitted successfully")
   }
 
   if (loading) {
@@ -221,6 +242,12 @@ export default function AgentReferralPage() {
           <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
             <h2 className="text-2xl font-bold tracking-tight">Referral Application</h2>
             <p className="mt-2 text-sm text-slate-500">Referral code: <span className="font-semibold text-slate-900">{code}</span></p>
+
+            {submissionError && (
+              <p className="mt-4 rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+                {submissionError}
+              </p>
+            )}
 
             <form onSubmit={handleSubmit} className="mt-6 space-y-4">
               <div className="grid gap-4 sm:grid-cols-2">

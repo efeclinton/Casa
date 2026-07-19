@@ -34,58 +34,46 @@ export default function SignupPage() {
       return
     }
 
-    console.log("FORM DATA:", { fullName, phone, email })
-
     setLoading(true)
 
-    const { data, error } = await supabase.auth.signUp({
-      email: nextEmail,
-      password,
-      options: {
-        data: {
-          full_name: nextFullName,
-          phone: nextPhone,
+    try {
+      const { data, error } = await supabase.auth.signUp({
+        email: nextEmail,
+        password,
+        options: {
+          data: {
+            full_name: nextFullName,
+            phone: nextPhone,
+          },
         },
-      },
-    })
-
-    if (error) {
-      alert(error.message)
-      setLoading(false)
-      return
-    }
-
-    const user = data.user
-
-    if (user) {
-      console.log("UPSERT DATA:", {
-        id: user.id,
-        full_name: fullName,
-        phone: phone,
-        email: email,
       })
 
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .upsert([{
-        id: user.id,
-        full_name: nextFullName,
-        phone: nextPhone,
-        email: nextEmail,
-        agent_status: 'none'
-      }], { onConflict: 'id' })
-
-      if (profileError) {
-        console.log("PROFILE ERROR:", profileError)
-        alert('Error creating profile: ' + profileError.message)
+      if (error) {
+        console.error("Signup failed:", {
+          code: error.code,
+          message: error.message,
+        })
+        alert(error.message)
         setLoading(false)
         return
       }
+
+      if (!data.user && !data.session?.user) {
+        alert("Account creation could not be confirmed. Please try again.")
+        setLoading(false)
+        return
+      }
+
+      setLoading(false)
+      alert("Account created successfully")
+
+      router.push(`/login?redirect=${encodeURIComponent(redirect)}`)
+    } catch (unexpectedError) {
+      const message = unexpectedError instanceof Error ? unexpectedError.message : "Unable to create account. Please try again."
+      console.error("Unexpected signup failure:", { message })
+      alert(message)
+      setLoading(false)
     }
-
-    alert("Account created successfully")
-
-    router.push(`/login?redirect=${encodeURIComponent(redirect)}`)
   }
 
   return (
