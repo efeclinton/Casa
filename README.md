@@ -1,293 +1,340 @@
-# Casa
+# CASA
 
-Casa is a modern real estate marketplace built for the Nigerian market. The platform helps people find verified homes for rent or sale and enables students to easily discover campus accommodations without dealing with fraudulent or expensive agents.
+**A trusted Nigerian housing and local marketplace platform, beginning with student accommodation around UNN.**
 
-The Nigerian property market currently relies heavily on informal networks and middlemen, making it difficult for people to compare prices, verify listings, and discover available properties efficiently. Casa aims to solve this by providing a transparent and accessible platform where users can search properties, compare listings, and connect directly with landlords or verified agents.
+## Overview
 
-The platform is designed as a mobile-first web application to match how most Nigerians access the internet.
+CASA helps people find accommodation with clearer information and stronger trust signals than informal, fragmented property search. People can browse structured property listings, compare key details, review the agent behind a listing, save properties, report concerns, and contact agents directly by phone or WhatsApp.
 
-## Setup
+The product also includes Campus Market, a local marketplace where students can discover useful items and connect with sellers. Approved agents receive tools for managing listings and marketplace posts, while administrators oversee agent onboarding, verification, users, listings, and reports.
 
-The repository root is an npm workspace wrapper. The only Next.js application is in `casa/`.
-
-From the repository root:
-
-```bash
-npm install
-npm run dev
-npm run lint
-npm run build
-```
-
-## Core Goals
-
-* Make property discovery easier across Nigeria
-* Reduce fraud in real estate listings
-* Help students find campus accommodations quickly
-* Allow users to compare housing options transparently
-* Provide a trusted platform for agents and landlords to list properties
-
-## Key Features
-
-* Property search across Nigerian cities
-* Property listing pages with images and virtual tours
-* Direct contact with agents via phone or WhatsApp
-* Property listing creation for agents and landlords
-* Admin approval system for listings
-* Community reporting for fraudulent properties
-* Saved properties and alerts
-
-## Technology Stack
-
-Frontend
-Next.js
-
-Backend
-Supabase
-
-Database
-PostgreSQL
-
-Media Storage
-Cloudinary or AWS S3
-
-## Documentation
-
-* CASA_PRD.md – Product Requirements Document
-* CASA_ARCHITECTURE.md – Technical system architecture
-
-* # Casa
-
-**Casa** is a modern real estate marketplace built for the Nigerian market. It helps people find verified homes for rent or sale and helps students easily discover campus accommodations without dealing with fraudulent or expensive agents.
-
-The Nigerian property market still relies heavily on informal networks, middlemen, and offline agents. This makes it difficult for people to compare prices, verify listings, and find housing efficiently. Casa aims to solve this by providing a transparent platform where users can search properties, compare listings, and connect directly with landlords or verified agents.
-
-Casa is designed as a **mobile-first web application** because most Nigerians access the internet through their smartphones.
-
----
-
-## Mission
-
-Casa helps Nigerians find verified homes for rent and sale and helps students discover campus accommodations with ease, without dealing with fraudulent or expensive agents.
-
----
+CASA's long-term purpose is broader than student housing. It is being built as a trusted Nigerian housing and local marketplace platform for renters, buyers, landlords, agents, students, and everyday Nigerians searching for accommodation or property.
 
 ## The Problem
 
-Finding housing in Nigeria is often difficult and unreliable. Common issues include:
+Housing discovery in Nigeria often depends on word of mouth, informal middlemen, and scattered posts across different channels. This creates recurring problems:
 
-* Too many middlemen inflating prices
-* Lack of transparent pricing across listings
-* Difficulty comparing available properties
-* High risk of scams and fraudulent listings
-* Platforms that mainly cater to luxury housing markets
+- Prices and availability may be unclear.
+- Comparing several options takes unnecessary time and effort.
+- Property information is fragmented and inconsistently presented.
+- Searchers may not know whether an agent is credible.
+- Scam concerns make direct contact feel risky.
+- Multiple informal middlemen can make the process harder to understand.
+- Students may need to find accommodation quickly while also managing school deadlines and limited local knowledge.
 
-Because of this, many Nigerians still rely on **word-of-mouth or physical agents** to find housing.
+CASA addresses these practical problems without relying on unsupported claims or statistics.
 
-Casa aims to create a **trusted digital marketplace** where property discovery becomes simple, transparent, and accessible.
+## The Solution
 
----
+CASA brings the property-search journey into one structured experience through:
 
-## Target Users
+- Searchable property listings and price filters.
+- Consistent property information, images, videos, and supported virtual-tour links.
+- Public agent profiles with business names, approval context, verification status, ratings, and reviews.
+- Saved listings for signed-in property seekers.
+- Listing reports for suspicious or concerning properties.
+- Direct phone and WhatsApp contact.
+- Referral-controlled agent applications.
+- Administrative review, verification, and moderation tools.
+- Campus Market for local student commerce.
 
-### Students (Primary MVP Users)
+## Vision and MVP Strategy
 
-Students searching for campus accommodations such as:
+### Wider Nigerian vision
 
-* Hostels
-* Self-contained apartments
-* Shared housing
-* Off-campus student rentals
+CASA is intended to grow into a trusted housing and local marketplace platform for the wider Nigerian market. Its future audience includes renters, buyers, landlords, property agents, students, and other people trying to find or offer accommodation and property with less confusion.
 
-### Renters
+### Current UNN student-first MVP
 
-People searching for houses or apartments to rent.
+The current MVP focuses on student accommodation around the University of Nigeria, Nsukka (UNN). Property creation currently treats listings as **Campus Stay** listings.
 
-### Buyers
+This is a deliberate validation strategy:
 
-People searching for homes or land to purchase.
+- Begin with one high-need demographic.
+- Solve the problem deeply within one location.
+- Validate how property seekers browse, compare, save, and contact.
+- Validate trusted-agent recruitment and onboarding.
+- Learn from a focused market before expanding into wider Nigerian rental and property-sale categories.
 
-### Landlords
+CASA is therefore student-first today, but it is not permanently limited to students.
 
-Property owners listing their properties.
+## Build Week Track
+
+**Apps for Your Life**
+
+CASA fits this consumer-application track because housing discovery is an everyday, high-stakes need. The product helps people make practical decisions about where to live, assess who they are dealing with, communicate directly, and participate in a useful local marketplace from a mobile-first interface.
+
+## Current Features
+
+### Property Seekers
+
+- Browse active properties from the homepage, campus page, property catalogue, and search results.
+- Filter by location, price, and rent period.
+- Open property details with images, optional videos, and supported virtual-tour links.
+- Review price, location, availability, listing freshness, agent details, ratings, and reviews.
+- View public agent profiles and the agent's active properties and marketplace items.
+- Save and remove listings after signing in.
+- Contact agents by phone or WhatsApp through a safety-confirmation flow.
+- Report suspicious listings with a reason.
+- Rate or review an agent after a recorded contact.
 
 ### Agents
 
-Real estate agents managing multiple listings.
+- Apply through a referral link belonging to a currently approved agent.
+- Create Campus Stay property listings after approval.
+- Edit only properties they own or represent.
+- Upload property images, videos, and supported virtual-tour links.
+- Activate, deactivate, and renew property listings from the dashboard.
+- Post and manage Campus Market items after approval.
+- Maintain public profile and business information.
+- Receive ratings and reviews from contacted users.
+- Generate and share a referral link after approval.
 
-### Developers
+### Administrators
 
-Companies selling estates or new developments.
+- Review agent applications and approve or reject them.
+- Manage agent verification separately from agent approval.
+- Search and inspect users, agents, and listings.
+- Review account status, listing totals, contact activity, ratings, saved listings, and referral relationships.
+- Review user-reported listings.
+- Remove listings through the moderation interface after confirmed database deletion.
 
----
+CASA does **not** currently require every property to receive admin approval before it can appear publicly. Administration focuses on agent access, verification, reports, user management, and listing moderation.
 
-## Core Features
+### Campus Market
 
-### Property Search
+- Browse active marketplace items.
+- Search by item title or description and filter by price.
+- View item details, seller information, verification context, and ratings.
+- Contact sellers through WhatsApp.
+- Allow approved agents to create, edit, activate, and deactivate their marketplace items.
 
-Users can search properties across Nigerian cities using location and filters.
+### Trust and Safety
 
-### Property Listings
+- Separate agent approval status from verification status.
+- Use current approved-agent status as the access requirement for property and marketplace posting.
+- Display verification badges where relevant.
+- Restrict property editing by authentication, approval, and ownership or representation.
+- Use referral-only agent applications as an early quality-control layer.
+- Allow signed-in users to report listings.
+- Restrict review submission to users with a recorded contact.
+- Provide admin moderation for reports, users, agents, and listings.
 
-Listings include images, descriptions, price, location, and property details.
+## How CASA Was Built With Codex
 
-### Contact Agents
+The founder is a non-technical founder and digital marketer, not a professional software developer. The founder defined the problem, desired user experience, feature requirements, priorities, acceptance criteria, business decisions, and testing feedback.
 
-Users can contact property owners or agents through:
+Codex performed the software implementation. It inspected the repository, wrote code, implemented features, debugged failures, refactored components, traced Supabase data flows, and ran linting and production builds. The entire software implementation was completed through Codex-directed development.
 
-* Phone calls
-* WhatsApp
-* Viewing requests
+The development loop was:
 
-### Property Listing Creation
+1. The founder explains the desired outcome in plain English.
+2. Codex inspects the relevant repository code.
+3. Codex implements a focused, scoped change.
+4. The founder tests the result.
+5. The founder provides screenshots and behavioural feedback.
+6. Codex diagnoses the problem and improves the implementation.
+7. Linting and production builds validate the changes.
 
-Agents and landlords can list properties directly on the platform.
+The founder remained responsible for product direction, priorities, user experience, testing, business decisions, and approval of each outcome. Codex handled the technical translation and implementation.
 
-### Admin Listing Approval
+## How GPT-5.6 Contributed
 
-Listings must be approved by admins before appearing publicly.
+CASA began before GPT-5.6 was available. GPT-5.6 was introduced later and used extensively for codebase review, debugging, architecture reasoning, Supabase relationship analysis, feature refinement, and final Build Week preparation.
 
-### Fraud Reporting
+GPT-5.6 helped identify and reason through **20 reliability bugs** covering access control, stale data, storage failures, partial database operations, profile creation and completion, referral validation, image fallbacks, configuration validation, and repository structure. It also converted non-technical product and testing feedback into precise Codex implementation instructions.
 
-Users can report suspicious or fraudulent listings.
+GPT-5.6 was used as a product and engineering reasoning tool. CASA does not currently integrate the OpenAI API into the public application.
 
-### Saved Listings
+## Existing Project and Build Week Extensions
 
-Users can save properties and revisit them later.
+### Before Build Week
 
-### Virtual Tours
+Dated Git history shows that CASA existed before the final Build Week submission work:
 
-Listings may include videos or virtual walkthroughs.
+- Project and product documentation began on **March 4, 2026**.
+- The initial Next.js application was uploaded on **April 3, 2026**.
+- April commits established authentication and profiles, property discovery and details, saved listings, agent/admin foundations, ratings and reviews, reports, Google OAuth, listing management, and Campus Market.
+- May and June commits expanded search, responsive UI, verification, agent profiles, user administration, referral-oriented onboarding, public business-name display, and listing/profile experiences.
+- July 10 commits corrected property-agent assignment and improved shared loading states, carousels, avatars, thumbnails, and mobile navigation.
 
----
+This history establishes that the core product pre-dated the final submission-hardening period.
 
-## Property Categories
+### Meaningful Build Week Extensions
 
-Casa supports multiple property types including:
+The July 18–19 commit sequence documents substantial reliability and submission work:
 
-Residential
+- **July 18 — `c6d929a`:** improved missing-image handling on property details.
+- **July 18 — `54069bf`:** fixed the first four audited bugs, including approved-agent marketplace access, active-property homepage filtering, gallery-image fallback data, and marketplace update timestamps.
+- **July 19 — `cdd537d`:** added property form validation, secure virtual-tour hostname validation, campus-only form consistency, and marketplace upload protection.
+- **July 19 — `5582104`:** added failed-operation storage cleanup and improved atomic admin approval, rejection, and deletion reliability.
+- **July 19 — `f7dec2e`:** moved referral applications to an atomic RPC, rejected inactive referral owners, relied on the signup profile trigger, and removed personal signup-data logging.
+- **July 19 — `816edf0`:** completed the 20-bug audit with confirmed profile writes, authentication/profile failure states, local marketplace image fallbacks, Supabase environment validation, and single-lockfile preparation.
+- **July 19 — `810808d`:** added stronger property-edit authentication, approved-agent and ownership checks; centralized redirect safety; and validated property and marketplace price filters.
+- **July 19 — `9c00fa7`:** converted the repository root into an npm workspace, removed the abandoned duplicate Next.js root, established one workspace-aware lockfile, fixed recursive Git ignores, and aligned root commands with `casa/`.
 
-* Apartment
-* Self-Contain
-* Duplex
-* Bungalow
-* Detached House
-* Semi-Detached House
+The same period included repeated lint and production-build validation plus this judge-facing Build Week documentation. Dated Git commits and the submitted Codex feedback session provide evidence of the work.
 
-Commercial
+## Key Product Decisions
 
-* Office Space
-* Commercial Property
+- **Start with UNN students:** use a focused, high-need audience to validate the broader housing concept.
+- **Referral-only agent recruitment:** control early agent supply and reduce anonymous applications.
+- **Public business names:** present an agent's business identity rather than exposing a private legal name as the primary public label.
+- **Separate approval and verification:** approval controls agent access; verification is a distinct public trust signal.
+- **Direct phone and WhatsApp contact:** match communication habits familiar to the Nigerian market.
+- **Mobile-first experience:** support the devices most likely to be used by the target audience.
+- **Supabase foundation:** use one service for authentication, PostgreSQL data, and uploaded media.
 
-Land
+## Architecture and Technology
 
-* Residential Land
-* Commercial Land
+CASA currently uses:
 
-Short-Term
+- **Next.js 16 App Router** for the web application and routes.
+- **React 19** for the interface.
+- **TypeScript** for application code.
+- **Tailwind CSS** for styling and responsive layouts.
+- **Supabase Authentication** for email/password and Google sign-in sessions.
+- **Supabase PostgreSQL** for profiles, properties, marketplace items, referrals, ratings, reports, and saved listings.
+- **Supabase Storage** for property images, property videos, marketplace images, and avatars.
+- **Vercel** as the deployment target.
+- **GitHub** for source history and submission evidence.
+- **Codex** for software implementation.
+- **GPT-5.6** as a later-stage development and reasoning tool.
 
-* Short-let
-* Airbnb-style rentals
+The public application does not currently call the OpenAI API.
 
-Student Housing
+## Repository Structure
 
-* Campus hostels
-* Off-campus student housing
+The Git repository root is a lightweight npm workspace wrapper. The only active Next.js application is `casa/`.
 
----
-
-## Trust and Safety
-
-To reduce fraud in real estate listings, Casa includes:
-
-* Agent identity verification (NIN or valid ID)
-* Community reporting of suspicious listings
-* Admin moderation and listing approval
-* Verified agent badges
-
-Future versions may include AI-powered fraud detection.
-
----
-
-## Technology Stack
-
-**Frontend**
-
-Next.js (React framework)
-
-**Backend**
-
-Supabase
-
-**Database**
-
-PostgreSQL
-
-**Media Storage**
-
-Cloudinary or AWS S3
-
----
-
-## Project Structure
-
+```text
+Casa/
+├── package.json              npm workspace wrapper and delegated scripts
+├── package-lock.json         single workspace-aware lockfile
+├── README.md                 submission and project documentation
+├── Casa_Architecture.md      architecture document
+├── Casa_PRD.md               product requirements document
+├── supabase/                 tracked Supabase configuration and migrations
+└── casa/                     only active Next.js application
+    ├── app/                  App Router pages and routes
+    ├── components/           shared UI components
+    ├── lib/                  application and Supabase helpers
+    ├── public/               static assets and local placeholders
+    ├── .env.example          safe environment-variable template
+    ├── package.json          application scripts and dependencies
+    └── README.md             pointer back to this root documentation
 ```
-casa/
-│
-├── app/                 # Next.js application pages
-├── components/          # Reusable UI components
-├── lib/                 # Utilities and configuration
-├── services/            # Business logic and data services
-├── hooks/               # React hooks
-├── types/               # TypeScript models
-├── public/              # Static assets
-├── styles/              # Global styles
-│
-├── CASA_PRD.md          # Product requirements document
-├── CASA_ARCHITECTURE.md # System architecture documentation
-├── README.md
-└── package.json
-```
 
----
+Root `dev`, `build`, `start`, and `lint` scripts delegate to the `casa` workspace, so commands can be run from the repository root.
 
-## MVP Scope
+## Local Setup
 
-The first version of Casa will include:
+1. Clone the repository and enter its root.
 
-* Property search
-* Property listing pages
-* Property listing creation
-* Contact agent via phone or WhatsApp
-* Admin approval system for listings
-* Basic verification using ID and community reporting
-* Support for images and virtual tours
+   ```bash
+   git clone https://github.com/efeclinton/Casa.git
+   cd Casa
+   ```
 
----
+2. Install the workspace dependencies.
 
-## Future Features
+   ```bash
+   npm install
+   ```
 
-Planned features for later versions may include:
+3. Create `casa/.env.local` with your Supabase public client configuration.
 
-* Mortgage calculator
-* Property price analytics
-* Rent payment system
-* Legal documentation tools
-* Escrow service for property transactions
-* AI property recommendations
-* AI price estimation
-* AI fraud detection
+   ```env
+   NEXT_PUBLIC_SUPABASE_URL=
+   NEXT_PUBLIC_SUPABASE_ANON_KEY=
+   ```
 
----
+4. Start the development server.
 
-## Long-Term Vision
+   ```bash
+   npm run dev
+   ```
 
-Casa aims to become **the most trusted real estate marketplace in Nigeria**, helping millions of Nigerians discover housing opportunities more easily.
+5. Run validation when making changes.
 
-The platform will focus on **accessible housing discovery for everyday Nigerians and students**, not just luxury properties.
+   ```bash
+   npm run lint
+   npm run build
+   ```
 
----
+6. Open `http://localhost:3000`.
 
-## Contributing
+Do not commit real environment values. The root Git ignore rules exclude local environment files while keeping `.env.example` files available.
 
-Contributions, ideas, and improvements are welcome as the platform evolves.
+## Testing the Application
+
+Recommended judge journey:
+
+1. Open the homepage.
+2. Browse Featured Properties.
+3. Open a property.
+4. Review its images, location, price, agent, and contact options.
+5. Visit the agent profile to inspect business information, verification status, ratings, reviews, and active listings.
+6. Browse Campus Market.
+7. Sign in and test saved listings.
+
+Advanced agent and administrator functions require appropriately approved accounts.
+
+**[JUDGING CREDENTIALS TO BE ADDED ON DEVPOST]**
+
+## Live Demo
+
+The repository and tracked deployment configuration do not provide a production URL that can be verified here.
+
+**[LIVE DEMO URL TO BE ADDED]**
+
+## Screenshots
+
+Product screenshots are not currently committed. Submission screenshots should be added without referencing nonexistent repository files.
+
+- **Homepage:** [SCREENSHOT TO BE ADDED]
+- **Property detail:** [SCREENSHOT TO BE ADDED]
+- **Agent profile:** [SCREENSHOT TO BE ADDED]
+- **Campus Market:** [SCREENSHOT TO BE ADDED]
+- **Agent dashboard:** [SCREENSHOT TO BE ADDED]
+- **Admin dashboard:** [SCREENSHOT TO BE ADDED]
+
+## Known Limitations
+
+- The MVP currently focuses on UNN and nearby student accommodation.
+- Initial listing supply is limited to participating approved agents.
+- Agent moderation and verification are partly manual administrative processes.
+- A national rollout has not yet happened.
+- Broader rental and property-sale markets remain future expansion areas.
+- A live URL, public demo video, screenshots, and judging credentials still need to be attached to the submission documentation.
+
+## Roadmap
+
+The following items are planned and are not claimed as current features:
+
+- Expand to more Nigerian universities.
+- Enter wider Nigerian rental and property-sale markets.
+- Strengthen listing and identity verification.
+- Add better property comparison.
+- Improve recommendations and search relevance.
+- Introduce fraud-risk detection.
+- Provide richer listing, lead, and portfolio tools for agents.
+
+## Privacy and Security
+
+CASA uses Supabase Authentication for user sessions and applies approved-agent and ownership checks in protected application flows. Supabase row-level access controls remain an important part of the connected deployment's security boundary and must be maintained alongside frontend checks. Administrators handle agent approval, verification, reports, and listing moderation.
+
+Real environment values are kept in ignored local files; the committed `.env.example` contains variable names only. These controls reduce risk but are not a claim that the application is perfectly secure.
+
+## Hackathon Evidence
+
+- [x] Public GitHub repository: `efeclinton/Casa`
+- [x] Dated Build Week commits
+- [ ] Codex feedback Session ID supplied privately through Devpost
+- [ ] Public demo video
+- [ ] Live deployment URL added to the submission
+- [x] Documentation separating pre-existing work from Build Week work
+
+## License
+
+No `LICENSE` file currently exists in the repository. Licensing will be handled as a separate task; no licence terms are invented or added here.
