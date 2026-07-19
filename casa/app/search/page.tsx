@@ -1,6 +1,7 @@
 import { supabase } from "../../lib/supabaseClient"
 import PropertyCard from "../../components/PropertyCard"
 import { getListingAgentId, loadVerificationStatuses } from "../../lib/verification"
+import { validateOptionalPriceFilters } from "../../lib/priceFilters"
 
 type Property = {
   id: string;
@@ -34,32 +35,45 @@ export default async function SearchPage({
   const minPrice = params?.minPrice
   const maxPrice = params?.maxPrice
   const rentPeriod = params?.rentPeriod
+  const priceValidation = validateOptionalPriceFilters(minPrice, maxPrice)
+  let properties: Property[] = []
+  let queryError = ""
 
-  let query = supabase
-    .from("properties")
-    .select("*")
-    .eq("is_active", true)
-    .order("updated_at", { ascending: false, nullsFirst: false })
+  if (priceValidation.valid) {
+    let query = supabase
+      .from("properties")
+      .select("*")
+      .eq("is_active", true)
+      .order("updated_at", { ascending: false, nullsFirst: false })
 
-  if (location) {
-    query = query.ilike("location", `%${location}%`)
+    if (location) {
+      query = query.ilike("location", `%${location}%`)
+    }
+
+    if (priceValidation.values.minPrice !== undefined) {
+      query = query.gte("price", priceValidation.values.minPrice)
+    }
+
+    if (priceValidation.values.maxPrice !== undefined) {
+      query = query.lte("price", priceValidation.values.maxPrice)
+    }
+
+    if (rentPeriod) {
+      query = query.eq("rent_period", rentPeriod)
+    }
+
+    const { data, error } = await query
+
+    if (error) {
+      console.error("Property filter query failed", { code: error.code, message: error.message })
+      queryError = "Unable to load results. Please try again."
+    } else {
+      properties = (data || []) as Property[]
+    }
   }
 
-  if (minPrice) {
-    query = query.gte("price", Number(minPrice))
-  }
-
-  if (maxPrice) {
-    query = query.lte("price", Number(maxPrice))
-  }
-
-  if (rentPeriod) {
-    query = query.eq("rent_period", rentPeriod)
-  }
-
-  const { data } = await query
-
-  const properties: Property[] = data || []
+  const filterError = priceValidation.valid ? "" : priceValidation.message
+  const pageError = filterError || queryError
   const verificationStatuses = await loadVerificationStatuses(properties)
 
   return (
@@ -73,7 +87,11 @@ export default async function SearchPage({
           Results for &quot;{location}&quot;
         </h1>
 
-        {properties.length > 0 ? (
+        {pageError ? (
+
+          <p className="rounded-lg bg-red-50 p-3 text-sm text-red-700" role="alert">{pageError}</p>
+
+        ) : properties.length > 0 ? (
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
 

@@ -3,6 +3,7 @@ import Link from "next/link";
 import { supabase } from "@/lib/supabaseClient";
 import PropertyCard from "@/components/PropertyCard";
 import { getListingAgentId, loadVerificationStatuses } from "@/lib/verification";
+import { validateOptionalPriceFilters } from "@/lib/priceFilters";
 
 type Property = {
   id: string;
@@ -55,36 +56,46 @@ export default async function PropertiesPage({
   const minPrice = params?.minPrice;
   const maxPrice = params?.maxPrice;
   const rentPeriod = params?.rentPeriod;
+  const priceValidation = validateOptionalPriceFilters(minPrice, maxPrice);
+  let properties: Property[] = [];
+  let queryError = "";
 
-  let query = supabase
-    .from("properties")
-    .select("*")
-    .eq("is_active", true)
-    .order("updated_at", { ascending: false, nullsFirst: false });
+  if (priceValidation.valid) {
+    let query = supabase
+      .from("properties")
+      .select("*")
+      .eq("is_active", true)
+      .order("updated_at", { ascending: false, nullsFirst: false });
 
-  if (location) {
-    query = query.ilike("location", `%${location}%`);
+    if (location) {
+      query = query.ilike("location", `%${location}%`);
+    }
+
+    if (priceValidation.values.minPrice !== undefined) {
+      query = query.gte("price", priceValidation.values.minPrice);
+    }
+
+    if (priceValidation.values.maxPrice !== undefined) {
+      query = query.lte("price", priceValidation.values.maxPrice);
+    }
+
+    if (rentPeriod) {
+      query = query.eq("rent_period", rentPeriod);
+    }
+
+    const { data, error } = await query;
+
+    if (error) {
+      console.error("Property filter query failed", { code: error.code, message: error.message });
+      queryError = "Unable to load results. Please try again.";
+    } else {
+      properties = (data || []) as Property[];
+    }
   }
 
-  if (minPrice) {
-    query = query.gte("price", Number(minPrice));
-  }
-
-  if (maxPrice) {
-    query = query.lte("price", Number(maxPrice));
-  }
-
-  if (rentPeriod) {
-    query = query.eq("rent_period", rentPeriod);
-  }
-
-  const { data: properties, error } = await query;
-
-  if (error) {
-    console.error(error);
-  }
-
-  const verificationStatuses = await loadVerificationStatuses(properties || []);
+  const filterError = priceValidation.valid ? "" : priceValidation.message;
+  const pageError = filterError || queryError;
+  const verificationStatuses = await loadVerificationStatuses(properties);
 
   return (
     <div className="w-full max-w-6xl mx-auto px-4 py-6 sm:py-8">
@@ -119,6 +130,8 @@ export default async function PropertiesPage({
             type="number"
             placeholder="Min price"
             defaultValue={minPrice}
+            min="0"
+            step="any"
             className="border p-2.5 rounded-lg w-full text-sm sm:text-base"
           />
           <input
@@ -126,6 +139,8 @@ export default async function PropertiesPage({
             type="number"
             placeholder="Max price"
             defaultValue={maxPrice}
+            min="0"
+            step="any"
             className="border p-2.5 rounded-lg w-full text-sm sm:text-base"
           />
         </div>
@@ -135,9 +150,12 @@ export default async function PropertiesPage({
         </button>
       </form>
 
-      {/* LIST */}
+      {pageError ? (
+        <p className="rounded-lg bg-red-50 p-3 text-sm text-red-700" role="alert">{pageError}</p>
+      ) : (
+      /* LIST */
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-6">
-        {properties?.map((property: Property) => (
+        {properties.map((property: Property) => (
           <PropertyCard
             key={property.id}
             image={property.image}
@@ -154,6 +172,7 @@ export default async function PropertiesPage({
           />
         ))}
       </div>
+      )}
     </div>
 
   );

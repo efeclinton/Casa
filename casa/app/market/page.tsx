@@ -1,6 +1,7 @@
 import type { Metadata } from "next"
 import MarketItemCard from "@/components/MarketItemCard"
 import { supabase } from "../../lib/supabaseClient"
+import { validateOptionalPriceFilters } from "../../lib/priceFilters"
 
 type MarketItem = {
   id: string
@@ -48,45 +49,49 @@ export default async function MarketPage({
   const q = (params?.q || "").trim()
   const minPrice = params?.minPrice
   const maxPrice = params?.maxPrice
+  const priceValidation = validateOptionalPriceFilters(minPrice, maxPrice)
+  let items: MarketItem[] = []
+  let queryError = ""
 
-  let query = supabase
-    .from("market_items")
-    .select("*, user_id(*)")
-    .eq("is_active", true)
-    .order("created_at", { ascending: false })
+  if (priceValidation.valid) {
+    let query = supabase
+      .from("market_items")
+      .select("*, user_id(*)")
+      .eq("is_active", true)
+      .order("created_at", { ascending: false })
 
-  if (q) {
-    // Normalize and sanitize user input
-    const normalized = q.replace(/\s+/g, " ").trim()
-    const safeQ = normalized.replace(/[%_,()]/g, " ")
+    if (q) {
+      // Normalize and sanitize user input
+      const normalized = q.replace(/\s+/g, " ").trim()
+      const safeQ = normalized.replace(/[%_,()]/g, " ")
 
-    // Single OR clause across both searchable fields
-    // This gives flexible partial matching for full query text, e.g. "bed stand"
-    query = query.or(
-      `title.ilike.%${safeQ}%,description.ilike.%${safeQ}%`
-    )
+      // Single OR clause across both searchable fields
+      // This gives flexible partial matching for full query text, e.g. "bed stand"
+      query = query.or(
+        `title.ilike.%${safeQ}%,description.ilike.%${safeQ}%`
+      )
+    }
+
+    if (priceValidation.values.minPrice !== undefined) {
+      query = query.gte("price", priceValidation.values.minPrice)
+    }
+
+    if (priceValidation.values.maxPrice !== undefined) {
+      query = query.lte("price", priceValidation.values.maxPrice)
+    }
+
+    const { data, error } = await query
+
+    if (error) {
+      console.error("Market filter query failed", { code: error.code, message: error.message })
+      queryError = "Unable to load results. Please try again."
+    } else {
+      items = (data || []) as MarketItem[]
+    }
   }
 
-  if (minPrice) {
-    query = query.gte("price", Number(minPrice))
-  }
-
-  if (maxPrice) {
-    query = query.lte("price", Number(maxPrice))
-  }
-
-  const { data, error } = await query
-
-  if (error) {
-    console.error("Market fetch failed")
-    console.error("Supabase error message:", error.message)
-    console.error("Supabase error details:", error.details)
-    console.error("Supabase error hint:", error.hint)
-    console.error("Supabase error code:", error.code)
-    console.error("Raw error JSON:", JSON.stringify(error, null, 2))
-  }
-
-  const items: MarketItem[] = data || []
+  const filterError = priceValidation.valid ? "" : priceValidation.message
+  const pageError = filterError || queryError
 
   return (
     <main className="mx-auto w-full max-w-6xl px-4 py-6 sm:py-8">
@@ -110,6 +115,8 @@ export default async function MarketPage({
             type="number"
             placeholder="Min price"
             defaultValue={minPrice}
+            min="0"
+            step="any"
             className="w-full rounded border p-2"
           />
           <input
@@ -117,6 +124,8 @@ export default async function MarketPage({
             type="number"
             placeholder="Max price"
             defaultValue={maxPrice}
+            min="0"
+            step="any"
             className="w-full rounded border p-2"
           />
         </div>
@@ -126,7 +135,9 @@ export default async function MarketPage({
         </button>
       </form>
 
-      {items.length === 0 ? (
+      {pageError ? (
+        <p className="rounded-lg bg-red-50 p-3 text-sm text-red-700" role="alert">{pageError}</p>
+      ) : items.length === 0 ? (
         <p className="text-gray-500">No items match your search/filters.</p>
       ) : (
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-3 lg:gap-6 xl:grid-cols-4">

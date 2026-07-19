@@ -4,7 +4,7 @@ import { useState } from "react"
 import { supabase } from "@/lib/supabaseClient"
 import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
-import { getCompletionPath, isProfileComplete, loadCurrentProfile } from "@/lib/profileCompletion"
+import { getCompletionPath, getSafeRedirectPath, isProfileComplete, loadCurrentProfile } from "@/lib/profileCompletion"
 
 export default function LoginPage() {
 
@@ -14,10 +14,7 @@ export default function LoginPage() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
 
-  const getSafeRedirectPath = () => {
-    const redirect = searchParams.get("redirect") || "/"
-    return redirect.startsWith("/") ? redirect : "/"
-  }
+  const redirectPath = getSafeRedirectPath(searchParams.get("redirect"))
 
   const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -32,7 +29,6 @@ export default function LoginPage() {
       return
     }
 
-    const redirectPath = getSafeRedirectPath()
     const user = data.user
 
     if (user) {
@@ -52,7 +48,7 @@ export default function LoginPage() {
   }
 
   const handleGoogleLogin = async () => {
-    const redirect = encodeURIComponent(getSafeRedirectPath())
+    const redirect = encodeURIComponent(redirectPath)
 
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
@@ -113,7 +109,7 @@ export default function LoginPage() {
       </button>
 
       <p className="mt-4 text-sm">
-        Don&apos;t have an account? <Link href="/signup" className="text-green-600">Sign up</Link>
+        Don&apos;t have an account? <Link href={`/signup?redirect=${encodeURIComponent(redirectPath)}`} className="text-green-600">Sign up</Link>
       </p>
 
     </main>

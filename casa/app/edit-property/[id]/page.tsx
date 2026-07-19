@@ -7,15 +7,18 @@ import Image from "next/image"
 import { FormPageSkeleton } from "../../../components/LoadingSkeletons"
 import { validatePropertyForm } from "../../../lib/propertyFormValidation"
 import { cleanupUploadedPaths } from "../../../lib/storageCleanup"
+import { ensureProfileComplete } from "../../../lib/profileCompletion"
 
 export default function EditProperty() {
 
   const { id } = useParams()
   const router = useRouter()
+  const propertyId = typeof id === "string" ? id : ""
 
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState("")
+  const [accessError, setAccessError] = useState("")
 
   const [title, setTitle] = useState("")
   const [price, setPrice] = useState("")
@@ -48,39 +51,118 @@ export default function EditProperty() {
   ]
 
   useEffect(() => {
+    let active = true
 
     const fetchProperty = async () => {
+      try {
+        if (!propertyId) {
+          if (active) {
+            setAccessError("The property could not be found.")
+            setLoading(false)
+          }
+          return
+        }
 
-      const { data } = await supabase
-        .from("properties")
-        .select("*")
-        .eq("id", id)
-        .single()
+        const { data: authData, error: authError } = await supabase.auth.getUser()
 
-      if (!data) {
-        router.push("/dashboard")
-        return
+        if (authError) {
+          console.error("Property edit authentication failed", { code: authError.code, message: authError.message })
+          if (active) {
+            setAccessError("Unable to confirm your account. Please try again.")
+            setLoading(false)
+          }
+          return
+        }
+
+        const user = authData.user
+        if (!user) {
+          router.replace(`/login?redirect=${encodeURIComponent(`/edit-property/${propertyId}`)}`)
+          return
+        }
+
+        const complete = await ensureProfileComplete(user, router, `/edit-property/${propertyId}`)
+        if (!complete) return
+
+        const { data: profile, error: profileError } = await supabase
+          .from("profiles")
+          .select("agent_status")
+          .eq("id", user.id)
+          .maybeSingle()
+
+        if (profileError) {
+          console.error("Property edit agent-status check failed", { code: profileError.code, message: profileError.message })
+          if (active) {
+            setAccessError("Unable to confirm your agent status. Please try again.")
+            setLoading(false)
+          }
+          return
+        }
+
+        if (profile?.agent_status !== "approved") {
+          if (active) {
+            setAccessError("Only approved agents can edit properties.")
+            setLoading(false)
+          }
+          return
+        }
+
+        const { data, error: propertyError } = await supabase
+          .from("properties")
+          .select("id, owner_id, agent_id, title, price, location, phone, rent_period, school, description, image, images, videos, tour_images")
+          .eq("id", propertyId)
+          .or(`owner_id.eq.${user.id},agent_id.eq.${user.id}`)
+          .maybeSingle()
+
+        if (propertyError) {
+          console.error("Property edit fetch failed", { code: propertyError.code, message: propertyError.message })
+          if (active) {
+            setAccessError("Unable to load this property. Please try again.")
+            setLoading(false)
+          }
+          return
+        }
+
+        if (!data || (data.owner_id !== user.id && data.agent_id !== user.id)) {
+          if (active) {
+            setAccessError("You are not authorized to edit this property.")
+            setLoading(false)
+          }
+          return
+        }
+
+        if (!active) return
+
+        setTitle(data.title || "")
+        setPrice(String(data.price ?? ""))
+        setLocation(data.location || "")
+        setPhone(data.phone || "")
+        setRentPeriod(data.rent_period || "")
+        setListingType("campus")
+        setSchool(data.school || "")
+        setDescription(data.description || "")
+
+        setExistingImages(data.images || (data.image ? [data.image] : []))
+        setExistingVideos(data.videos || [])
+        setTourLinks(data.tour_images?.length ? data.tour_images : [""])
+
+        setLoading(false)
+      } catch (error) {
+        console.error("Unexpected property edit loading failure", {
+          message: error instanceof Error ? error.message : "Unknown error",
+        })
+        if (active) {
+          setAccessError("Unable to load this property. Please try again.")
+          setLoading(false)
+        }
       }
-
-      setTitle(data.title)
-      setPrice(String(data.price))
-      setLocation(data.location)
-      setPhone(data.phone)
-      setRentPeriod(data.rent_period || "")
-      setListingType("campus")
-      setSchool(data.school || "")
-      setDescription(data.description || "")
-
-      setExistingImages(data.images || (data.image ? [data.image] : []))
-      setExistingVideos(data.videos || [])
-      setTourLinks(data.tour_images?.length ? data.tour_images : [""])
-
-      setLoading(false)
     }
 
-    fetchProperty()
+    void fetchProperty()
 
-  }, [id, router])
+    return () => {
+      active = false
+    }
+  }, [propertyId, router])
 
   const removeImage = (img: string) => {
     setExistingImages(prev => prev.filter(i => i !== img))
@@ -123,6 +205,49 @@ export default function EditProperty() {
     const newlyUploadedVideoPaths: string[] = []
 
     try {
+      const { data: authData, error: authError } = await supabase.auth.getUser()
+
+      if (authError) {
+        console.error("Property update authentication failed", { code: authError.code, message: authError.message })
+        throw new Error("Unable to confirm your account. Please try again.")
+      }
+
+      const currentUser = authData.user
+      if (!currentUser) {
+        router.replace(`/login?redirect=${encodeURIComponent(`/edit-property/${propertyId}`)}`)
+        throw new Error("You must be signed in to update this property.")
+      }
+
+      const { data: latestProfile, error: profileError } = await supabase
+        .from("profiles")
+        .select("agent_status")
+        .eq("id", currentUser.id)
+        .maybeSingle()
+
+      if (profileError) {
+        console.error("Property update agent-status check failed", { code: profileError.code, message: profileError.message })
+        throw new Error("Unable to confirm your agent status. Please try again.")
+      }
+
+      if (latestProfile?.agent_status !== "approved") {
+        throw new Error("Only approved agents can edit properties.")
+      }
+
+      const { data: ownedProperty, error: ownershipError } = await supabase
+        .from("properties")
+        .select("id, owner_id, agent_id")
+        .eq("id", propertyId)
+        .or(`owner_id.eq.${currentUser.id},agent_id.eq.${currentUser.id}`)
+        .maybeSingle()
+
+      if (ownershipError) {
+        console.error("Property update ownership check failed", { code: ownershipError.code, message: ownershipError.message })
+        throw new Error("Unable to confirm property ownership. Please try again.")
+      }
+
+      if (!ownedProperty || (ownedProperty.owner_id !== currentUser.id && ownedProperty.agent_id !== currentUser.id)) {
+        throw new Error("You are not authorized to update this property.")
+      }
 
       const imageUrls = [...existingImages]
       const videoUrls = [...existingVideos]
@@ -179,7 +304,7 @@ export default function EditProperty() {
         }
       }
 
-      const { error } = await supabase
+      const { data: updatedProperty, error } = await supabase
         .from("properties")
         .update({
           updated_at: new Date().toISOString(),
@@ -196,9 +321,15 @@ export default function EditProperty() {
           images: imageUrls,
           videos: videoUrls
         })
-        .eq("id", id)
+        .eq("id", propertyId)
+        .or(`owner_id.eq.${currentUser.id},agent_id.eq.${currentUser.id}`)
+        .select("id")
+        .maybeSingle()
 
       if (error) throw error
+      if (!updatedProperty) {
+        throw new Error("The property could not be updated. It may no longer exist or you may not have permission.")
+      }
 
       setMessage("Property updated successfully")
 
@@ -225,6 +356,22 @@ export default function EditProperty() {
 
   if (loading) {
     return <FormPageSkeleton maxWidth="max-w-xl" />
+  }
+
+  if (accessError) {
+    return (
+      <main className="mx-auto max-w-xl px-4 py-10">
+        <h1 className="text-2xl font-bold">Unable to edit property</h1>
+        <p className="mt-3 text-sm text-red-700" role="alert">{accessError}</p>
+        <button
+          type="button"
+          onClick={() => router.replace("/dashboard")}
+          className="mt-6 rounded-lg bg-black px-4 py-3 text-sm font-semibold text-white"
+        >
+          Return to dashboard
+        </button>
+      </main>
+    )
   }
 
   return (
