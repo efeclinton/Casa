@@ -270,7 +270,7 @@ Do not commit real environment values. The root Git ignore rules exclude local e
 
 Recommended judge journey:
 
-1. Open the homepage.
+1. Open https://usecasa.ng.
 2. Browse Featured Properties.
 3. Open a property.
 4. Review its images, location, price, agent, and contact options.
@@ -284,9 +284,9 @@ Advanced agent and administrator functions require appropriately approved accoun
 
 ## Live Demo
 
-The repository and tracked deployment configuration do not provide a production URL that can be verified here.
+[Open the CASA live application](https://usecasa.ng)
 
-**[LIVE DEMO URL TO BE ADDED]**
+CASA is mobile-first, but it can also be tested on desktop.
 
 ## Screenshots
 
