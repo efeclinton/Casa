@@ -290,14 +290,29 @@ CASA is mobile-first, but it can also be tested on desktop.
 
 ## Screenshots
 
-Product screenshots are not currently committed. Submission screenshots should be added without referencing nonexistent repository files.
+### Homepage
 
-- **Homepage:** [SCREENSHOT TO BE ADDED]
-- **Property detail:** [SCREENSHOT TO BE ADDED]
-- **Agent profile:** [SCREENSHOT TO BE ADDED]
-- **Campus Market:** [SCREENSHOT TO BE ADDED]
-- **Agent dashboard:** [SCREENSHOT TO BE ADDED]
-- **Admin dashboard:** [SCREENSHOT TO BE ADDED]
+![CASA homepage](submission-assets/screenshots/homepage-redacted.png)
+
+### Property Detail
+
+![CASA property detail page](submission-assets/screenshots/property-detail-redacted.png)
+
+### Agent Profile
+
+![CASA verified agent profile](submission-assets/screenshots/agent-profile-redacted.png)
+
+### Campus Market
+
+![CASA Campus Market](submission-assets/screenshots/campus-market-redacted.png)
+
+### Agent Dashboard
+
+![CASA agent dashboard](submission-assets/screenshots/list-property-redacted.png)
+
+### Admin Dashboard
+
+![CASA admin dashboard](submission-assets/screenshots/admin-dashboard-redacted.png)
 
 ## Known Limitations
 

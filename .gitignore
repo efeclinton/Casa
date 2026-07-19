@@ -24,6 +24,9 @@ build/
 .DS_Store
 *.pem
 
+# private submission source screenshots
+submission-assets/raw-screenshots/
+
 # debug
 npm-debug.log*
 yarn-debug.log*
