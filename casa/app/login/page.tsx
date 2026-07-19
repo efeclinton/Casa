@@ -15,6 +15,7 @@ export default function LoginPage() {
   const [password, setPassword] = useState("")
 
   const redirectPath = getSafeRedirectPath(searchParams.get("redirect"))
+  const sessionExpired = searchParams.get("reason") === "session-expired"
 
   const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -71,6 +72,12 @@ export default function LoginPage() {
 
       <form onSubmit={handleLogin} className="space-y-4">
 
+        {sessionExpired && (
+          <p role="alert" className="rounded border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+            Your session has expired. Please sign in again.
+          </p>
+        )}
+
         <input
           type="email"
           placeholder="Email"
@@ -86,6 +93,12 @@ export default function LoginPage() {
           onChange={(e)=>setPassword(e.target.value)}
           className="w-full border p-3 rounded"
         />
+
+        <div className="text-right">
+          <Link href="/forgot-password" className="text-sm font-medium text-green-700 hover:underline">
+            Forgot password?
+          </Link>
+        </div>
 
         <button
           type="submit"

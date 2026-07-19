@@ -10,6 +10,7 @@ import { getAgentDisplayName } from "../../lib/agentDisplay"
 import { ProfilePageSkeleton } from "../../components/LoadingSkeletons"
 import Avatar from "../../components/Avatar"
 import PropertyThumbnail from "../../components/PropertyThumbnail"
+import ChangePasswordForm from "../../components/ChangePasswordForm"
 
 type Profile = {
   id?: string
@@ -73,10 +74,16 @@ export default function ProfilePage() {
 
   useEffect(() => {
     const fetchData = async () => {
-      const { data: { user } } = await supabase.auth.getUser()
+      const { data: { user }, error: userError } = await supabase.auth.getUser()
 
-      if (!user) {
-        router.push("/login")
+      if (userError || !user) {
+        if (userError) {
+          console.error("Profile authentication check failed", {
+            code: userError.code,
+            message: userError.message,
+          })
+        }
+        router.replace("/login?redirect=%2Fprofile")
         return
       }
 
@@ -492,6 +499,8 @@ export default function ProfilePage() {
                 )}
               </div>
             </section>
+
+            {user && <ChangePasswordForm user={user} />}
 
             <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
               <h2 className="text-lg font-semibold">Account Status</h2>
